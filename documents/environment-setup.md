@@ -17,8 +17,8 @@ On `start setup`, Claude reads the table below to brief the current position, an
 | 1. Tracker Boot project | ✅ | Project ID: 100000292 |
 | 2. GitHub repo | ✅ | hwyann/be-one (private) |
 | 3. Bot access | ✅ | strike-trio-devbot, push access; token in ~/.strike-trio/.env |
-| 4. Deploy hosting | ⬜ | |
-| 5. Local wiring | ⬜ | |
+| 4. Deploy hosting | ✅ | striketrio-beone.netlify.app |
+| 5. Local wiring | ✅ | .env.local created; src/lib/supabase.js wired |
 | 6. Verify (first ready) | ⬜ | |
 
 Status marks: ⬜ not done · 🔄 in progress · ✅ done
@@ -39,10 +39,10 @@ Status marks: ⬜ not done · 🔄 in progress · ✅ done
 
 - **Tracker Boot Project ID**: 100000292
 - **GitHub repo**: `hwyann/be-one`
-- **Deploy hosting**: `(e.g. Netlify site name)`
-- **Production URL**:
-- **Acceptance URL**:
-- **Preview URL pattern**:
+- **Deploy hosting**: `striketrio-beone.netlify.app`
+- **Production URL**: https://striketrio-beone.netlify.app
+- **Acceptance URL**: https://acceptance--striketrio-beone.netlify.app
+- **Preview URL pattern**: https://deploy-preview-{PR}--striketrio-beone.netlify.app
 
 ---
 

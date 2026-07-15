@@ -6,7 +6,7 @@ A B2B SaaS OKR system that embeds Bekind Labs' Lean/XP consulting methodology di
 **Stack**: React + Supabase + Netlify
 **Tracker Boot**: Project ID 100000292
 **GitHub**: hwyann/be-one
-**Deploy**: (confirmed during setup) — (confirmed during setup)
+**Deploy**: striketrio-beone.netlify.app — https://striketrio-beone.netlify.app
 
 ## Me
 Jess — PM
