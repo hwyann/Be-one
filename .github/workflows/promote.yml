@@ -1,0 +1,47 @@
+name: Promote to Production
+
+# Triggered by Tracker Boot when a story is Accepted.
+# Tracker Boot calls the GitHub API using a PAT configured in the project's
+# Tracker Boot settings (not a GitHub Actions secret).
+#
+# Required GitHub Actions secrets: none (GITHUB_TOKEN is auto-provisioned).
+# Required Tracker Boot config: a GitHub PAT with `workflow` scope so
+# Tracker Boot can dispatch this workflow via the GitHub API.
+#   → Set it in Tracker Boot project settings as TRACKER_BOOT_API_KEY.
+
+on:
+  workflow_dispatch:
+    inputs:
+      story_id:
+        description: 'Accepted Tracker Boot story ID'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fast-forward production to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          MAIN_SHA=$(git rev-parse origin/main)
+
+          if git ls-remote --exit-code origin production >/dev/null 2>&1; then
+            PROD_SHA=$(git rev-parse origin/production)
+            bash scripts/check-ff.sh "$PROD_SHA" "$MAIN_SHA"
+          fi
+
+          git push origin "refs/remotes/origin/main:refs/heads/production"
+          echo "Promoted: production → $(git rev-parse --short origin/main)${STORY:+ (story #$STORY)}"
+        env:
+          STORY: ${{ inputs.story_id }}

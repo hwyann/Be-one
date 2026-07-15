@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:unit": "bash tests/unit/promote.test.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",
