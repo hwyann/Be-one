@@ -22,7 +22,7 @@ GH_TOKEN=$DEVBOT_TOKEN gh pr create \
   --body "$BODY" \
   --base main \
   --head "$BRANCH" \
-  --repo hwyann/be-one
+  --repo hwyann/Be-one
 
 echo ""
 echo "PR opened under strike-trio-devbot."
