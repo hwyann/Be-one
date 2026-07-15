@@ -97,6 +97,12 @@ Always write one test at a time, make it run, then improve structure. Always run
 
 ---
 
+## Design Source of Truth
+
+All UI work must match `documents/design/be-one-mvp.html`. Open it in a browser before implementing any screen or component. If a detail is unspecified, default to the mock — do not invent a layout.
+
+---
+
 ## Stack-specific: React / JavaScript
 
 - Use existing CSS variables and classes. Never hardcode values
