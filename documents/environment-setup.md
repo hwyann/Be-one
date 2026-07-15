@@ -41,7 +41,7 @@ Status marks: ⬜ not done · 🔄 in progress · ✅ done
 - **GitHub repo**: `hwyann/be-one`
 - **Deploy hosting**: `striketrio-beone.netlify.app`
 - **Production URL**: https://striketrio-beone.netlify.app
-- **Acceptance URL**: https://acceptance--striketrio-beone.netlify.app
+- **Acceptance URL**: https://main--striketrio-beone.netlify.app
 - **Preview URL pattern**: https://deploy-preview-{PR}--striketrio-beone.netlify.app
 
 ---
