@@ -14,7 +14,8 @@ Jess — PM
 
 ## Dev Team
 
-(confirmed during setup)
+**Dev A**: Chip — worktree at `~/Documents/Claude/Worktrees/be-one-chip`, branch `dev-chip`
+**Dev B**: Dale — worktree at `~/Documents/Claude/Worktrees/be-one-dale`, branch `dev-dale`
 
 ## ⚠️ Session Start Triggers — Always Run First
 
@@ -23,7 +24,8 @@ When any of the keywords below are received, use the Read tool to read the liste
 | Keyword | Files to Read |
 |---------|--------------|
 | `PM start` | `documents/aabt-workflow.md` + `documents/product/product-overview.md` + `documents/environment-setup.md` (its presence means environment setup is done) (+ after environment setup: dev track files + `documents/delivery-playbook.md` + `documents/iteration-plan.md`) |
-| `dev-* start` (added after setup) | — |
+| `dev-chip start` | `documents/tracks/dev-chip.md` |
+| `dev-dale start` | `documents/tracks/dev-dale.md` |
 | `start setup` | Read `documents/environment-setup.md` (create it if missing), brief the progress, then continue Strike Trio skill Phase 2 **one step at a time**. (Infrastructure is tracked in this checklist, NOT as Tracker Boot Chores.) |
 | `/story` or `write story` | **Re-read all of §4** in `documents/aabt-workflow.md`, then apply the self-check checklist to write and register the story. Always go through this trigger before writing a story or putting it in the tracker (don't rely on memory). |
 | `create a persona` / `persona workshop` | Run the persona builder skill. Check `documents/product/product-overview.md` and the `documents/product/personas/` folder, then start the workshop. |

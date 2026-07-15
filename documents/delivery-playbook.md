@@ -10,7 +10,7 @@ After an IPM or after the previous Accept is complete, the cycle starts when PM 
 
 ### Step 1 — Story Assignment
 
-Claude pulls the next story from the Tracker Boot backlog and writes **only the number, title, and a track directive** into the `## Current Story` section of `documents/tracks/dev-(confirmed during setup).md` or `documents/tracks/dev-(confirmed during setup).md`. Don't copy-paste the details, AC, Gherkin, or TDD — **the source of truth is the tracker, and the Dev reads the details and AC with `tb_get_story` when starting the story.** Keeping a copy in the track file becomes a source of drift against the tracker.
+Claude pulls the next story from the Tracker Boot backlog and writes **only the number, title, and a track directive** into the `## Current Story` section of `documents/tracks/dev-chip.md` or `documents/tracks/dev-dale.md`. Don't copy-paste the details, AC, Gherkin, or TDD — **the source of truth is the tracker, and the Dev reads the details and AC with `tb_get_story` when starting the story.** Keeping a copy in the track file becomes a source of drift against the tracker.
 
 ```markdown
 ### #[number] — [title]
@@ -18,7 +18,7 @@ Claude pulls the next story from the Tracker Boot backlog and writes **only the 
 **Track directive**: [a one-line scope this track will own — so files don't overlap with the other Dev]
 ```
 
-Double-click `commands/ready-(confirmed during setup).command` or `commands/ready-(confirmed during setup).command`. Claude Code launches, automatically resets the branch to the latest main, and sends the `dev-(confirmed during setup) start` trigger.
+Double-click `commands/ready-chip.command` or `commands/ready-dale.command`. Claude Code launches, automatically resets the branch to the latest main, and sends the `dev-chip start` or `dev-dale start` trigger.
 
 The Dev track automatically:
 - Reads the track file and confirms the story
@@ -63,8 +63,8 @@ Claude reads the PR diff and performs the code review. **This is where refactori
 
 Claude only decides the verdict (pass/changes-needed). **The act of leaving it is done by the human (PM) with their own account** — because the PR author is the bot, the PM's approve/request-changes is valid.
 
-- **Changes needed** → Claude writes the body of the findings into `.review-body.md`, and the PM **double-clicks `decline-(confirmed during setup).command`** — the command shows the body and submits `request-changes` only after a "submit as-is? (y/n)" confirmation (the human makes the submit decision = HITL). Dev trigger to receive it: **"read the review on PR #[number] and apply it"** → the Dev reads it via `gh pr view <N> --json reviews` and applies it.
-- **Approved** → the PM **double-clicks `approve-(confirmed during setup).command`** to approve (a pass has no body — a review-free double-click; the Step 5 merge gate requires this approval). **approve produces no screen output, so there's nothing to paste** — never ask to "paste the approve result". Move straight to Step 5 merge; the artifact to paste is that merge result.
+- **Changes needed** → Claude writes the body of the findings into `.review-body.md`, and the PM **double-clicks `decline-chip.command` or `decline-dale.command`** — the command shows the body and submits `request-changes` only after a "submit as-is? (y/n)" confirmation (the human makes the submit decision = HITL). Dev trigger to receive it: **"read the review on PR #[number] and apply it"** → the Dev reads it via `gh pr view <N> --json reviews` and applies it.
+- **Approved** → the PM **double-clicks `approve-chip.command` or `approve-dale.command`** to approve (a pass has no body — a review-free double-click; the Step 5 merge gate requires this approval). **approve produces no screen output, so there's nothing to paste** — never ask to "paste the approve result". Move straight to Step 5 merge; the artifact to paste is that merge result.
 
 > **The home of code-review findings = the PR review** (different from the Tracker Boot comment, which is the home of preview feedback). Reason: the merge approve gate (`reviewDecision == APPROVED`) hangs on the PR review, so the code-review verdict must live there as a PR review for the gate to work. A Tracker Boot comment can't flip the gate. **Preview feedback = Tracker Boot comment / code-review findings = PR review** — the two channels split.
 
@@ -72,7 +72,7 @@ Claude only decides the verdict (pass/changes-needed). **The act of leaving it i
 
 ### Step 5 — Merge
 
-PM double-clicks `merge-(confirmed during setup).command` or `merge-(confirmed during setup).command` and pastes the result into the PM session.
+PM double-clicks `merge-chip.command` or `merge-dale.command` and pastes the result into the PM session.
 
 - **Approve gate** → the merge command refuses the merge unless `reviewDecision` is `APPROVED` (it passes only after the PM approved with their own account in Step 4). A missing review is caught immediately at the command level — this gate works only because the author is the bot.
 - **Conflict** → Claude (PM session) reads both branches, compares the intent of each change, and resolves directly.
@@ -129,5 +129,5 @@ The PM session bash sandbox has no SSH key. Follow these rules strictly:
 
 - **File edits**: Use Read / Write / Edit tools only. Never run `git commit` in bash (causes HEAD.lock issues).
 - **git push**: PM runs this directly from their terminal.
-- **git diff (code review)**: Use local worktree refs without `git fetch`. The worktree lives at **`~/Documents/Claude/Worktrees/[project-folder-name]-(confirmed during setup)`** (or the other Dev's name) — run `git diff origin/main...dev-(confirmed during setup)`. (The old `/tmp` path was retired because it's wiped on macOS restart — this is the same permanent path the ready command uses.)
+- **git diff (code review)**: Use local worktree refs without `git fetch`. Worktrees live at `~/Documents/Claude/Worktrees/be-one-chip` and `~/Documents/Claude/Worktrees/be-one-dale` — run `git diff origin/main...dev-chip` or `git diff origin/main...dev-dale`.
 - **Track files**: Managed via symlink. No git push needed.
