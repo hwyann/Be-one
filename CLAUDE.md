@@ -47,15 +47,30 @@ When any of the keywords below are received, use the Read tool to read the liste
 
 ## Delivery Cycle — Follow This Order Without Exception
 
-> (activated after environment setup)
+Full details in `documents/delivery-playbook.md`. Steps in order:
+
+1. **Story assignment** — PM says "start dev" → Claude writes story into track file → double-click `ready-[dev].command`
+2. **Preview check** — Dev pushes → PM pastes notification → Claude presents preview URL → PM clicks and checks
+3. **PR** — PM says "PR it" in Dev session → Dev runs `bash commands/pr.sh <track>` (bot-authored PR)
+4. **Code review** — Claude reads diff → PM approves (`approve-[dev].command`) or requests changes (`decline-[dev].command`)
+5. **Merge** — PM double-clicks `merge-[dev].command` → merges to main → story marked Delivered → PM checks acceptance URL
+6. **Accept** — PM says "Accept" → story Accepted in Tracker Boot → `promote.yml` publishes to production (auto, ~5 min)
 
 ## PM Session Response Formats
 
-> (activated after environment setup)
+- Lead with the result or decision, not a preamble
+- Preview/acceptance checks: present URL as a **clickable markdown link** — never raw text
+- Story assignment: number + title + track directive only in the track file (no AC copy)
+- Feedback: written as a Tracker Boot comment (`tb_create_comment`) — not in the track file
+- After any PM doc edit: always end the response with the `push-docs.command` reminder
 
 ## Dev Track Report — Three Gates the PM Checks
 
-> (activated after environment setup)
+| Gate | When | What to verify |
+|------|------|---------------|
+| **Preview** | After Dev push notification | Feature works on the preview URL; no visual regressions |
+| **Code review** | Before approve/decline | Diff quality: duplication, naming, structural triggers; Refactor line honest |
+| **Acceptance** | After merge to main | Feature works on acceptance URL; production unchanged |
 
 ## Track File Rules
 - When PM updates a track file, never modify `## Notification Protocol` or `## Development Rules` sections
@@ -65,7 +80,19 @@ When any of the keywords below are received, use the Read tool to read the liste
 
 ## Deployment Rules (single site + deploy contexts)
 
-> (activated after environment setup)
+**Site**: striketrio-beone.netlify.app
+
+| Context | Branch | URL |
+|---------|--------|-----|
+| Production | `production` | https://striketrio-beone.netlify.app |
+| Acceptance | `main` | https://main--striketrio-beone.netlify.app |
+| Preview | PR branches | https://deploy-preview-{PR}--striketrio-beone.netlify.app |
+
+- Merging a PR to `main` triggers the acceptance deploy — **production does not change.**
+- `promote.yml` fast-forwards `production` to the accepted commit after PM Accept (~5 min).
+- Never deploy to production by hand — the tracker's Accepted state is the gate.
+
+> ⚠️ **One Netlify setting still needed**: go to Netlify → striketrio-beone → Site configuration → Build & deploy → **Production branch** → change from `main` to `production`. Until this is done, `main` deploys to production instead of acceptance.
 
 ## Document Persistence Rule — persist PM docs the moment they're edited
 

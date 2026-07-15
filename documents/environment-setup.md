@@ -19,7 +19,7 @@ On `start setup`, Claude reads the table below to brief the current position, an
 | 3. Bot access | ✅ | strike-trio-devbot, push access; token in ~/.strike-trio/.env |
 | 4. Deploy hosting | ✅ | striketrio-beone.netlify.app |
 | 5. Local wiring | ✅ | .env.local created; src/lib/supabase.js wired |
-| 6. Verify (first ready) | ⬜ | |
+| 6. Verify (first ready) | ✅ | https://striketrio-beone.netlify.app loads |
 
 Status marks: ⬜ not done · 🔄 in progress · ✅ done
 
