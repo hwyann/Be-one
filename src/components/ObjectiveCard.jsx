@@ -1,8 +1,6 @@
-const STATUS_CONFIG = {
-  on_track: { label: 'On track', color: 'var(--ontrack)' },
-  at_risk:  { label: 'At risk',  color: 'var(--atrisk)' },
-  behind:   { label: 'Behind',   color: 'var(--behind)' },
-}
+import { useState } from 'react'
+import CheckInPanel from './CheckInPanel'
+import { STATUS_BY_VALUE } from '../lib/statuses'
 
 const MAX_INLINE_OWNERS = 3
 const COLLAPSED_INLINE_OWNERS = 2
@@ -31,29 +29,57 @@ function Avatar({ text, overlap }) {
 }
 
 function KrRow({ kr }) {
-  const owners = (kr.individual_objectives ?? []).filter(o => o.owner_name)
+  const linked = kr.individual_objectives ?? []
+  const owners = linked.filter(o => o.owner_name)
   const overflow = owners.length > MAX_INLINE_OWNERS ? owners.length - COLLAPSED_INLINE_OWNERS : 0
   const shown = overflow > 0 ? owners.slice(0, COLLAPSED_INLINE_OWNERS) : owners
+  const checkInTarget = linked.find(o => o.id)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      padding: '7px 8px',
-      font: '500 12px var(--font-sans)',
-      color: 'var(--text-secondary)',
-    }}>
-      <span style={{ flex: 1, minWidth: 0 }}>{kr.title}</span>
-      {(shown.length > 0 || overflow > 0) && (
-        <div style={{ display: 'flex' }}>
-          {shown.map((o, i) => (
-            <Avatar key={i} text={initialsFor(o.owner_name)} overlap={i > 0} />
-          ))}
-          {overflow > 0 && (
-            <Avatar text={`+${overflow}`} overlap={shown.length > 0} />
-          )}
-        </div>
+    <div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '7px 8px',
+        font: '500 12px var(--font-sans)',
+        color: 'var(--text-secondary)',
+      }}>
+        <span style={{ flex: 1, minWidth: 0 }}>{kr.title}</span>
+        {(shown.length > 0 || overflow > 0) && (
+          <div style={{ display: 'flex' }}>
+            {shown.map((o, i) => (
+              <Avatar key={i} text={initialsFor(o.owner_name)} overlap={i > 0} />
+            ))}
+            {overflow > 0 && (
+              <Avatar text={`+${overflow}`} overlap={shown.length > 0} />
+            )}
+          </div>
+        )}
+        {checkInTarget && !panelOpen && (
+          <button
+            type="button"
+            onClick={() => setPanelOpen(true)}
+            style={{
+              font: '500 11px var(--font-sans)',
+              padding: '3px 8px',
+              borderRadius: '999px',
+              border: '1px solid var(--hairline)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            Check in
+          </button>
+        )}
+      </div>
+      {checkInTarget && panelOpen && (
+        <CheckInPanel
+          individualObjectiveId={checkInTarget.id}
+          onDone={() => setPanelOpen(false)}
+        />
       )}
     </div>
   )
@@ -61,7 +87,7 @@ function KrRow({ kr }) {
 
 export default function ObjectiveCard({ objective }) {
   const { category, title, status } = objective
-  const { label: dotLabel, color: dotColor } = STATUS_CONFIG[status] ?? { label: status, color: 'var(--text-muted)' }
+  const { label: dotLabel, color: dotColor } = STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' }
   const keyResults = objective.key_results ?? []
 
   return (
