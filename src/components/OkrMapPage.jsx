@@ -104,6 +104,7 @@ export default function OkrMapPage() {
               key={objective.id}
               objective={objective}
               onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
+              onStatusSaved={refetch}
             />
           ))}
         </div>

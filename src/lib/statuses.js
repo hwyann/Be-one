@@ -4,6 +4,8 @@ export const STATUSES = [
   { value: 'behind',   label: 'Behind',   color: 'var(--behind)'  },
 ]
 
+const NOT_STARTED = { value: 'not_started', label: 'Not started', color: 'var(--text-muted)' }
+
 export const STATUS_BY_VALUE = Object.fromEntries(
-  STATUSES.map(s => [s.value, s]),
+  [NOT_STARTED, ...STATUSES].map(s => [s.value, s]),
 )

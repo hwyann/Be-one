@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import CheckInPanel from './CheckInPanel'
 import CheckInHistory from './CheckInHistory'
+import StatusEditor from './StatusEditor'
 import { STATUS_BY_VALUE } from '../lib/statuses'
 
 const MAX_INLINE_OWNERS = 3
@@ -103,10 +104,11 @@ function KrRow({ kr, onCheckInSaved }) {
   )
 }
 
-export default function ObjectiveCard({ objective, onCheckInSaved }) {
-  const { category, title, status } = objective
+export default function ObjectiveCard({ objective, onCheckInSaved, onStatusSaved }) {
+  const { id, category, title, status } = objective
   const { label: dotLabel, color: dotColor } = STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' }
   const keyResults = objective.key_results ?? []
+  const [editingStatus, setEditingStatus] = useState(false)
 
   return (
     <div style={{
@@ -137,20 +139,41 @@ export default function ObjectiveCard({ objective, onCheckInSaved }) {
         }}>
           {title}
         </span>
-        <span
-          role="img"
+        <button
+          type="button"
           aria-label={dotLabel}
+          onClick={() => setEditingStatus(true)}
           style={{
+            width: '14px',
+            height: '14px',
+            padding: 0,
+            border: 'none',
+            background: 'transparent',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            marginTop: '1px',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{
             width: '8px',
             height: '8px',
             borderRadius: '50%',
             background: dotColor,
             display: 'inline-block',
-            flexShrink: 0,
-            marginTop: '4px',
-          }}
-        />
+          }} />
+        </button>
       </div>
+      {editingStatus && (
+        <StatusEditor
+          objectiveId={id}
+          currentStatus={status}
+          onDone={() => setEditingStatus(false)}
+          onSaved={onStatusSaved}
+        />
+      )}
       {keyResults.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {keyResults.map(kr => <KrRow key={kr.id} kr={kr} onCheckInSaved={onCheckInSaved} />)}
