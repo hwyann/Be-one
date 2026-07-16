@@ -89,6 +89,24 @@ describe('useIndividualObjectives', () => {
     expect(result.current.objectives).toEqual([])
   })
 
+  it('selects owner_name and link fields', async () => {
+    let capturedSelect
+    const eqMock = vi.fn().mockResolvedValue({ data: [], error: null })
+    const selectSpy = vi.fn().mockImplementation(sel => {
+      capturedSelect = sel
+      return { eq: eqMock }
+    })
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
+      return { select: selectSpy }
+    })
+    const { result } = renderHook(() => useIndividualObjectives())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(capturedSelect).toContain('owner_name')
+    expect(capturedSelect).toContain('linked_company_objective_id')
+    expect(capturedSelect).toContain('key_result_id')
+  })
+
   it('refetch reloads the objectives', async () => {
     const first = [{ id: 'io-1', title: 'A' }]
     const second = [
