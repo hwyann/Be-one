@@ -306,4 +306,64 @@ describe('OkrMapPage', () => {
     expect(refetchIndividual).not.toHaveBeenCalled()
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
+
+  describe('alignment summary strip', () => {
+    const linkedIndividualObjectives = [
+      { id: 'io-1', title: 'A', link_type: 'direct_kr' },
+      { id: 'io-2', title: 'B', link_type: 'direct_kr' },
+      { id: 'io-3', title: 'C', link_type: 'objective_level' },
+      { id: 'io-4', title: 'D', link_type: null },
+    ]
+
+    it('shows a Direct KR card counting direct_kr links in Map view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: linkedIndividualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      expect(screen.getByText(/Direct KR · 2/)).toBeInTheDocument()
+    })
+
+    it('shows an Objective-level card counting objective_level and null links in Map view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: linkedIndividualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      expect(screen.getByText(/Objective-level · 2/)).toBeInTheDocument()
+    })
+
+    it('shows zero counts when there are no individual objectives', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: [],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      expect(screen.getByText(/Direct KR · 0/)).toBeInTheDocument()
+      expect(screen.getByText(/Objective-level · 0/)).toBeInTheDocument()
+    })
+
+    it('does not render the summary strip in My thread view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: linkedIndividualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      expect(screen.queryByText(/Direct KR · /)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Objective-level · /)).not.toBeInTheDocument()
+    })
+  })
 })
