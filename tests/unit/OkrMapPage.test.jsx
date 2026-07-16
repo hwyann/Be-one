@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   useIndividualObjectives: vi.fn(),
   useActiveQuarter: vi.fn(),
   OkrDialog: vi.fn(),
+  MyThreadPage: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCompanyObjectives', () => ({
@@ -24,6 +25,10 @@ vi.mock('../../src/components/OkrDialog', () => ({
   default: (props) => mocks.OkrDialog(props),
 }))
 
+vi.mock('../../src/components/MyThreadPage', () => ({
+  default: (props) => mocks.MyThreadPage(props),
+}))
+
 import OkrMapPage from '../../src/components/OkrMapPage'
 
 const objectives = [
@@ -40,6 +45,7 @@ describe('OkrMapPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.OkrDialog.mockReturnValue(<div data-testid="okr-dialog" />)
+    mocks.MyThreadPage.mockReturnValue(<div data-testid="my-thread" />)
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: [],
       loading: false,
@@ -123,7 +129,7 @@ describe('OkrMapPage', () => {
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
 
-  it('renders each individual objective title as a clickable edit trigger', () => {
+  it('renders MyThreadPage below the map with the individual and company objectives', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: individualObjectives,
@@ -132,11 +138,14 @@ describe('OkrMapPage', () => {
       refetch: vi.fn(),
     })
     render(<OkrMapPage />)
-    expect(screen.getByRole('button', { name: /^Ship MVP$/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /^Interview 10 users$/ })).toBeInTheDocument()
+    expect(screen.getByTestId('my-thread')).toBeInTheDocument()
+    const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
+    expect(props.objectives).toBe(individualObjectives)
+    expect(props.companyObjectives).toBe(objectives)
+    expect(props.ownerName).toBeTruthy()
   })
 
-  it('opens the dialog in edit mode when an individual objective is clicked', () => {
+  it('opens the dialog in edit mode when MyThreadPage calls onEdit', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: individualObjectives,
@@ -145,10 +154,23 @@ describe('OkrMapPage', () => {
       refetch: vi.fn(),
     })
     render(<OkrMapPage />)
-    fireEvent.click(screen.getByRole('button', { name: /^Ship MVP$/ }))
+    const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
+    act(() => { myThreadProps.onEdit(individualObjectives[0]) })
     expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     expect(props.objective).toEqual(individualObjectives[0])
+  })
+
+  it('does not render the temporary "My objectives" heading', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<OkrMapPage />)
+    expect(screen.queryByText('My objectives')).not.toBeInTheDocument()
   })
 
   it('opens the dialog in add mode (no objective prop) when + Add objective is clicked', () => {
@@ -186,7 +208,8 @@ describe('OkrMapPage', () => {
       refetch: refetchIndividual,
     })
     render(<OkrMapPage />)
-    fireEvent.click(screen.getByRole('button', { name: /^Ship MVP$/ }))
+    const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
+    act(() => { myThreadProps.onEdit(individualObjectives[0]) })
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     act(() => { props.onSave({ id: 'io-1', title: 'Ship MVP v2' }) })
     expect(refetchIndividual).toHaveBeenCalledTimes(1)
@@ -203,7 +226,8 @@ describe('OkrMapPage', () => {
       refetch: refetchIndividual,
     })
     render(<OkrMapPage />)
-    fireEvent.click(screen.getByRole('button', { name: /^Ship MVP$/ }))
+    const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
+    act(() => { myThreadProps.onEdit(individualObjectives[0]) })
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     act(() => { props.onClose() })
     expect(refetchIndividual).not.toHaveBeenCalled()

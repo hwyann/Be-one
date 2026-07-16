@@ -5,6 +5,9 @@ import useActiveQuarter from '../hooks/useActiveQuarter'
 import ObjectiveCard from './ObjectiveCard'
 import OkrDialog from './OkrDialog'
 import Toast from './Toast'
+import MyThreadPage from './MyThreadPage'
+
+const VIEWER_OWNER_NAME = 'Satoshi Kimura'
 
 export default function OkrMapPage() {
   const { objectives, loading, error, refetch } = useCompanyObjectives()
@@ -63,42 +66,12 @@ export default function OkrMapPage() {
           />
         ))}
       </div>
-      {individualObjectives.length > 0 && (
-        <div style={{ marginTop: '24px' }}>
-          <div style={{
-            font: '700 10px var(--font-display)',
-            letterSpacing: '.16em',
-            textTransform: 'uppercase',
-            color: 'var(--ink-700, #666)',
-            marginBottom: '8px',
-          }}>
-            My objectives
-          </div>
-          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {individualObjectives.map(objective => (
-              <li key={objective.id}>
-                <button
-                  type="button"
-                  onClick={() => setDialogState({ objective })}
-                  style={{
-                    font: '600 14px var(--font-display)',
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: '1px solid var(--hairline)',
-                    background: 'var(--surface)',
-                    color: 'var(--ink-900)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                >
-                  {objective.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <MyThreadPage
+        ownerName={VIEWER_OWNER_NAME}
+        objectives={individualObjectives}
+        companyObjectives={objectives}
+        onEdit={objective => setDialogState({ objective })}
+      />
       {toastMessage && (
         <Toast
           message={toastMessage}
