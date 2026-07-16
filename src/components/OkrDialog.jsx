@@ -27,7 +27,7 @@ export default function OkrDialog({
       }
       query = supabase
         .from('individual_objectives')
-        .insert([{ title, quarter_id: quarterId, ...linkFields }])
+        .insert([{ title, quarter_id: quarterId, owner_name: 'Satoshi Kimura', ...linkFields }])
         .select()
     }
 
