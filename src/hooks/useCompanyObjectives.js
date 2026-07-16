@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function useCompanyObjectives() {
@@ -6,36 +6,26 @@ export default function useCompanyObjectives() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    let cancelled = false
+  const load = useCallback(async () => {
+    const { data: quarter, error: qError } = await supabase
+      .from('quarters')
+      .select('id')
+      .eq('is_active', true)
+      .single()
 
-    async function load() {
-      const { data: quarter, error: qError } = await supabase
-        .from('quarters')
-        .select('id')
-        .eq('is_active', true)
-        .single()
+    if (qError) { setError(qError.message); setLoading(false); return }
 
-      if (qError) {
-        if (!cancelled) { setError(qError.message); setLoading(false) }
-        return
-      }
+    const { data, error: oError } = await supabase
+      .from('company_objectives')
+      .select('id, category, title, status')
+      .eq('quarter_id', quarter.id)
 
-      const { data, error: oError } = await supabase
-        .from('company_objectives')
-        .select('id, category, title, status')
-        .eq('quarter_id', quarter.id)
-
-      if (!cancelled) {
-        if (oError) setError(oError.message)
-        else setObjectives(data)
-        setLoading(false)
-      }
-    }
-
-    load()
-    return () => { cancelled = true }
+    if (oError) setError(oError.message)
+    else { setObjectives(data); setError(null) }
+    setLoading(false)
   }, [])
 
-  return { objectives, loading, error }
+  useEffect(() => { load() }, [load])
+
+  return { objectives, loading, error, refetch: load }
 }

@@ -1,12 +1,17 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   useCompanyObjectives: vi.fn(),
+  OkrDialog: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCompanyObjectives', () => ({
   default: mocks.useCompanyObjectives,
+}))
+
+vi.mock('../../src/components/OkrDialog', () => ({
+  default: (props) => mocks.OkrDialog(props),
 }))
 
 import OkrMapPage from '../../src/components/OkrMapPage'
@@ -19,6 +24,7 @@ const objectives = [
 describe('OkrMapPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.OkrDialog.mockReturnValue(<div data-testid="okr-dialog" />)
   })
 
   it('renders a card for each objective', () => {
@@ -52,5 +58,46 @@ describe('OkrMapPage', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives: [], loading: false, error: null })
     render(<OkrMapPage />)
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('renders an "Add objective" trigger', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
+  })
+
+  it('does not render the dialog until the trigger is clicked', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+  })
+
+  it('opens the dialog when the trigger is clicked', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+  })
+
+  it('closes the dialog and refetches on save', () => {
+    const refetch = vi.fn()
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    act(() => { props.onSave({ id: 'new-1', title: 'New objective' }) })
+    expect(refetch).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+  })
+
+  it('closes the dialog on cancel without refetching', () => {
+    const refetch = vi.fn()
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    act(() => { props.onClose() })
+    expect(refetch).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
 })
