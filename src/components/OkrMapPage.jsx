@@ -4,6 +4,7 @@ import useIndividualObjectives from '../hooks/useIndividualObjectives'
 import useActiveQuarter from '../hooks/useActiveQuarter'
 import ObjectiveCard from './ObjectiveCard'
 import OkrDialog from './OkrDialog'
+import Toast from './Toast'
 
 export default function OkrMapPage() {
   const { objectives, loading, error, refetch } = useCompanyObjectives()
@@ -13,6 +14,7 @@ export default function OkrMapPage() {
   } = useIndividualObjectives()
   const { quarterId } = useActiveQuarter()
   const [dialogState, setDialogState] = useState(null)
+  const [toastMessage, setToastMessage] = useState(null)
 
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
@@ -54,7 +56,11 @@ export default function OkrMapPage() {
         gap: '14px',
       }}>
         {objectives.map(objective => (
-          <ObjectiveCard key={objective.id} objective={objective} />
+          <ObjectiveCard
+            key={objective.id}
+            objective={objective}
+            onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
+          />
         ))}
       </div>
       {individualObjectives.length > 0 && (
@@ -92,6 +98,13 @@ export default function OkrMapPage() {
             ))}
           </ul>
         </div>
+      )}
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          visibleMs={5000}
+          onDismiss={() => setToastMessage(null)}
+        />
       )}
       {dialogState && (
         <div

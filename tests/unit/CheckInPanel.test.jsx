@@ -57,12 +57,43 @@ describe('CheckInPanel', () => {
     await waitFor(() => expect(onDone).toHaveBeenCalled())
   })
 
-  it('calls onDone without saving when Cancel is clicked', () => {
+  it('calls onSaved after a successful save', async () => {
+    const onSaved = vi.fn()
+    render(<CheckInPanel individualObjectiveId="io-1" onSaved={onSaved} onDone={() => {}} />)
+
+    fireEvent.click(screen.getByRole('radio', { name: /on track/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1))
+  })
+
+  it('does not call onSaved when the save fails', async () => {
+    mocks.save.mockResolvedValueOnce(false)
+    const onSaved = vi.fn()
+    render(<CheckInPanel individualObjectiveId="io-1" onSaved={onSaved} onDone={() => {}} />)
+
+    fireEvent.click(screen.getByRole('radio', { name: /on track/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() => expect(mocks.save).toHaveBeenCalled())
+    expect(onSaved).not.toHaveBeenCalled()
+  })
+
+  it('calls onDone without saving or firing onSaved when Cancel is clicked', () => {
     const onDone = vi.fn()
-    render(<CheckInPanel individualObjectiveId="io-1" onDone={onDone} />)
+    const onSaved = vi.fn()
+    render(<CheckInPanel individualObjectiveId="io-1" onSaved={onSaved} onDone={onDone} />)
 
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(mocks.save).not.toHaveBeenCalled()
+    expect(onSaved).not.toHaveBeenCalled()
     expect(onDone).toHaveBeenCalled()
+  })
+
+  it('Save button uses the coral action styling, not the undefined --accent-strong token', () => {
+    render(<CheckInPanel individualObjectiveId="io-1" onDone={() => {}} />)
+    const saveBtn = screen.getByRole('button', { name: /save/i })
+    expect(saveBtn.style.background).toBe('var(--coral-700)')
+    expect(saveBtn.style.color).toBe('var(--surface)')
   })
 })

@@ -2,14 +2,17 @@ import { useState } from 'react'
 import useCheckIns from '../hooks/useCheckIns'
 import { STATUSES } from '../lib/statuses'
 
-export default function CheckInPanel({ individualObjectiveId, onDone }) {
+export default function CheckInPanel({ individualObjectiveId, onDone, onSaved }) {
   const [status, setStatus] = useState(null)
   const [note, setNote] = useState('')
   const { save, saving, error } = useCheckIns()
 
   async function handleSave() {
     const ok = await save({ individualObjectiveId, status, note })
-    if (ok) onDone?.()
+    if (ok) {
+      onSaved?.()
+      onDone?.()
+    }
   }
 
   return (
@@ -99,8 +102,8 @@ export default function CheckInPanel({ individualObjectiveId, onDone }) {
             font: '600 12px var(--font-sans)',
             padding: '5px 10px',
             borderRadius: '8px',
-            border: '1px solid var(--accent-strong)',
-            background: 'var(--accent-strong)',
+            border: '1px solid var(--coral-800)',
+            background: 'var(--coral-700)',
             color: 'var(--surface)',
             cursor: !status || saving ? 'not-allowed' : 'pointer',
             opacity: !status || saving ? 0.6 : 1,
