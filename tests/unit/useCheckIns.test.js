@@ -26,13 +26,14 @@ describe('useCheckIns', () => {
     expect(result.current.error).toBeNull()
   })
 
-  it('inserts a check_in row with individual_objective_id, status, and note', async () => {
+  it('inserts a check_in row with individual_objective_id, status, note, and plan_next', async () => {
     const { result } = renderHook(() => useCheckIns())
     await act(async () => {
       await result.current.save({
         individualObjectiveId: 'io-1',
         status: 'on_track',
         note: 'shipped the first draft',
+        planNext: 'wire up the review flow',
       })
     })
     expect(mocks.from).toHaveBeenCalledWith('check_ins')
@@ -40,6 +41,7 @@ describe('useCheckIns', () => {
       individual_objective_id: 'io-1',
       status: 'on_track',
       note: 'shipped the first draft',
+      plan_next: 'wire up the review flow',
     })
   })
 
@@ -47,7 +49,7 @@ describe('useCheckIns', () => {
     const { result } = renderHook(() => useCheckIns())
     let ok
     await act(async () => {
-      ok = await result.current.save({ individualObjectiveId: 'io-1', status: 'at_risk', note: '' })
+      ok = await result.current.save({ individualObjectiveId: 'io-1', status: 'at_risk', note: '', planNext: '' })
     })
     expect(ok).toBe(true)
     expect(result.current.error).toBeNull()
@@ -58,7 +60,7 @@ describe('useCheckIns', () => {
     const { result } = renderHook(() => useCheckIns())
     let ok
     await act(async () => {
-      ok = await result.current.save({ individualObjectiveId: 'io-1', status: 'behind', note: 'blocked' })
+      ok = await result.current.save({ individualObjectiveId: 'io-1', status: 'behind', note: 'blocked', planNext: '' })
     })
     expect(ok).toBe(false)
     expect(result.current.error).toBe('Insert failed')

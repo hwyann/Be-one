@@ -29,6 +29,11 @@ describe('CheckInPanel', () => {
     expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
   })
 
+  it('renders a plan-for-next-week input', () => {
+    render(<CheckInPanel individualObjectiveId="io-1" onDone={() => {}} />)
+    expect(screen.getByLabelText(/plan for next week/i)).toBeInTheDocument()
+  })
+
   it('disables Save until a status is selected', () => {
     render(<CheckInPanel individualObjectiveId="io-1" onDone={() => {}} />)
     const saveBtn = screen.getByRole('button', { name: /save/i })
@@ -38,13 +43,16 @@ describe('CheckInPanel', () => {
     expect(saveBtn).toBeEnabled()
   })
 
-  it('saves the check-in with the selected status and note, then calls onDone', async () => {
+  it('saves the check-in with the selected status, note, and plan-next, then calls onDone', async () => {
     const onDone = vi.fn()
     render(<CheckInPanel individualObjectiveId="io-1" onDone={onDone} />)
 
     fireEvent.click(screen.getByRole('radio', { name: /at risk/i }))
     fireEvent.change(screen.getByLabelText(/what changed/i), {
       target: { value: 'stuck on review' },
+    })
+    fireEvent.change(screen.getByLabelText(/plan for next week/i), {
+      target: { value: 'unblock with pairing session' },
     })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
 
@@ -53,6 +61,7 @@ describe('CheckInPanel', () => {
       individualObjectiveId: 'io-1',
       status: 'at_risk',
       note: 'stuck on review',
+      planNext: 'unblock with pairing session',
     })
     await waitFor(() => expect(onDone).toHaveBeenCalled())
   })
