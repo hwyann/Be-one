@@ -108,6 +108,7 @@ export default function OkrMapPage() {
           <OkrDialog
             quarterId={quarterId}
             objective={dialogState.objective}
+            companyObjectives={objectives}
             onSave={handleSave}
             onClose={closeDialog}
           />
