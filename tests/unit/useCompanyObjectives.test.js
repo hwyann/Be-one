@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -75,5 +75,23 @@ describe('useCompanyObjectives', () => {
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.error).toBe('Fetch failed')
     expect(result.current.objectives).toEqual([])
+  })
+
+  it('refetch reloads the objectives', async () => {
+    const first = [{ id: '1', category: 'Growth', title: 'A', status: 'on_track' }]
+    const second = [
+      { id: '1', category: 'Growth', title: 'A', status: 'on_track' },
+      { id: '2', category: 'Retention', title: 'B', status: 'at_risk' },
+    ]
+    let call = 0
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
+      call += 1
+      return makeObjectivesMock({ data: call === 1 ? first : second, error: null })
+    })
+    const { result } = renderHook(() => useCompanyObjectives())
+    await waitFor(() => expect(result.current.objectives).toEqual(first))
+    await act(async () => { await result.current.refetch() })
+    expect(result.current.objectives).toEqual(second)
   })
 })
