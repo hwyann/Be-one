@@ -26,9 +26,10 @@ describe('OkrDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.insert.mockResolvedValue({ data: null, error: null })
+    mocks.insert.mockReturnValue({ select: mocks.select })
     mocks.update.mockReturnValue({ eq: mocks.eq })
-    mocks.eq.mockResolvedValue({ data: null, error: null })
+    mocks.eq.mockReturnValue({ select: mocks.select })
+    mocks.select.mockResolvedValue({ data: null, error: null })
   })
 
   it('renders title input and Save/Cancel buttons', () => {
@@ -45,7 +46,7 @@ describe('OkrDialog', () => {
   })
 
   it('inserts new objective to supabase on save', async () => {
-    mocks.insert.mockResolvedValue({ data: [{ id: 'new-1', title: 'Grow revenue' }], error: null })
+    mocks.select.mockResolvedValue({ data: [{ id: 'new-1', title: 'Grow revenue' }], error: null })
     render(<OkrDialog onSave={onSave} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
@@ -56,7 +57,7 @@ describe('OkrDialog', () => {
 
   it('calls onSave with the saved objective after insert', async () => {
     const saved = { id: 'new-1', title: 'Grow revenue' }
-    mocks.insert.mockResolvedValue({ data: [saved], error: null })
+    mocks.select.mockResolvedValue({ data: [saved], error: null })
     render(<OkrDialog onSave={onSave} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
@@ -64,7 +65,7 @@ describe('OkrDialog', () => {
   })
 
   it('updates existing objective in supabase on save', async () => {
-    mocks.eq.mockResolvedValue({ data: [{ id: 'obj-1', title: 'Ship MVP v2' }], error: null })
+    mocks.select.mockResolvedValue({ data: [{ id: 'obj-1', title: 'Ship MVP v2' }], error: null })
     const objective = { id: 'obj-1', title: 'Ship MVP' }
     render(<OkrDialog objective={objective} onSave={onSave} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Ship MVP v2' } })
@@ -77,7 +78,7 @@ describe('OkrDialog', () => {
 
   it('calls onSave with the updated objective after update', async () => {
     const updated = { id: 'obj-1', title: 'Ship MVP v2' }
-    mocks.eq.mockResolvedValue({ data: [updated], error: null })
+    mocks.select.mockResolvedValue({ data: [updated], error: null })
     const objective = { id: 'obj-1', title: 'Ship MVP' }
     render(<OkrDialog objective={objective} onSave={onSave} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Ship MVP v2' } })
@@ -99,7 +100,7 @@ describe('OkrDialog', () => {
   })
 
   it('shows error message on supabase failure', async () => {
-    mocks.insert.mockResolvedValue({ data: null, error: { message: 'DB error' } })
+    mocks.select.mockResolvedValue({ data: null, error: { message: 'DB error' } })
     render(<OkrDialog onSave={onSave} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))

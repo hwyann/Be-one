@@ -9,8 +9,8 @@ export default function OkrDialog({ objective = null, onSave, onClose }) {
     if (!title.trim()) return
 
     const query = objective
-      ? supabase.from('individual_objectives').update({ title }).eq('id', objective.id)
-      : supabase.from('individual_objectives').insert([{ title }])
+      ? supabase.from('individual_objectives').update({ title }).eq('id', objective.id).select()
+      : supabase.from('individual_objectives').insert([{ title }]).select()
     const { data, error: err } = await query
 
     if (err) {
