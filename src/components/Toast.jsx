@@ -11,7 +11,7 @@ export default function Toast({ message, visibleMs = 5000, onDismiss }) {
       role="status"
       style={{
         position: 'fixed',
-        bottom: '24px',
+        top: '24px',
         left: '50%',
         transform: 'translateX(-50%)',
         padding: '10px 16px',
