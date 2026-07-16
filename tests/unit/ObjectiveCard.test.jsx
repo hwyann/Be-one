@@ -1,6 +1,10 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { vi, describe, it, expect } from 'vitest'
 import ObjectiveCard from '../../src/components/ObjectiveCard'
+
+vi.mock('../../src/hooks/useCheckIns', () => ({
+  default: () => ({ save: vi.fn().mockResolvedValue(true), saving: false, error: null }),
+}))
 
 describe('ObjectiveCard', () => {
   const objective = {
@@ -102,5 +106,44 @@ describe('ObjectiveCard', () => {
     render(<ObjectiveCard objective={nulls} />)
     expect(screen.getByText('SK')).toBeInTheDocument()
     expect(screen.getByText('Reach 100 accounts')).toBeInTheDocument()
+  })
+
+  const withLinkedIO = {
+    ...objective,
+    key_results: [{
+      id: 'k1',
+      title: 'Reach 100 accounts',
+      individual_objectives: [
+        { id: 'io-1', owner_name: 'Satoshi Kimura' },
+      ],
+    }],
+  }
+
+  it('renders a check-in trigger on a KR row with a linked individual objective', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument()
+  })
+
+  it('expands the check-in panel when the trigger is clicked', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+    expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
+  })
+
+  it('closes the panel when Cancel is clicked', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
+  })
+
+  it('does not render a check-in trigger when the KR has no linked individual objective', () => {
+    const noLink = {
+      ...objective,
+      key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
+    }
+    render(<ObjectiveCard objective={noLink} />)
+    expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
   })
 })

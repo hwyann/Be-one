@@ -111,5 +111,6 @@ describe('useCompanyObjectives', () => {
     expect(capturedSelect).toContain('key_results')
     expect(capturedSelect).toContain('individual_objectives')
     expect(capturedSelect).toContain('owner_name')
+    expect(capturedSelect).toMatch(/individual_objectives\([^)]*\bid\b/)
   })
 })
