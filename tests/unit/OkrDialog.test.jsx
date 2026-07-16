@@ -192,6 +192,7 @@ describe('OkrDialog', () => {
         {
           title: 'Grow revenue',
           quarter_id: 'q1',
+          owner_name: 'Satoshi Kimura',
           link_type: 'direct_kr',
           linked_company_objective_id: 'co-1',
           key_result_id: 'kr-2',
@@ -220,6 +221,7 @@ describe('OkrDialog', () => {
         {
           title: 'Grow revenue',
           quarter_id: 'q1',
+          owner_name: 'Satoshi Kimura',
           link_type: 'objective_level',
           linked_company_objective_id: 'co-2',
         },
