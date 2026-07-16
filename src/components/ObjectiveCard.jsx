@@ -28,7 +28,7 @@ function Avatar({ text, overlap }) {
   )
 }
 
-function KrRow({ kr }) {
+function KrRow({ kr, onCheckInSaved }) {
   const linked = kr.individual_objectives ?? []
   const owners = linked.filter(o => o.owner_name)
   const overflow = owners.length > MAX_INLINE_OWNERS ? owners.length - COLLAPSED_INLINE_OWNERS : 0
@@ -78,6 +78,7 @@ function KrRow({ kr }) {
       {checkInTarget && panelOpen && (
         <CheckInPanel
           individualObjectiveId={checkInTarget.id}
+          onSaved={onCheckInSaved}
           onDone={() => setPanelOpen(false)}
         />
       )}
@@ -85,7 +86,7 @@ function KrRow({ kr }) {
   )
 }
 
-export default function ObjectiveCard({ objective }) {
+export default function ObjectiveCard({ objective, onCheckInSaved }) {
   const { category, title, status } = objective
   const { label: dotLabel, color: dotColor } = STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' }
   const keyResults = objective.key_results ?? []
@@ -135,7 +136,7 @@ export default function ObjectiveCard({ objective }) {
       </div>
       {keyResults.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {keyResults.map(kr => <KrRow key={kr.id} kr={kr} />)}
+          {keyResults.map(kr => <KrRow key={kr.id} kr={kr} onCheckInSaved={onCheckInSaved} />)}
         </div>
       )}
     </div>
