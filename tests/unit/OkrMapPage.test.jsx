@@ -4,6 +4,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => ({
   useCompanyObjectives: vi.fn(),
   useIndividualObjectives: vi.fn(),
+  useActiveQuarter: vi.fn(),
   OkrDialog: vi.fn(),
 }))
 
@@ -13,6 +14,10 @@ vi.mock('../../src/hooks/useCompanyObjectives', () => ({
 
 vi.mock('../../src/hooks/useIndividualObjectives', () => ({
   default: mocks.useIndividualObjectives,
+}))
+
+vi.mock('../../src/hooks/useActiveQuarter', () => ({
+  default: mocks.useActiveQuarter,
 }))
 
 vi.mock('../../src/components/OkrDialog', () => ({
@@ -41,6 +46,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: vi.fn(),
     })
+    mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q1', error: null })
   })
 
   it('renders a card for each objective', () => {
@@ -151,6 +157,15 @@ describe('OkrMapPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     expect(props.objective).toBeUndefined()
+  })
+
+  it('passes the active quarterId to the dialog', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q42', error: null })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    expect(props.quarterId).toBe('q42')
   })
 
   it('refetches individual objectives after an edit save', () => {

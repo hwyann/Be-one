@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import useCompanyObjectives from '../hooks/useCompanyObjectives'
 import useIndividualObjectives from '../hooks/useIndividualObjectives'
+import useActiveQuarter from '../hooks/useActiveQuarter'
 import ObjectiveCard from './ObjectiveCard'
 import OkrDialog from './OkrDialog'
 
@@ -10,6 +11,7 @@ export default function OkrMapPage() {
     objectives: individualObjectives,
     refetch: refetchIndividual,
   } = useIndividualObjectives()
+  const { quarterId } = useActiveQuarter()
   const [dialogState, setDialogState] = useState(null)
 
   if (loading) return <div>Loading...</div>
@@ -104,6 +106,7 @@ export default function OkrMapPage() {
           }}
         >
           <OkrDialog
+            quarterId={quarterId}
             objective={dialogState.objective}
             onSave={handleSave}
             onClose={closeDialog}

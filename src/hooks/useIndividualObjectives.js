@@ -7,11 +7,20 @@ export default function useIndividualObjectives() {
   const [error, setError] = useState(null)
 
   const load = useCallback(async () => {
-    const { data, error: err } = await supabase
+    const { data: quarter, error: qError } = await supabase
+      .from('quarters')
+      .select('id')
+      .eq('is_active', true)
+      .single()
+
+    if (qError) { setError(qError.message); setLoading(false); return }
+
+    const { data, error: oError } = await supabase
       .from('individual_objectives')
       .select('id, title')
+      .eq('quarter_id', quarter.id)
 
-    if (err) setError(err.message)
+    if (oError) setError(oError.message)
     else { setObjectives(data); setError(null) }
     setLoading(false)
   }, [])
