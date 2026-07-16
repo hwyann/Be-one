@@ -3,11 +3,16 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   useCompanyObjectives: vi.fn(),
+  useIndividualObjectives: vi.fn(),
   OkrDialog: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCompanyObjectives', () => ({
   default: mocks.useCompanyObjectives,
+}))
+
+vi.mock('../../src/hooks/useIndividualObjectives', () => ({
+  default: mocks.useIndividualObjectives,
 }))
 
 vi.mock('../../src/components/OkrDialog', () => ({
@@ -21,10 +26,21 @@ const objectives = [
   { id: '2', category: 'Retention', title: 'Improve NPS score', status: 'at_risk' },
 ]
 
+const individualObjectives = [
+  { id: 'io-1', title: 'Ship MVP' },
+  { id: 'io-2', title: 'Interview 10 users' },
+]
+
 describe('OkrMapPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.OkrDialog.mockReturnValue(<div data-testid="okr-dialog" />)
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: [],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
   })
 
   it('renders a card for each objective', () => {
@@ -98,6 +114,76 @@ describe('OkrMapPage', () => {
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     act(() => { props.onClose() })
     expect(refetch).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+  })
+
+  it('renders each individual objective title as a clickable edit trigger', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<OkrMapPage />)
+    expect(screen.getByRole('button', { name: /^Ship MVP$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Interview 10 users$/ })).toBeInTheDocument()
+  })
+
+  it('opens the dialog in edit mode when an individual objective is clicked', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /^Ship MVP$/ }))
+    expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    expect(props.objective).toEqual(individualObjectives[0])
+  })
+
+  it('opens the dialog in add mode (no objective prop) when + Add objective is clicked', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    expect(props.objective).toBeUndefined()
+  })
+
+  it('refetches individual objectives after an edit save', () => {
+    const refetchIndividual = vi.fn()
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: refetchIndividual,
+    })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /^Ship MVP$/ }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    act(() => { props.onSave({ id: 'io-1', title: 'Ship MVP v2' }) })
+    expect(refetchIndividual).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+  })
+
+  it('closes the edit dialog on cancel without refetching', () => {
+    const refetchIndividual = vi.fn()
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: refetchIndividual,
+    })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /^Ship MVP$/ }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    act(() => { props.onClose() })
+    expect(refetchIndividual).not.toHaveBeenCalled()
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
 })

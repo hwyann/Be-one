@@ -1,14 +1,27 @@
 import { useState } from 'react'
 import useCompanyObjectives from '../hooks/useCompanyObjectives'
+import useIndividualObjectives from '../hooks/useIndividualObjectives'
 import ObjectiveCard from './ObjectiveCard'
 import OkrDialog from './OkrDialog'
 
 export default function OkrMapPage() {
   const { objectives, loading, error, refetch } = useCompanyObjectives()
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const {
+    objectives: individualObjectives,
+    refetch: refetchIndividual,
+  } = useIndividualObjectives()
+  const [dialogState, setDialogState] = useState(null)
 
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
+
+  function closeDialog() { setDialogState(null) }
+
+  function handleSave() {
+    if (dialogState.objective) refetchIndividual()
+    else refetch()
+    closeDialog()
+  }
 
   return (
     <div style={{ minWidth: '980px', padding: '24px' }}>
@@ -19,7 +32,7 @@ export default function OkrMapPage() {
       }}>
         <button
           type="button"
-          onClick={() => setDialogOpen(true)}
+          onClick={() => setDialogState({})}
           style={{
             font: '600 13px var(--font-display)',
             padding: '8px 14px',
@@ -42,7 +55,43 @@ export default function OkrMapPage() {
           <ObjectiveCard key={objective.id} objective={objective} />
         ))}
       </div>
-      {dialogOpen && (
+      {individualObjectives.length > 0 && (
+        <div style={{ marginTop: '24px' }}>
+          <div style={{
+            font: '700 10px var(--font-display)',
+            letterSpacing: '.16em',
+            textTransform: 'uppercase',
+            color: 'var(--ink-700, #666)',
+            marginBottom: '8px',
+          }}>
+            My objectives
+          </div>
+          <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {individualObjectives.map(objective => (
+              <li key={objective.id}>
+                <button
+                  type="button"
+                  onClick={() => setDialogState({ objective })}
+                  style={{
+                    font: '600 14px var(--font-display)',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--hairline)',
+                    background: 'var(--surface)',
+                    color: 'var(--ink-900)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    width: '100%',
+                  }}
+                >
+                  {objective.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {dialogState && (
         <div
           style={{
             position: 'fixed',
@@ -55,8 +104,9 @@ export default function OkrMapPage() {
           }}
         >
           <OkrDialog
-            onSave={() => { setDialogOpen(false); refetch() }}
-            onClose={() => setDialogOpen(false)}
+            objective={dialogState.objective}
+            onSave={handleSave}
+            onClose={closeDialog}
           />
         </div>
       )}
