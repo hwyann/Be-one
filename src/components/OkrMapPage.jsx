@@ -9,6 +9,19 @@ import MyThreadPage from './MyThreadPage'
 
 const VIEWER_OWNER_NAME = 'Satoshi Kimura'
 
+function toggleButtonStyle(active) {
+  return {
+    font: '600 13px var(--font-display)',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: 'none',
+    background: active ? 'var(--surface)' : 'transparent',
+    color: active ? 'var(--ink-900)' : 'var(--text-secondary)',
+    boxShadow: active ? '0 1px 2px rgba(19,30,40,.08)' : 'none',
+    cursor: 'pointer',
+  }
+}
+
 export default function OkrMapPage() {
   const { objectives, loading, error, refetch } = useCompanyObjectives()
   const {
@@ -18,6 +31,7 @@ export default function OkrMapPage() {
   const { quarterId } = useActiveQuarter()
   const [dialogState, setDialogState] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
+  const [view, setView] = useState('map')
 
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
@@ -34,9 +48,35 @@ export default function OkrMapPage() {
     <div style={{ minWidth: '980px', padding: '24px' }}>
       <div style={{
         display: 'flex',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: '14px',
       }}>
+        <div style={{
+          display: 'inline-flex',
+          gap: '4px',
+          padding: '4px',
+          borderRadius: '10px',
+          background: 'var(--panel)',
+          border: '1px solid var(--hairline)',
+        }}>
+          <button
+            type="button"
+            aria-pressed={view === 'map'}
+            onClick={() => setView('map')}
+            style={toggleButtonStyle(view === 'map')}
+          >
+            Map
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === 'my-thread'}
+            onClick={() => setView('my-thread')}
+            style={toggleButtonStyle(view === 'my-thread')}
+          >
+            My thread
+          </button>
+        </div>
         <button
           type="button"
           onClick={() => setDialogState({})}
@@ -53,25 +93,28 @@ export default function OkrMapPage() {
           + Add objective
         </button>
       </div>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr 1fr',
-        gap: '14px',
-      }}>
-        {objectives.map(objective => (
-          <ObjectiveCard
-            key={objective.id}
-            objective={objective}
-            onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
-          />
-        ))}
-      </div>
-      <MyThreadPage
-        ownerName={VIEWER_OWNER_NAME}
-        objectives={individualObjectives}
-        companyObjectives={objectives}
-        onEdit={objective => setDialogState({ objective })}
-      />
+      {view === 'map' ? (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
+          gap: '14px',
+        }}>
+          {objectives.map(objective => (
+            <ObjectiveCard
+              key={objective.id}
+              objective={objective}
+              onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
+            />
+          ))}
+        </div>
+      ) : (
+        <MyThreadPage
+          ownerName={VIEWER_OWNER_NAME}
+          objectives={individualObjectives}
+          companyObjectives={objectives}
+          onEdit={objective => setDialogState({ objective })}
+        />
+      )}
       {toastMessage && (
         <Toast
           message={toastMessage}
