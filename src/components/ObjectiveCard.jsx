@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CheckInPanel from './CheckInPanel'
+import CheckInHistory from './CheckInHistory'
 import { STATUS_BY_VALUE } from '../lib/statuses'
 
 const MAX_INLINE_OWNERS = 3
@@ -28,13 +29,37 @@ function Avatar({ text, overlap }) {
   )
 }
 
+function KrRowActionButton({ label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        font: '500 11px var(--font-sans)',
+        padding: '3px 8px',
+        borderRadius: '999px',
+        border: '1px solid var(--hairline)',
+        background: 'transparent',
+        color: 'var(--text-secondary)',
+        cursor: 'pointer',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 function KrRow({ kr, onCheckInSaved }) {
   const linked = kr.individual_objectives ?? []
   const owners = linked.filter(o => o.owner_name)
   const overflow = owners.length > MAX_INLINE_OWNERS ? owners.length - COLLAPSED_INLINE_OWNERS : 0
   const shown = overflow > 0 ? owners.slice(0, COLLAPSED_INLINE_OWNERS) : owners
   const checkInTarget = linked.find(o => o.id)
-  const [panelOpen, setPanelOpen] = useState(false)
+  const [panelMode, setPanelMode] = useState(null)
+
+  function toggle(mode) {
+    setPanelMode(prev => (prev === mode ? null : mode))
+  }
 
   return (
     <div>
@@ -57,30 +82,22 @@ function KrRow({ kr, onCheckInSaved }) {
             )}
           </div>
         )}
-        {checkInTarget && !panelOpen && (
-          <button
-            type="button"
-            onClick={() => setPanelOpen(true)}
-            style={{
-              font: '500 11px var(--font-sans)',
-              padding: '3px 8px',
-              borderRadius: '999px',
-              border: '1px solid var(--hairline)',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-            }}
-          >
-            Check in
-          </button>
+        {checkInTarget && panelMode !== 'checkin' && (
+          <KrRowActionButton label="Check in" onClick={() => toggle('checkin')} />
+        )}
+        {checkInTarget && (
+          <KrRowActionButton label="History" onClick={() => toggle('history')} />
         )}
       </div>
-      {checkInTarget && panelOpen && (
+      {checkInTarget && panelMode === 'checkin' && (
         <CheckInPanel
           individualObjectiveId={checkInTarget.id}
           onSaved={onCheckInSaved}
-          onDone={() => setPanelOpen(false)}
+          onDone={() => setPanelMode(null)}
         />
+      )}
+      {checkInTarget && panelMode === 'history' && (
+        <CheckInHistory individualObjectiveId={checkInTarget.id} />
       )}
     </div>
   )

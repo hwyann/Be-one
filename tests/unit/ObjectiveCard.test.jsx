@@ -6,6 +6,10 @@ vi.mock('../../src/hooks/useCheckIns', () => ({
   default: () => ({ save: vi.fn().mockResolvedValue(true), saving: false, error: null }),
 }))
 
+vi.mock('../../src/hooks/useCheckInHistory', () => ({
+  default: () => ({ checkIns: [], loading: false, error: null }),
+}))
+
 describe('ObjectiveCard', () => {
   const objective = {
     id: '1',
@@ -145,5 +149,51 @@ describe('ObjectiveCard', () => {
     }
     render(<ObjectiveCard objective={noLink} />)
     expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
+  })
+
+  it('renders a History trigger on a KR row with a linked individual objective', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+  })
+
+  it('does not render a History trigger when the KR has no linked individual objective', () => {
+    const noLink = {
+      ...objective,
+      key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
+    }
+    render(<ObjectiveCard objective={noLink} />)
+    expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
+  })
+
+  it('expands the check-in history panel when the History trigger is clicked', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+    expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+  })
+
+  it('closes the history panel when the History trigger is clicked again', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+    expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+  })
+
+  it('swaps from the check-in panel to the history panel when History is clicked', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+    expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+    expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+  })
+
+  it('swaps from the history panel to the check-in panel when Check in is clicked', () => {
+    render(<ObjectiveCard objective={withLinkedIO} />)
+    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+    expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+    expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
   })
 })
