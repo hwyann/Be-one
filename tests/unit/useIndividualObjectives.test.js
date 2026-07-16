@@ -16,8 +16,22 @@ const fakeObjectives = [
   { id: 'io-2', title: 'Interview 10 users' },
 ]
 
-function makeSelectMock(result) {
-  return { select: vi.fn().mockResolvedValue(result) }
+function makeQuartersMock(result) {
+  return {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue(result),
+      }),
+    }),
+  }
+}
+
+function makeObjectivesMock(result) {
+  return {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockResolvedValue(result),
+    }),
+  }
 }
 
 describe('useIndividualObjectives', () => {
@@ -26,29 +40,49 @@ describe('useIndividualObjectives', () => {
   })
 
   it('returns loading: true initially', () => {
-    mocks.from.mockReturnValue({ select: vi.fn().mockReturnValue(new Promise(() => {})) })
+    mocks.from.mockReturnValue(makeQuartersMock(new Promise(() => {})))
     const { result } = renderHook(() => useIndividualObjectives())
     expect(result.current.loading).toBe(true)
     expect(result.current.objectives).toEqual([])
     expect(result.current.error).toBeNull()
   })
 
-  it('returns individual objectives on success', async () => {
-    mocks.from.mockReturnValue(makeSelectMock({ data: fakeObjectives, error: null }))
+  it('returns individual objectives for the active quarter', async () => {
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
+      return makeObjectivesMock({ data: fakeObjectives, error: null })
+    })
     const { result } = renderHook(() => useIndividualObjectives())
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.objectives).toEqual(fakeObjectives)
     expect(result.current.error).toBeNull()
   })
 
-  it('queries the individual_objectives table', async () => {
-    mocks.from.mockReturnValue(makeSelectMock({ data: [], error: null }))
+  it('filters individual_objectives by the active quarter_id', async () => {
+    const objectivesMock = makeObjectivesMock({ data: fakeObjectives, error: null })
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
+      return objectivesMock
+    })
     renderHook(() => useIndividualObjectives())
     await waitFor(() => expect(mocks.from).toHaveBeenCalledWith('individual_objectives'))
+    const selectResult = objectivesMock.select.mock.results[0].value
+    expect(selectResult.eq).toHaveBeenCalledWith('quarter_id', 'q1')
   })
 
-  it('returns error on fetch failure', async () => {
-    mocks.from.mockReturnValue(makeSelectMock({ data: null, error: { message: 'DB down' } }))
+  it('returns error when quarters fetch fails', async () => {
+    mocks.from.mockReturnValue(makeQuartersMock({ data: null, error: { message: 'Quarter down' } }))
+    const { result } = renderHook(() => useIndividualObjectives())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.error).toBe('Quarter down')
+    expect(result.current.objectives).toEqual([])
+  })
+
+  it('returns error when objectives fetch fails', async () => {
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
+      return makeObjectivesMock({ data: null, error: { message: 'DB down' } })
+    })
     const { result } = renderHook(() => useIndividualObjectives())
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.error).toBe('DB down')
@@ -62,9 +96,10 @@ describe('useIndividualObjectives', () => {
       { id: 'io-2', title: 'B' },
     ]
     let call = 0
-    mocks.from.mockImplementation(() => {
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
       call += 1
-      return makeSelectMock({ data: call === 1 ? first : second, error: null })
+      return makeObjectivesMock({ data: call === 1 ? first : second, error: null })
     })
     const { result } = renderHook(() => useIndividualObjectives())
     await waitFor(() => expect(result.current.objectives).toEqual(first))
