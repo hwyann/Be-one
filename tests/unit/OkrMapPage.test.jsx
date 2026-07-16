@@ -159,6 +159,14 @@ describe('OkrMapPage', () => {
     expect(props.objective).toBeUndefined()
   })
 
+  it('passes the company objectives tree to the dialog for the alignment selector', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    expect(props.companyObjectives).toBe(objectives)
+  })
+
   it('passes the active quarterId to the dialog', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q42', error: null })
