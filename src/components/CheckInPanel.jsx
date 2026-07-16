@@ -2,13 +2,34 @@ import { useState } from 'react'
 import useCheckIns from '../hooks/useCheckIns'
 import { STATUSES } from '../lib/statuses'
 
+function TextField({ label, value, onChange }) {
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', font: '500 11px var(--font-sans)', color: 'var(--text-secondary)' }}>
+      {label}
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          padding: '6px 8px',
+          border: '1px solid var(--hairline)',
+          borderRadius: '8px',
+          font: '500 12px var(--font-sans)',
+          background: 'var(--surface)',
+        }}
+      />
+    </label>
+  )
+}
+
 export default function CheckInPanel({ individualObjectiveId, onDone, onSaved }) {
   const [status, setStatus] = useState(null)
   const [note, setNote] = useState('')
+  const [planNext, setPlanNext] = useState('')
   const { save, saving, error } = useCheckIns()
 
   async function handleSave() {
-    const ok = await save({ individualObjectiveId, status, note })
+    const ok = await save({ individualObjectiveId, status, note, planNext })
     if (ok) {
       onSaved?.()
       onDone?.()
@@ -62,21 +83,8 @@ export default function CheckInPanel({ individualObjectiveId, onDone, onSaved })
           )
         })}
       </div>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', font: '500 11px var(--font-sans)', color: 'var(--text-secondary)' }}>
-        What changed? one line is enough
-        <input
-          type="text"
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          style={{
-            padding: '6px 8px',
-            border: '1px solid var(--hairline)',
-            borderRadius: '8px',
-            font: '500 12px var(--font-sans)',
-            background: 'var(--surface)',
-          }}
-        />
-      </label>
+      <TextField label="What changed? one line is enough" value={note} onChange={setNote} />
+      <TextField label="Plan for next week" value={planNext} onChange={setPlanNext} />
       {error && <div role="alert" style={{ font: '500 11px var(--font-sans)', color: 'var(--behind)' }}>{error}</div>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
         <button
