@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import LoginPage from './components/LoginPage'
+import OkrMapPage from './components/OkrMapPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
 
@@ -12,7 +13,7 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
-              <div>Be One</div>
+              <OkrMapPage />
             </ProtectedRoute>
           }
         />
