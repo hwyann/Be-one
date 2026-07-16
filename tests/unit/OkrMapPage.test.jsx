@@ -129,7 +129,21 @@ describe('OkrMapPage', () => {
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
 
-  it('renders MyThreadPage below the map with the individual and company objectives', () => {
+  it('renders a segmented toggle for Map and My thread views', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    expect(screen.getByRole('button', { name: /^map$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /my thread/i })).toBeInTheDocument()
+  })
+
+  it('defaults to Map view with the map selected and My thread unselected', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    expect(screen.getByRole('button', { name: /^map$/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /my thread/i })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('renders the map grid and hides MyThreadPage in Map view', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: individualObjectives,
@@ -138,6 +152,62 @@ describe('OkrMapPage', () => {
       refetch: vi.fn(),
     })
     render(<OkrMapPage />)
+    expect(screen.getByText('Expand into new markets')).toBeInTheDocument()
+    expect(screen.queryByTestId('my-thread')).not.toBeInTheDocument()
+  })
+
+  it('shows MyThreadPage and hides the map grid when My thread is selected', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+    expect(screen.getByTestId('my-thread')).toBeInTheDocument()
+    expect(screen.queryByText('Expand into new markets')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /my thread/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^map$/i })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('returns to the map grid when Map is selected again', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^map$/i }))
+    expect(screen.getByText('Expand into new markets')).toBeInTheDocument()
+    expect(screen.queryByTestId('my-thread')).not.toBeInTheDocument()
+  })
+
+  it('preserves the active quarter across view toggles', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q42', error: null })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^map$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    expect(props.quarterId).toBe('q42')
+  })
+
+  it('passes individual and company objectives to MyThreadPage when in my-thread view', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     expect(screen.getByTestId('my-thread')).toBeInTheDocument()
     const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
     expect(props.objectives).toBe(individualObjectives)
@@ -154,6 +224,7 @@ describe('OkrMapPage', () => {
       refetch: vi.fn(),
     })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
     act(() => { myThreadProps.onEdit(individualObjectives[0]) })
     expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
@@ -208,6 +279,7 @@ describe('OkrMapPage', () => {
       refetch: refetchIndividual,
     })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
     act(() => { myThreadProps.onEdit(individualObjectives[0]) })
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
@@ -226,6 +298,7 @@ describe('OkrMapPage', () => {
       refetch: refetchIndividual,
     })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
     act(() => { myThreadProps.onEdit(individualObjectives[0]) })
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
