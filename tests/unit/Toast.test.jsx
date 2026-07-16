@@ -18,6 +18,13 @@ describe('Toast', () => {
     expect(status).toHaveTextContent('KR check-in notes saved.')
   })
 
+  it('anchors to the top-center of the viewport', () => {
+    render(<Toast message="Saved." visibleMs={5000} onDismiss={() => {}} />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveStyle({ position: 'fixed', top: '24px', left: '50%' })
+    expect(status.style.bottom).toBe('')
+  })
+
   it('calls onDismiss after visibleMs', () => {
     const onDismiss = vi.fn()
     render(<Toast message="Saved." visibleMs={5000} onDismiss={onDismiss} />)
