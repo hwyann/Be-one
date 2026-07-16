@@ -1,6 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { vi, describe, it, expect } from 'vitest'
-import ObjectiveCard from '../../src/components/ObjectiveCard'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  update: vi.fn(),
+}))
 
 vi.mock('../../src/hooks/useCheckIns', () => ({
   default: () => ({ save: vi.fn().mockResolvedValue(true), saving: false, error: null }),
@@ -9,6 +12,17 @@ vi.mock('../../src/hooks/useCheckIns', () => ({
 vi.mock('../../src/hooks/useCheckInHistory', () => ({
   default: () => ({ checkIns: [], loading: false, error: null }),
 }))
+
+vi.mock('../../src/hooks/useCompanyObjectiveStatus', () => ({
+  default: () => ({ update: mocks.update, saving: false, error: null }),
+}))
+
+import ObjectiveCard from '../../src/components/ObjectiveCard'
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mocks.update.mockResolvedValue(true)
+})
 
 describe('ObjectiveCard', () => {
   const objective = {
@@ -30,17 +44,17 @@ describe('ObjectiveCard', () => {
 
   it('renders an on_track status dot', () => {
     render(<ObjectiveCard objective={objective} />)
-    expect(screen.getByRole('img', { name: /on track/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /on track/i })).toBeInTheDocument()
   })
 
   it('renders an at_risk status dot', () => {
     render(<ObjectiveCard objective={{ ...objective, status: 'at_risk' }} />)
-    expect(screen.getByRole('img', { name: /at risk/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /at risk/i })).toBeInTheDocument()
   })
 
   it('renders a behind status dot', () => {
     render(<ObjectiveCard objective={{ ...objective, status: 'behind' }} />)
-    expect(screen.getByRole('img', { name: /behind/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /behind/i })).toBeInTheDocument()
   })
 
   it('renders a row for each key result', () => {
@@ -195,5 +209,70 @@ describe('ObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: /check in/i }))
     expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
     expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
+  })
+
+  it('renders a not_started status dot with the "Not started" label', () => {
+    render(<ObjectiveCard objective={{ ...objective, status: 'not_started' }} />)
+    expect(screen.getByRole('button', { name: /not started/i })).toBeInTheDocument()
+  })
+
+  it('opens the status editor when the status dot is clicked', () => {
+    render(<ObjectiveCard objective={objective} />)
+    expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+    expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
+  })
+
+  it('renders the three traffic-light options in the status editor', () => {
+    render(<ObjectiveCard objective={objective} />)
+    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+    const group = screen.getByRole('group', { name: /set status/i })
+    expect(within(group).getByRole('radio', { name: /on track/i })).toBeInTheDocument()
+    expect(within(group).getByRole('radio', { name: /at risk/i })).toBeInTheDocument()
+    expect(within(group).getByRole('radio', { name: /behind/i })).toBeInTheDocument()
+  })
+
+  it('saves the picked status via useCompanyObjectiveStatus.update and closes the editor', async () => {
+    render(<ObjectiveCard objective={objective} />)
+    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+    const group = screen.getByRole('group', { name: /set status/i })
+    fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
+    fireEvent.click(within(group).getByRole('button', { name: /save/i }))
+
+    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ id: '1', status: 'at_risk' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+    )
+  })
+
+  it('calls onStatusSaved after a successful save', async () => {
+    const onStatusSaved = vi.fn()
+    render(<ObjectiveCard objective={objective} onStatusSaved={onStatusSaved} />)
+    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+    const group = screen.getByRole('group', { name: /set status/i })
+    fireEvent.click(within(group).getByRole('radio', { name: /behind/i }))
+    fireEvent.click(within(group).getByRole('button', { name: /save/i }))
+    await waitFor(() => expect(onStatusSaved).toHaveBeenCalledTimes(1))
+  })
+
+  it('does not call onStatusSaved or close when the save fails', async () => {
+    mocks.update.mockResolvedValueOnce(false)
+    const onStatusSaved = vi.fn()
+    render(<ObjectiveCard objective={objective} onStatusSaved={onStatusSaved} />)
+    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+    const group = screen.getByRole('group', { name: /set status/i })
+    fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
+    fireEvent.click(within(group).getByRole('button', { name: /save/i }))
+    await waitFor(() => expect(mocks.update).toHaveBeenCalled())
+    expect(onStatusSaved).not.toHaveBeenCalled()
+    expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
+  })
+
+  it('closes the editor when Cancel is clicked and does not call update', () => {
+    render(<ObjectiveCard objective={objective} />)
+    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(mocks.update).not.toHaveBeenCalled()
+    expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
   })
 })
