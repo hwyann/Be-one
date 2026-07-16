@@ -17,7 +17,7 @@ export default function useCompanyObjectives() {
 
     const { data, error: oError } = await supabase
       .from('company_objectives')
-      .select('id, category, title, status')
+      .select('id, category, title, status, key_results(id, title, individual_objectives(owner_name))')
       .eq('quarter_id', quarter.id)
 
     if (oError) setError(oError.message)
