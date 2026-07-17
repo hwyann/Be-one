@@ -1,4 +1,5 @@
 import useCheckInHistory from '../hooks/useCheckInHistory'
+import useKrSummary from '../hooks/useKrSummary'
 import { STATUS_BY_VALUE } from '../lib/statuses'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -7,8 +8,52 @@ function formatDate(iso) {
   return DATE_FORMAT.format(new Date(iso))
 }
 
+function SummaryBlock({ status, summary }) {
+  if (status === 'ready') {
+    return (
+      <div
+        role="note"
+        aria-label="AI summary"
+        style={{
+          font: '500 12px var(--font-sans)',
+          color: 'var(--ink-900)',
+          padding: '8px 10px',
+          borderLeft: '3px solid var(--coral)',
+          background: 'var(--panel-alt, rgba(0,0,0,0.02))',
+          borderRadius: '4px',
+        }}
+      >
+        {summary}
+      </div>
+    )
+  }
+  if (status === 'insufficient_data') {
+    return (
+      <div style={{ font: '500 11px var(--font-sans)', color: 'var(--text-muted)' }}>
+        Not enough check-ins yet.
+      </div>
+    )
+  }
+  if (status === 'loading') {
+    return (
+      <div style={{ font: '500 11px var(--font-sans)', color: 'var(--text-muted)' }}>
+        Generating summary…
+      </div>
+    )
+  }
+  if (status === 'error') {
+    return (
+      <div style={{ font: '500 11px var(--font-sans)', color: 'var(--text-muted)' }}>
+        Summary unavailable
+      </div>
+    )
+  }
+  return null
+}
+
 export default function CheckInHistory({ individualObjectiveId }) {
   const { checkIns, error } = useCheckInHistory(individualObjectiveId)
+  const { summary, status: summaryStatus } = useKrSummary(individualObjectiveId)
 
   return (
     <div
@@ -25,6 +70,7 @@ export default function CheckInHistory({ individualObjectiveId }) {
         gap: '10px',
       }}
     >
+      <SummaryBlock status={summaryStatus} summary={summary} />
       {error && (
         <div role="alert" style={{ font: '500 11px var(--font-sans)', color: 'var(--behind)' }}>{error}</div>
       )}

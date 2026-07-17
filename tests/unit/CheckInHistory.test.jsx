@@ -3,17 +3,24 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   useCheckInHistory: vi.fn(),
+  useKrSummary: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCheckInHistory', () => ({
   default: mocks.useCheckInHistory,
 }))
+vi.mock('../../src/hooks/useKrSummary', () => ({
+  default: mocks.useKrSummary,
+}))
 
 import CheckInHistory from '../../src/components/CheckInHistory'
+
+const emptySummary = { summary: null, loading: false, error: null, status: null }
 
 describe('CheckInHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.useKrSummary.mockReturnValue(emptySummary)
   })
 
   it('renders an empty state when there are no check-ins', () => {
@@ -76,5 +83,63 @@ describe('CheckInHistory', () => {
     mocks.useCheckInHistory.mockReturnValue({ checkIns: [], loading: false, error: null })
     render(<CheckInHistory individualObjectiveId="io-42" />)
     expect(mocks.useCheckInHistory).toHaveBeenCalledWith('io-42')
+  })
+
+  describe('summary block', () => {
+    beforeEach(() => {
+      mocks.useCheckInHistory.mockReturnValue({
+        checkIns: [
+          { id: 'c1', status: 'on_track', note: 'first', plan_next: '', created_at: '2026-07-01T09:00:00Z' },
+        ],
+        loading: false,
+        error: null,
+      })
+    })
+
+    it('passes the individual objective id to useKrSummary', () => {
+      render(<CheckInHistory individualObjectiveId="io-42" />)
+      expect(mocks.useKrSummary).toHaveBeenCalledWith('io-42')
+    })
+
+    it('renders the summary text above the list when status is ready', () => {
+      mocks.useKrSummary.mockReturnValue({
+        summary: 'Improving trajectory; shipping steadily.',
+        loading: false,
+        error: null,
+        status: 'ready',
+      })
+      render(<CheckInHistory individualObjectiveId="io-1" />)
+      const summary = screen.getByRole('note', { name: /summary/i })
+      expect(summary).toHaveTextContent('Improving trajectory; shipping steadily.')
+      const list = screen.getByRole('list')
+      expect(summary.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('renders "Not enough check-ins yet." when status is insufficient_data', () => {
+      mocks.useKrSummary.mockReturnValue({ summary: null, loading: false, error: null, status: 'insufficient_data' })
+      render(<CheckInHistory individualObjectiveId="io-1" />)
+      expect(screen.getByText(/not enough check-ins yet/i)).toBeInTheDocument()
+    })
+
+    it('renders "Generating summary…" placeholder when status is loading', () => {
+      mocks.useKrSummary.mockReturnValue({ summary: null, loading: true, error: null, status: 'loading' })
+      render(<CheckInHistory individualObjectiveId="io-1" />)
+      expect(screen.getByText(/generating summary/i)).toBeInTheDocument()
+    })
+
+    it('renders "Summary unavailable" when status is error, but still shows the list', () => {
+      mocks.useKrSummary.mockReturnValue({ summary: null, loading: false, error: 'boom', status: 'error' })
+      render(<CheckInHistory individualObjectiveId="io-1" />)
+      expect(screen.getByText(/summary unavailable/i)).toBeInTheDocument()
+      expect(screen.getByRole('list')).toBeInTheDocument()
+    })
+
+    it('does not render a summary block when status is null (no objective id)', () => {
+      mocks.useKrSummary.mockReturnValue(emptySummary)
+      render(<CheckInHistory individualObjectiveId="io-1" />)
+      expect(screen.queryByText(/summary/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/not enough check-ins yet/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/generating summary/i)).not.toBeInTheDocument()
+    })
   })
 })
