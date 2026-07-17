@@ -129,17 +129,18 @@ describe('OkrMapPage', () => {
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
 
-  it('renders a segmented toggle for Map and My thread views', () => {
+  it('renders a segmented toggle labeled "OKR map" and "My thread"', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     render(<OkrMapPage />)
-    expect(screen.getByRole('button', { name: /^map$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^okr map$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /my thread/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^map$/i })).not.toBeInTheDocument()
   })
 
-  it('defaults to Map view with the map selected and My thread unselected', () => {
+  it('defaults to Map view with the OKR map selected and My thread unselected', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     render(<OkrMapPage />)
-    expect(screen.getByRole('button', { name: /^map$/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: /my thread/i })).toHaveAttribute('aria-pressed', 'false')
   })
 
@@ -169,7 +170,7 @@ describe('OkrMapPage', () => {
     expect(screen.getByTestId('my-thread')).toBeInTheDocument()
     expect(screen.queryByText('Expand into new markets')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /my thread/i })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: /^map$/i })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('returns to the map grid when Map is selected again', () => {
@@ -182,7 +183,7 @@ describe('OkrMapPage', () => {
     })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^map$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
     expect(screen.getByText('Expand into new markets')).toBeInTheDocument()
     expect(screen.queryByTestId('my-thread')).not.toBeInTheDocument()
   })
@@ -192,7 +193,7 @@ describe('OkrMapPage', () => {
     mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q42', error: null })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^map$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     expect(props.quarterId).toBe('q42')
@@ -305,6 +306,37 @@ describe('OkrMapPage', () => {
     act(() => { props.onClose() })
     expect(refetchIndividual).not.toHaveBeenCalled()
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+  })
+
+  describe('Company Objectives section title', () => {
+    it('renders "Company Objectives" above the grid in Map view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByText('Company Objectives')).toBeInTheDocument()
+    })
+
+    it('styles the section title with the kicker typographic pattern', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const title = screen.getByText('Company Objectives')
+      const style = title.style
+      expect(style.textTransform).toBe('uppercase')
+      expect(style.letterSpacing).toBe('0.16em')
+      expect(style.font).toMatch(/700 10px/)
+    })
+
+    it('does not render the section title in My thread view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      expect(screen.queryByText('Company Objectives')).not.toBeInTheDocument()
+    })
   })
 
   describe('alignment summary strip', () => {

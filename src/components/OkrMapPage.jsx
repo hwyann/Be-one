@@ -100,7 +100,7 @@ export default function OkrMapPage() {
             onClick={() => setView('map')}
             style={toggleButtonStyle(view === 'map')}
           >
-            Map
+            OKR map
           </button>
           <button
             type="button"
@@ -129,6 +129,15 @@ export default function OkrMapPage() {
       </div>
       {view === 'map' ? (
         <>
+          <div style={{
+            font: '700 10px var(--font-display)',
+            letterSpacing: '.16em',
+            textTransform: 'uppercase',
+            color: 'var(--text-secondary)',
+            marginBottom: '10px',
+          }}>
+            Company Objectives
+          </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr 1fr 1fr',
