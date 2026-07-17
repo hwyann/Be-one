@@ -113,6 +113,45 @@ All UI work must match `documents/design/be-one-mvp.html`. Open it in a browser 
 
 ---
 
+## Stack-specific: Supabase Edge Functions
+
+Every Edge Function that will be called from the browser (via `supabase.functions.invoke` or `fetch`) **must handle CORS**. Server-to-server callers (curl, Deno, another Edge Function) don't enforce it, so this failure only surfaces in the browser — where it's silent from the SDK's point of view (comes back as a `FunctionsHttpError` with no obvious cause).
+
+**Every browser-facing Edge Function must:**
+
+1. **Handle `OPTIONS` preflight** — return 204 with CORS headers.
+2. **Include CORS headers on every response** (success and error paths).
+
+Baseline template — copy verbatim into any new function; adjust `Access-Control-Allow-Origin` if you need to restrict:
+
+```typescript
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+Deno.serve(async (req: Request): Promise<Response> => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders })
+  }
+  // ... your logic here ...
+})
+
+function json(payload: unknown, status = 200): Response {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { 'content-type': 'application/json', ...corsHeaders },
+  })
+}
+```
+
+**PM code review gate:** for any PR adding or modifying an Edge Function under `supabase/functions/`, verify the `OPTIONS` handler exists and every `Response` (including error branches) merges `corsHeaders`. If either is missing, decline the PR.
+
+**Historical note:** #200029613 was a Bug where the `generate-kr-summary` function skipped both. Raw curl passed; browser failed silently with "Summary unavailable". This defaults section exists to prevent recurrence.
+
+---
+
 ## End-to-End Tests — not the default
 
 E2E is the thinnest layer, not the baseline. Quality stands on **unit TDD + code review + PM Accept**; E2E sits on top and runs **only on stories that touch a critical path**, once before push (never per commit — it's a long-running test). Over-using E2E is the ice-cream-cone anti-pattern. Whether to add a Gherkin↔code glue layer (e.g. Cucumber) or run the E2E tool standalone is a trade-off the tenant weighs — DRY (the AC's source of truth is the Tracker Boot story) vs. a living executable spec — not something the methodology prescribes. **Full policy (timing · condition · unit · tool) lives in `aabt-workflow.md §5`** — this is a reminder, not the source of truth.
