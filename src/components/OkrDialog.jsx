@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import ObjectiveCard from './ObjectiveCard'
 
 export default function OkrDialog({
   quarterId,
@@ -7,6 +8,7 @@ export default function OkrDialog({
   companyObjectives = [],
   onSave,
   onClose,
+  onKrSaved,
 }) {
   const [title, setTitle] = useState(objective?.title ?? '')
   const [link, setLink] = useState('')
@@ -72,6 +74,13 @@ export default function OkrDialog({
       )}
       <button onClick={handleSave}>Save</button>
       <button onClick={onClose}>Cancel</button>
+      {objective && (
+        <ObjectiveCard
+          objective={objective}
+          individualObjectiveId={objective.id}
+          onKrSaved={onKrSaved}
+        />
+      )}
     </div>
   )
 }

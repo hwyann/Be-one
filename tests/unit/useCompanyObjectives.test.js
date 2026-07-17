@@ -111,6 +111,28 @@ describe('useCompanyObjectives', () => {
     expect(capturedSelect).toContain('key_results')
     expect(capturedSelect).toContain('individual_objectives')
     expect(capturedSelect).toContain('owner_name')
-    expect(capturedSelect).toMatch(/individual_objectives\([^)]*\bid\b/)
+    expect(capturedSelect).toMatch(/individual_objectives[^(]*\([^)]*\bid\b/)
+  })
+
+  it('disambiguates the individual_objectives embed by the key_result_id FK (survives the second FK from #200029521)', async () => {
+    const AMBIGUOUS_MESSAGE =
+      "Could not embed because more than one relationship was found for 'key_results' and 'individual_objectives'"
+    let capturedSelect
+    const eqMock = vi.fn().mockImplementation(() =>
+      /individual_objectives\s*!\s*key_result_id/.test(capturedSelect)
+        ? Promise.resolve({ data: [], error: null })
+        : Promise.resolve({ data: null, error: { message: AMBIGUOUS_MESSAGE } })
+    )
+    const selectSpy = vi.fn().mockImplementation(sel => {
+      capturedSelect = sel
+      return { eq: eqMock }
+    })
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
+      return { select: selectSpy }
+    })
+    const { result } = renderHook(() => useCompanyObjectives())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.error).toBeNull()
   })
 })

@@ -25,7 +25,7 @@ function usePrefersReducedMotion() {
   return reduced
 }
 
-function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, onStatusSaved }) {
+function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, onStatusSaved, onKrSaved }) {
   const total = objectives.length
   const current = objectives[index]
   const prefersReduced = usePrefersReducedMotion()
@@ -65,6 +65,7 @@ function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, 
             objective={current}
             onCheckInSaved={onCheckInSaved}
             onStatusSaved={onStatusSaved}
+            onKrSaved={onKrSaved}
           />
         </div>
       </div>
@@ -179,6 +180,10 @@ export default function OkrMapPage() {
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
 
+  const liveDialogObjective = dialogState?.objective
+    ? (individualObjectives.find(o => o.id === dialogState.objective.id) ?? dialogState.objective)
+    : undefined
+
   function closeDialog() { setDialogState(null) }
 
   function handleSave() {
@@ -246,6 +251,7 @@ export default function OkrMapPage() {
               onNext={() => setCarouselIndex(i => Math.min(objectives.length - 1, i + 1))}
               onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
               onStatusSaved={refetch}
+              onKrSaved={refetch}
             />
           )}
           <AlignmentSummaryStrip objectives={individualObjectives} />
@@ -279,10 +285,11 @@ export default function OkrMapPage() {
         >
           <OkrDialog
             quarterId={quarterId}
-            objective={dialogState.objective}
+            objective={liveDialogObjective}
             companyObjectives={objectives}
             onSave={handleSave}
             onClose={closeDialog}
+            onKrSaved={refetchIndividual}
           />
         </div>
       )}

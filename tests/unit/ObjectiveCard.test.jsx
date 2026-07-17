@@ -3,6 +3,8 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   update: vi.fn(),
+  krCreate: vi.fn(),
+  krUpdate: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCheckIns', () => ({
@@ -17,11 +19,22 @@ vi.mock('../../src/hooks/useCompanyObjectiveStatus', () => ({
   default: () => ({ update: mocks.update, saving: false, error: null }),
 }))
 
+vi.mock('../../src/hooks/useKrMutation', () => ({
+  default: () => ({
+    create: mocks.krCreate,
+    update: mocks.krUpdate,
+    saving: false,
+    error: null,
+  }),
+}))
+
 import ObjectiveCard from '../../src/components/ObjectiveCard'
 
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.update.mockResolvedValue(true)
+  mocks.krCreate.mockResolvedValue(true)
+  mocks.krUpdate.mockResolvedValue(true)
 })
 
 describe('ObjectiveCard', () => {
@@ -274,5 +287,135 @@ describe('ObjectiveCard', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(mocks.update).not.toHaveBeenCalled()
     expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+  })
+
+  describe('key result management', () => {
+    it('renders an Add KR affordance', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.getByRole('button', { name: /add key result/i })).toBeInTheDocument()
+    })
+
+    it('opens an Add KR form when the affordance is clicked', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByLabelText(/key result/i)).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
+      expect(screen.getByLabelText(/^key result$/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/target note/i)).toBeInTheDocument()
+    })
+
+    it('creates a KR against the company objective when saved', async () => {
+      const onKrSaved = vi.fn()
+      render(<ObjectiveCard objective={objective} onKrSaved={onKrSaved} />)
+      fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
+      fireEvent.change(screen.getByLabelText(/^key result$/i), { target: { value: 'Reach 100 accounts' } })
+      fireEvent.change(screen.getByLabelText(/target note/i), { target: { value: 'by Q3' } })
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(() =>
+        expect(mocks.krCreate).toHaveBeenCalledWith({
+          objectiveId: '1',
+          individualObjectiveId: undefined,
+          title: 'Reach 100 accounts',
+          targetNote: 'by Q3',
+        })
+      )
+      await waitFor(() => expect(onKrSaved).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(screen.queryByLabelText(/^key result$/i)).not.toBeInTheDocument())
+    })
+
+    it('creates a KR against the individual objective when individualObjectiveId is passed', async () => {
+      const individualObjective = { id: 'io-9', title: 'Ship MVP' }
+      const onKrSaved = vi.fn()
+      render(
+        <ObjectiveCard
+          objective={individualObjective}
+          individualObjectiveId="io-9"
+          onKrSaved={onKrSaved}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
+      fireEvent.change(screen.getByLabelText(/^key result$/i), { target: { value: 'Draft the brief' } })
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(() =>
+        expect(mocks.krCreate).toHaveBeenCalledWith({
+          objectiveId: undefined,
+          individualObjectiveId: 'io-9',
+          title: 'Draft the brief',
+          targetNote: '',
+        })
+      )
+    })
+
+    it('does not save an empty KR title', () => {
+      render(<ObjectiveCard objective={objective} />)
+      fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      expect(mocks.krCreate).not.toHaveBeenCalled()
+    })
+
+    it('closes the Add KR form when Cancel is clicked', () => {
+      render(<ObjectiveCard objective={objective} />)
+      fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
+      fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+      expect(screen.queryByLabelText(/^key result$/i)).not.toBeInTheDocument()
+      expect(mocks.krCreate).not.toHaveBeenCalled()
+    })
+
+    it('renders an Edit trigger on each existing KR row', () => {
+      const withKrs = {
+        ...objective,
+        key_results: [
+          { id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] },
+        ],
+      }
+      render(<ObjectiveCard objective={withKrs} />)
+      expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument()
+    })
+
+    it('opens an Edit form pre-filled with the KR text and target note', () => {
+      const withKrs = {
+        ...objective,
+        key_results: [
+          { id: 'k1', title: 'Reach 100 accounts', target_note: 'stretch: 200', individual_objectives: [] },
+        ],
+      }
+      render(<ObjectiveCard objective={withKrs} />)
+      fireEvent.click(screen.getByRole('button', { name: /edit/i }))
+      expect(screen.getByLabelText(/^key result$/i)).toHaveValue('Reach 100 accounts')
+      expect(screen.getByLabelText(/target note/i)).toHaveValue('stretch: 200')
+    })
+
+    it('updates the KR text via useKrMutation.update and calls onKrSaved', async () => {
+      const withKrs = {
+        ...objective,
+        key_results: [
+          { id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] },
+        ],
+      }
+      const onKrSaved = vi.fn()
+      render(<ObjectiveCard objective={withKrs} onKrSaved={onKrSaved} />)
+      fireEvent.click(screen.getByRole('button', { name: /edit/i }))
+      const input = screen.getByLabelText(/^key result$/i)
+      fireEvent.change(input, { target: { value: 'Reach 150 accounts' } })
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(() =>
+        expect(mocks.krUpdate).toHaveBeenCalledWith({
+          id: 'k1',
+          title: 'Reach 150 accounts',
+          targetNote: '',
+        })
+      )
+      await waitFor(() => expect(onKrSaved).toHaveBeenCalledTimes(1))
+    })
+
+    it('displays a KR target note beneath the KR text when present', () => {
+      const withKrs = {
+        ...objective,
+        key_results: [
+          { id: 'k1', title: 'Reach 100 accounts', target_note: 'stretch: 200', individual_objectives: [] },
+        ],
+      }
+      render(<ObjectiveCard objective={withKrs} />)
+      expect(screen.getByText(/stretch: 200/)).toBeInTheDocument()
+    })
   })
 })
