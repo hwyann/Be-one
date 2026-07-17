@@ -9,6 +9,83 @@ import MyThreadPage from './MyThreadPage'
 
 const VIEWER_OWNER_NAME = 'Satoshi Kimura'
 
+function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, onStatusSaved }) {
+  const total = objectives.length
+  const current = objectives[index]
+  return (
+    <div>
+      <div style={{
+        font: '700 10px var(--font-display)',
+        letterSpacing: '.16em',
+        textTransform: 'uppercase',
+        color: 'var(--text-secondary)',
+        marginBottom: '10px',
+      }}>
+        Company Objective
+      </div>
+      <div
+        data-testid="carousel-slide"
+        style={{
+          width: '70%',
+          marginLeft: 'auto',
+          marginRight: 'auto',
+        }}
+      >
+        <ObjectiveCard
+          objective={current}
+          onCheckInSaved={onCheckInSaved}
+          onStatusSaved={onStatusSaved}
+        />
+      </div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '14px',
+        marginTop: '14px',
+      }}>
+        <button
+          type="button"
+          onClick={onPrev}
+          disabled={index === 0}
+          style={carouselButtonStyle(index === 0)}
+        >
+          Previous
+        </button>
+        <span style={{
+          font: '600 12px var(--font-display)',
+          color: 'var(--text-secondary)',
+          minWidth: '52px',
+          textAlign: 'center',
+        }}>
+          {index + 1} of {total}
+        </span>
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={index >= total - 1}
+          style={carouselButtonStyle(index >= total - 1)}
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function carouselButtonStyle(disabled) {
+  return {
+    font: '600 13px var(--font-display)',
+    padding: '6px 14px',
+    borderRadius: '8px',
+    border: '1px solid var(--hairline)',
+    background: 'var(--surface)',
+    color: disabled ? 'var(--text-muted)' : 'var(--ink-900)',
+    cursor: disabled ? 'default' : 'pointer',
+    opacity: disabled ? 0.5 : 1,
+  }
+}
+
 function AlignmentSummaryStrip({ objectives }) {
   const directKrCount = objectives.filter(o => o.link_type === 'direct_kr').length
   const objectiveLevelCount = objectives.filter(
@@ -66,6 +143,7 @@ export default function OkrMapPage() {
   const [dialogState, setDialogState] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
   const [view, setView] = useState('map')
+  const [carouselIndex, setCarouselIndex] = useState(0)
 
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
@@ -129,29 +207,16 @@ export default function OkrMapPage() {
       </div>
       {view === 'map' ? (
         <>
-          <div style={{
-            font: '700 10px var(--font-display)',
-            letterSpacing: '.16em',
-            textTransform: 'uppercase',
-            color: 'var(--text-secondary)',
-            marginBottom: '10px',
-          }}>
-            Company Objectives
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr 1fr',
-            gap: '14px',
-          }}>
-            {objectives.map(objective => (
-              <ObjectiveCard
-                key={objective.id}
-                objective={objective}
-                onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
-                onStatusSaved={refetch}
-              />
-            ))}
-          </div>
+          {objectives.length > 0 && (
+            <ObjectiveCarousel
+              objectives={objectives}
+              index={carouselIndex}
+              onPrev={() => setCarouselIndex(i => Math.max(0, i - 1))}
+              onNext={() => setCarouselIndex(i => Math.min(objectives.length - 1, i + 1))}
+              onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
+              onStatusSaved={refetch}
+            />
+          )}
           <AlignmentSummaryStrip objectives={individualObjectives} />
         </>
       ) : (
