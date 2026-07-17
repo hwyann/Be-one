@@ -404,6 +404,80 @@ describe('OkrMapPage', () => {
     })
   })
 
+  describe('slide animation between objectives', () => {
+    function mockMatchMedia(reducedMatches) {
+      const original = window.matchMedia
+      window.matchMedia = vi.fn().mockImplementation(query => ({
+        matches: query === '(prefers-reduced-motion: reduce)' ? reducedMatches : false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+      return () => { window.matchMedia = original }
+    }
+
+    it('does not apply a slide animation on the initial render', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const slide = screen.getByTestId('carousel-slide')
+      expect(slide).toHaveAttribute('data-direction', 'none')
+      expect(slide.style.animation).toBe('')
+    })
+
+    it('applies a forward slide animation when Next is clicked', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /next/i }))
+      const slide = screen.getByTestId('carousel-slide')
+      expect(slide).toHaveAttribute('data-direction', 'forward')
+      expect(slide.style.animation).toMatch(/280ms/)
+      expect(slide.style.animation).toMatch(/ease-out/)
+      expect(slide.style.animation).toMatch(/forward/)
+    })
+
+    it('applies a backward slide animation when Previous is clicked', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /next/i }))
+      fireEvent.click(screen.getByRole('button', { name: /previous/i }))
+      const slide = screen.getByTestId('carousel-slide')
+      expect(slide).toHaveAttribute('data-direction', 'backward')
+      expect(slide.style.animation).toMatch(/280ms/)
+      expect(slide.style.animation).toMatch(/ease-out/)
+      expect(slide.style.animation).toMatch(/backward/)
+    })
+
+    it('skips the animation when prefers-reduced-motion is set', () => {
+      const restore = mockMatchMedia(true)
+      try {
+        mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+        render(<OkrMapPage />)
+        fireEvent.click(screen.getByRole('button', { name: /next/i }))
+        const slide = screen.getByTestId('carousel-slide')
+        expect(slide.style.animation).toBe('')
+      } finally {
+        restore()
+      }
+    })
+
+    it('still animates when prefers-reduced-motion is not set (matchMedia returns false)', () => {
+      const restore = mockMatchMedia(false)
+      try {
+        mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+        render(<OkrMapPage />)
+        fireEvent.click(screen.getByRole('button', { name: /next/i }))
+        const slide = screen.getByTestId('carousel-slide')
+        expect(slide.style.animation).toMatch(/280ms/)
+      } finally {
+        restore()
+      }
+    })
+  })
+
   describe('alignment summary strip', () => {
     const linkedIndividualObjectives = [
       { id: 'io-1', title: 'A', link_type: 'direct_kr' },
