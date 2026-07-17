@@ -85,3 +85,19 @@ h1, h2, h3 {
 #root {
   min-height: 100svh;
 }
+
+@keyframes carousel-slide-forward {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes carousel-slide-backward {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-testid="carousel-slide"] {
+    animation: none !important;
+  }
+}
