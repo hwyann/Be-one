@@ -44,6 +44,10 @@ Status marks: ⬜ not done · 🔄 in progress · ✅ done
 - **Acceptance URL**: https://main--striketrio-beone.netlify.app
 - **Preview URL pattern**: https://deploy-preview-{PR}--striketrio-beone.netlify.app
 
+### Supabase Edge Function secrets
+
+- **`ANTHROPIC_API_KEY`** — required by `generate-kr-summary` edge function. Set once per Supabase project via `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`. Rotate here (not in code) if leaked.
+
 ---
 
 ## Per-step notes
