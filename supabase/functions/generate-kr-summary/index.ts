@@ -12,7 +12,16 @@ const MODEL = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS = 200
 const ANTHROPIC_VERSION = '2023-06-01'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 Deno.serve(async (req: Request): Promise<Response> => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders })
+  }
   if (req.method !== 'POST') {
     return json({ error: 'Method Not Allowed' }, 405)
   }
@@ -125,6 +134,6 @@ async function callAnthropic(prompt: string): Promise<string | null> {
 function json(payload: unknown, status = 200): Response {
   return new Response(JSON.stringify(payload), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...corsHeaders },
   })
 }
