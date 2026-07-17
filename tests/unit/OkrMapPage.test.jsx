@@ -36,6 +36,12 @@ const objectives = [
   { id: '2', category: 'Retention', title: 'Improve NPS score', status: 'at_risk' },
 ]
 
+const threeObjectives = [
+  { id: '1', category: 'Growth', title: 'Expand into new markets', status: 'on_track' },
+  { id: '2', category: 'Retention', title: 'Improve NPS score', status: 'at_risk' },
+  { id: '3', category: 'Efficiency', title: 'Reduce cycle time', status: 'on_track' },
+]
+
 const individualObjectives = [
   { id: 'io-1', title: 'Ship MVP' },
   { id: 'io-2', title: 'Interview 10 users' },
@@ -55,18 +61,18 @@ describe('OkrMapPage', () => {
     mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q1', error: null })
   })
 
-  it('renders a card for each objective', () => {
+  it('renders only the first objective initially (carousel core)', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null })
     render(<OkrMapPage />)
     expect(screen.getByText('Expand into new markets')).toBeInTheDocument()
-    expect(screen.getByText('Improve NPS score')).toBeInTheDocument()
+    expect(screen.queryByText('Improve NPS score')).not.toBeInTheDocument()
   })
 
-  it('renders kickers for each objective', () => {
+  it('renders the kicker for only the current objective', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null })
     render(<OkrMapPage />)
     expect(screen.getByText('GROWTH')).toBeInTheDocument()
-    expect(screen.getByText('RETENTION')).toBeInTheDocument()
+    expect(screen.queryByText('RETENTION')).not.toBeInTheDocument()
   })
 
   it('shows loading state while fetching', () => {
@@ -144,7 +150,7 @@ describe('OkrMapPage', () => {
     expect(screen.getByRole('button', { name: /my thread/i })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('renders the map grid and hides MyThreadPage in Map view', () => {
+  it('renders the map carousel and hides MyThreadPage in Map view', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: individualObjectives,
@@ -157,7 +163,7 @@ describe('OkrMapPage', () => {
     expect(screen.queryByTestId('my-thread')).not.toBeInTheDocument()
   })
 
-  it('shows MyThreadPage and hides the map grid when My thread is selected', () => {
+  it('shows MyThreadPage and hides the map carousel when My thread is selected', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: individualObjectives,
@@ -173,7 +179,7 @@ describe('OkrMapPage', () => {
     expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('returns to the map grid when Map is selected again', () => {
+  it('returns to the map carousel when Map is selected again', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: individualObjectives,
@@ -308,24 +314,30 @@ describe('OkrMapPage', () => {
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
 
-  describe('Company Objectives section title', () => {
-    it('renders "Company Objectives" above the grid in Map view', () => {
+  describe('per-objective "Company Objective" header', () => {
+    it('renders "Company Objective" (singular) above the current objective in Map view', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       render(<OkrMapPage />)
-      expect(screen.getByText('Company Objectives')).toBeInTheDocument()
+      expect(screen.getByText('Company Objective')).toBeInTheDocument()
     })
 
-    it('styles the section title with the kicker typographic pattern', () => {
+    it('no longer renders the plural "Company Objectives" section title from #200029527', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       render(<OkrMapPage />)
-      const title = screen.getByText('Company Objectives')
-      const style = title.style
+      expect(screen.queryByText('Company Objectives')).not.toBeInTheDocument()
+    })
+
+    it('styles the header with the kicker typographic pattern', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const header = screen.getByText('Company Objective')
+      const style = header.style
       expect(style.textTransform).toBe('uppercase')
       expect(style.letterSpacing).toBe('0.16em')
       expect(style.font).toMatch(/700 10px/)
     })
 
-    it('does not render the section title in My thread view', () => {
+    it('does not render the header in My thread view', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       mocks.useIndividualObjectives.mockReturnValue({
         objectives: individualObjectives,
@@ -335,7 +347,60 @@ describe('OkrMapPage', () => {
       })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
-      expect(screen.queryByText('Company Objectives')).not.toBeInTheDocument()
+      expect(screen.queryByText('Company Objective')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('carousel navigation', () => {
+    it('shows a position indicator "1 of N" on initial render', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByText('1 of 3')).toBeInTheDocument()
+    })
+
+    it('advances to the next objective when Next is clicked', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /next/i }))
+      expect(screen.getByText('Improve NPS score')).toBeInTheDocument()
+      expect(screen.queryByText('Expand into new markets')).not.toBeInTheDocument()
+      expect(screen.getByText('2 of 3')).toBeInTheDocument()
+    })
+
+    it('goes back to the previous objective when Previous is clicked', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /next/i }))
+      fireEvent.click(screen.getByRole('button', { name: /previous/i }))
+      expect(screen.getByText('Expand into new markets')).toBeInTheDocument()
+      expect(screen.queryByText('Improve NPS score')).not.toBeInTheDocument()
+      expect(screen.getByText('1 of 3')).toBeInTheDocument()
+    })
+
+    it('disables Previous at the first position', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled()
+      expect(screen.getByRole('button', { name: /next/i })).not.toBeDisabled()
+    })
+
+    it('disables Next at the last position', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: threeObjectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /next/i }))
+      fireEvent.click(screen.getByRole('button', { name: /next/i }))
+      expect(screen.getByRole('button', { name: /next/i })).toBeDisabled()
+      expect(screen.getByRole('button', { name: /previous/i })).not.toBeDisabled()
+      expect(screen.getByText('3 of 3')).toBeInTheDocument()
+    })
+
+    it('centers the current objective at ~70% width', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const slide = screen.getByTestId('carousel-slide')
+      expect(slide.style.width).toBe('70%')
+      expect(slide.style.marginLeft).toBe('auto')
+      expect(slide.style.marginRight).toBe('auto')
     })
   })
 
