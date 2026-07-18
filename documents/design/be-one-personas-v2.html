@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Be-one — Personas v2 Design Review</title>
+<style>
+:root {
+  --font-display: "M PLUS Rounded 1c", "Nunito", ui-rounded, sans-serif;
+  --font-sans: "DM Sans", "Inter", system-ui, sans-serif;
+  --coral-500: #F26B5B; --coral-600: #E85D48;
+  --ink-900: #131E28;
+  --canvas: #F9FAFF; --surface: #FFFFFF; --panel: #EFF2FA; --hairline: #E0E4F0;
+  --text-primary: #131E28; --text-secondary: #5E6E7D; --text-muted: #BDC1CD;
+  --ontrack: #10B981; --ontrack-bg: #ECFDF5; --ontrack-text: #047857;
+  --atrisk: #F59E0B; --atrisk-bg: #FFFBEB; --atrisk-text: #B45309;
+  --behind: #E11D48; --behind-bg: #FFF1F2; --behind-text: #BE123C;
+  --radius-card: 16px;
+  --shadow-card: 0 1px 2px rgba(19,30,40,.06), 0 1px 3px rgba(19,30,40,.08);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--canvas);
+  color: var(--text-primary);
+  padding: 40px 24px;
+  line-height: 1.5;
+}
+.wrap { max-width: 1200px; margin: 0 auto; }
+.intro {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 32px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 40px;
+}
+.intro h1 { font-family: var(--font-display); font-size: 32px; margin: 0 0 8px; }
+.intro p { color: var(--text-secondary); margin: 6px 0; }
+.section {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 32px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 32px;
+}
+.section h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.badge {
+  font: 700 10px/1 var(--font-display);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--coral-500);
+  color: white;
+}
+.badge.ic { background: var(--ontrack); }
+.badge.exec { background: var(--coral-500); }
+.badge.new { background: var(--ink-900); }
+.subtitle { color: var(--text-secondary); font-size: 14px; margin: 0 0 24px; }
+.decision-note {
+  background: var(--panel);
+  border-left: 3px solid var(--coral-500);
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-top: 20px;
+  color: var(--text-primary);
+}
+.decision-note b { color: var(--coral-600); }
+
+/* ===== Login card ===== */
+.login-card {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 32px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.login-card h3 { font-family: var(--font-display); font-size: 24px; margin: 0 0 8px; }
+.login-card .sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; }
+.field input, .field select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--hairline);
+  border-radius: 8px; font-family: var(--font-sans); font-size: 14px; background: var(--surface);
+}
+.btn-primary {
+  display: block; width: 100%; padding: 12px 16px;
+  background: var(--coral-500); color: white; border: none;
+  border-radius: 8px; font-family: var(--font-display); font-weight: 700; font-size: 14px;
+  cursor: pointer;
+}
+.btn-primary:hover { background: var(--coral-600); }
+
+/* ===== Header / navbar ===== */
+.appbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; background: var(--surface);
+  border: 1px solid var(--hairline); border-radius: 12px;
+  margin-bottom: 16px;
+}
+.appbar-left { display: flex; align-items: center; gap: 16px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--coral-600); }
+.quarter-pill {
+  padding: 4px 10px; border-radius: 999px; background: var(--panel);
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+}
+.viewer-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--panel);
+  font-size: 12px; font-weight: 600;
+}
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--coral-500); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-size: 12px; font-weight: 700;
+}
+.avatar.small { width: 22px; height: 22px; font-size: 10px; }
+
+/* ===== View toggle ===== */
+.toggle {
+  display: inline-flex; padding: 4px; background: var(--panel);
+  border-radius: 8px; margin-bottom: 16px; gap: 4px;
+}
+.toggle button {
+  padding: 6px 14px; border: none; background: transparent;
+  font-family: var(--font-sans); font-weight: 600; font-size: 13px;
+  color: var(--text-secondary); border-radius: 6px; cursor: pointer;
+}
+.toggle button.active { background: var(--surface); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+
+/* ===== OKR Card ===== */
+.okr-card {
+  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-card);
+  padding: 24px; margin: 0 auto; width: 70%;
+}
+.kicker {
+  font: 700 10px var(--font-display); letter-spacing: .16em;
+  text-transform: uppercase; color: var(--coral-600); margin-bottom: 8px;
+}
+.card-title {
+  font-family: var(--font-display); font-size: 22px; font-weight: 700;
+  color: var(--ink-900); margin: 0 0 12px; display: flex; align-items: center; gap: 10px;
+}
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.status-dot.on { background: var(--ontrack); }
+.status-dot.at { background: var(--atrisk); }
+.status-dot.be { background: var(--behind); }
+
+/* ===== AI summary block (from Dale's #200029544) ===== */
+.ai-summary {
+  border-left: 3px solid var(--coral-500);
+  padding: 12px 14px; margin: 16px 0; background: rgba(0,0,0,0.02);
+  border-radius: 4px; font-size: 13px; line-height: 1.5;
+}
+.ai-summary-label {
+  font: 700 9px var(--font-display); letter-spacing: .16em;
+  text-transform: uppercase; color: var(--coral-600); margin-bottom: 4px;
+}
+
+/* ===== KR row ===== */
+.kr-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-top: 1px solid var(--hairline);
+  gap: 12px;
+}
+.kr-row:first-of-type { border-top: none; }
+.kr-text { flex: 1; font-size: 14px; }
+.kr-target-note { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+.kr-owners { display: flex; gap: -6px; }
+.kr-actions { display: flex; gap: 6px; }
+.kr-action {
+  padding: 3px 10px; border: 1px solid var(--hairline); border-radius: 999px;
+  background: var(--surface); font-size: 11px; color: var(--text-secondary); cursor: pointer;
+}
+.kr-action.primary { color: var(--coral-600); border-color: var(--coral-500); }
+
+/* ===== Nav controls ===== */
+.nav-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; margin-top: 20px;
+}
+.nav-btn {
+  padding: 6px 14px; border: 1px solid var(--hairline);
+  border-radius: 8px; background: var(--surface);
+  font-family: var(--font-display); font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.pos-ind { font-size: 12px; color: var(--text-secondary); font-weight: 600; min-width: 52px; text-align: center; }
+
+/* ===== Alignment health strip (exec only) ===== */
+.exec-health {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+}
+.health-stat {
+  padding: 14px 16px; background: var(--panel); border-radius: 12px;
+  border: 1px solid var(--hairline);
+}
+.health-stat .num {
+  font-family: var(--font-display); font-size: 24px; font-weight: 700;
+  color: var(--ink-900); line-height: 1;
+}
+.health-stat .num.on { color: var(--ontrack-text); }
+.health-stat .num.at { color: var(--atrisk-text); }
+.health-stat .num.be { color: var(--behind-text); }
+.health-stat .lbl { font-size: 11px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+
+/* ===== Individual objectives list (My Thread) ===== */
+.ind-obj {
+  padding: 14px 16px; border: 1px solid var(--hairline); border-radius: 12px;
+  margin-bottom: 10px; background: var(--surface);
+}
+.ind-obj-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+.ind-obj-link { font-size: 12px; color: var(--text-secondary); }
+.ind-obj-link .solid { display: inline-block; width: 22px; border-top: 2.5px solid var(--ink-900); vertical-align: middle; margin: 0 4px; }
+.ind-obj-link .dashed { display: inline-block; width: 22px; border-top: 2px dashed var(--text-secondary); vertical-align: middle; margin: 0 4px; }
+.add-obj {
+  padding: 12px 16px; border: 2px dashed var(--hairline); border-radius: 12px;
+  text-align: center; color: var(--coral-600); font-weight: 600; font-size: 14px;
+  cursor: pointer; margin-top: 10px;
+}
+.add-obj:hover { border-color: var(--coral-500); background: var(--coral-500); background: rgba(242,107,91,0.04); }
+
+/* ===== Team Overview (Hiroshi's My Thread alternative) ===== */
+.team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.report-card {
+  padding: 14px; border: 1px solid var(--hairline); border-radius: 12px;
+  background: var(--surface);
+}
+.report-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.report-name { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+.report-role { font-size: 11px; color: var(--text-secondary); }
+.report-obj { font-size: 12px; padding: 4px 0; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; }
+.report-obj:first-of-type { border-top: none; padding-top: 8px; }
+
+/* ===== Legend row (Dale's #200029034) ===== */
+.legend {
+  display: flex; gap: 20px; font-size: 12px; color: var(--text-secondary);
+  padding: 8px 0; margin-bottom: 12px;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-line { display: inline-block; width: 24px; }
+.legend-line.solid { border-top: 2.5px solid var(--ink-900); }
+.legend-line.dashed { border-top: 2px dashed var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="intro">
+  <h1>Be-one — Personas v2 Design Review</h1>
+  <p>Prepared for Jess · 2026-07-18 · this artifact proposes the multi-user + persona-differentiated UX for the post-hackathon phase.</p>
+  <p style="margin-top:16px;"><b>What's new vs. today:</b></p>
+  <ul style="margin: 8px 0 0 20px; color: var(--text-secondary); font-size: 14px;">
+    <li>Login accepts any email (removes the single-user restriction)</li>
+    <li>On first login, capture <b>display name</b> + <b>role</b> (IC or Exec)</li>
+    <li>Map view stays universal; My Thread differs per role</li>
+    <li>Exec map adds an <b>alignment health strip</b> and gives the AI summary top billing</li>
+    <li>Exec My Thread swaps to a <b>Team Overview</b> if they have direct reports (or a lightweight "my own goals" list if they don't)</li>
+  </ul>
+</div>
+
+<!-- =========================================== -->
+<!-- LOGIN v2 -->
+<!-- =========================================== -->
+<div class="section">
+  <h2><span class="badge new">New</span> 1. Login v2 — open sign-in + first-time profile capture</h2>
+  <p class="subtitle">Two flows in one screen. Existing users just enter their email. First-time users see the profile step after clicking the magic link.</p>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+    <div>
+      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 1 — Any email</p>
+      <div class="login-card">
+        <h3>Sign in to Be-one</h3>
+        <p class="sub">Enter your email — we'll send you a magic link.</p>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" placeholder="you@company.com" value="hiroshi@company.com">
+        </div>
+        <button class="btn-primary">Send magic link</button>
+      </div>
+    </div>
+    <div>
+      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 2 — First-time profile (after magic link)</p>
+      <div class="login-card">
+        <h3>Welcome to Be-one</h3>
+        <p class="sub">Quick setup — you'll only see this once.</p>
+        <div class="field">
+          <label>Display name</label>
+          <input type="text" value="Hiroshi Tanaka">
+        </div>
+        <div class="field">
+          <label>Role</label>
+          <select>
+            <option>Individual Contributor (IC)</option>
+            <option selected>Executive / Team Lead</option>
+          </select>
+        </div>
+        <button class="btn-primary">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="decision-note">
+    <b>Design decisions needing your confirmation:</b>
+    <ul style="margin: 8px 0 0 20px;">
+      <li>Roles are just two options for MVP: <b>IC</b> and <b>Exec</b>. Team Lead lives under Exec. Room to add later.</li>
+      <li>Role affects which My Thread rendering they see; both roles see the same Map view.</li>
+      <li>Role is user-editable via a settings link (deferred story) — not locked at signup.</li>
+      <li>Any email is allowed. If you want to gate at a domain level (e.g. `@bekindlabs.com` for now), that's a one-line variable — flag it.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- =========================================== -->
+<!-- SATOSHI - MAP -->
+<!-- =========================================== -->
+<div class="section">
+  <h2><span class="badge ic">IC</span> 2. Satoshi's OKR Map view</h2>
+  <p class="subtitle">Same carousel as today, but the "who owns" affordance foregrounds Satoshi's contributions.</p>
+
+  <div class="appbar">
+    <div class="appbar-left">
+      <span class="brand">be-one</span>
+      <span class="quarter-pill">Q3 2026 ▾</span>
+    </div>
+    <div class="viewer-chip">
+      <div class="avatar">SK</div>
+      <span>Satoshi Kimura</span>
+    </div>
+  </div>
+
+  <div class="toggle">
+    <button class="active">OKR map</button>
+    <button>My thread</button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-line solid"></span> Direct KR link</div>
+    <div class="legend-item"><span class="legend-line dashed"></span> Objective-level</div>
+  </div>
+
+  <div class="okr-card">
+    <div class="kicker">Company Objective · 2 of 4</div>
+    <h3 class="card-title"><span class="status-dot on"></span>Validate product–market fit with early adopters</h3>
+    <div class="kr-row">
+      <div class="kr-text">
+        NPS score from early adopter interviews
+        <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
+      </div>
+      <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div></div>
+      <div class="kr-actions">
+        <button class="kr-action">Edit</button>
+        <button class="kr-action primary">Check in</button>
+        <button class="kr-action">History</button>
+      </div>
+    </div>
+    <div class="kr-row">
+      <div class="kr-text">10 recorded design-partner interviews</div>
+      <div class="kr-owners"></div>
+      <div class="kr-actions">
+        <button class="kr-action">Edit</button>
+        <button class="kr-action primary">Check in</button>
+        <button class="kr-action">History</button>
+      </div>
+    </div>
+    <div class="kr-row">
+      <div class="kr-text">3 signed pilots</div>
+      <div class="kr-owners"></div>
+      <div class="kr-actions">
+        <button class="kr-action">Edit</button>
+        <button class="kr-action primary">Check in</button>
+        <button class="kr-action">History</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn">Previous</button>
+    <span class="pos-ind">2 of 4</span>
+    <button class="nav-btn">Next</button>
+  </div>
+
+  <div class="decision-note">
+    <b>What's IC-specific here?</b>
+    <ul style="margin: 8px 0 0 20px;">
+      <li>Satoshi's own avatar shown on KRs he contributes to (already implied by linked individual objectives)</li>
+      <li>Check in / History affordances on <b>every KR</b> (requires #200029523 chore + #200029526 feature currently queued for Chip)</li>
+      <li>No AI summary block on Map view for IC — that lives in History panel per today's #200029544</li>
+      <li>Legend row up top (Dale's #200029034 currently in flight)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- =========================================== -->
+<!-- SATOSHI - MY THREAD -->
+<!-- =========================================== -->
+<div class="section">
+  <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread</h2>
+  <p class="subtitle">Focused on his own objectives + upward alignment. This is where an IC lives day-to-day.</p>
+
+  <div class="appbar">
+    <div class="appbar-left">
+      <span class="brand">be-one</span>
+      <span class="quarter-pill">Q3 2026 ▾</span>
+    </div>
+    <div class="viewer-chip">
+      <div class="avatar">SK</div>
+      <span>Satoshi Kimura</span>
+    </div>
+  </div>
+
+  <div class="toggle">
+    <button>OKR map</button>
+    <button class="active">My thread</button>
+  </div>
+
+  <div style="max-width: 640px; margin: 0 auto;">
+    <div class="ind-obj">
+      <div class="ind-obj-title">Ship the AI-summary display end-to-end</div>
+      <div class="ind-obj-link">Contributes to <b>Validate product–market fit</b><span class="solid"></span>Direct KR: <i>NPS score from early adopter interviews</i></div>
+    </div>
+    <div class="ind-obj">
+      <div class="ind-obj-title">Enhance the SRE support operation</div>
+      <div class="ind-obj-link">Contributes to <b>Establish a reliable engineering foundation</b><span class="dashed"></span>Objective-level</div>
+    </div>
+    <div class="ind-obj">
+      <div class="ind-obj-title">Update the AI-augmented cycle</div>
+      <div class="ind-obj-link">Contributes to <b>Build lean documentation of the methodology layer</b><span class="solid"></span>Direct KR: <i>Methodology guides published in-product</i></div>
+    </div>
+    <div class="add-obj">+ Add my objective</div>
+  </div>
+
+  <div class="decision-note">
+    <b>Design decisions:</b>
+    <ul style="margin: 8px 0 0 20px;">
+      <li>Each row shows the upward link explicitly (solid = direct KR, dashed = objective-level) — reuses Dale's legend language</li>
+      <li>"+ Add my objective" is prominent — the primary CTA of this view</li>
+      <li>Clicking a row expands it inline (like today) to show KRs + check-in surface</li>
+      <li><b>Where do check-ins live?</b> On individual-objective KRs, per the #200029526 flow — the coral summary block from #200029544 renders when there are ≥3 check-ins</li>
+    </ul>
+  </div>
+</div>
+
+<!-- =========================================== -->
+<!-- HIROSHI - MAP -->
+<!-- =========================================== -->
+<div class="section">
+  <h2><span class="badge exec">Exec</span> 4. Hiroshi's OKR Map view</h2>
+  <p class="subtitle">Same underlying data, but Exec-shaped hierarchy: alignment-health strip first, AI summary promoted onto the card, all reports' avatars visible on KRs.</p>
+
+  <div class="appbar">
+    <div class="appbar-left">
+      <span class="brand">be-one</span>
+      <span class="quarter-pill">Q3 2026 ▾</span>
+    </div>
+    <div class="viewer-chip">
+      <div class="avatar" style="background: var(--ink-900);">HT</div>
+      <span>Hiroshi Tanaka · CEO</span>
+    </div>
+  </div>
+
+  <div class="toggle">
+    <button class="active">OKR map</button>
+    <button>My thread</button>
+  </div>
+
+  <div class="exec-health">
+    <div class="health-stat"><div class="num on">2</div><div class="lbl">On track</div></div>
+    <div class="health-stat"><div class="num at">1</div><div class="lbl">At risk</div></div>
+    <div class="health-stat"><div class="num be">1</div><div class="lbl">Behind</div></div>
+    <div class="health-stat"><div class="num">8</div><div class="lbl">Contributors linked</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-line solid"></span> Direct KR link</div>
+    <div class="legend-item"><span class="legend-line dashed"></span> Objective-level</div>
+  </div>
+
+  <div class="okr-card">
+    <div class="kicker">Company Objective · 2 of 4</div>
+    <h3 class="card-title"><span class="status-dot on"></span>Validate product–market fit with early adopters</h3>
+
+    <div class="ai-summary">
+      <div class="ai-summary-label">Objective summary · AI</div>
+      Trajectory is on track — 3 of 5 pilot conversations converted this week. Recurring theme across check-ins: onboarding friction on day-2. Latest signal: Satoshi shipped the NPS instrument on Wednesday.
+    </div>
+
+    <div class="kr-row">
+      <div class="kr-text">
+        NPS score from early adopter interviews
+        <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
+      </div>
+      <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div><div class="avatar small" style="background: var(--atrisk); margin-left: -6px;">AM</div></div>
+      <div class="kr-actions"><button class="kr-action">View history</button></div>
+    </div>
+    <div class="kr-row">
+      <div class="kr-text">10 recorded design-partner interviews</div>
+      <div class="kr-owners"><div class="avatar small" style="background: var(--ontrack);">RK</div></div>
+      <div class="kr-actions"><button class="kr-action">View history</button></div>
+    </div>
+    <div class="kr-row">
+      <div class="kr-text">3 signed pilots</div>
+      <div class="kr-owners"><div class="avatar small" style="background: var(--behind);">JT</div></div>
+      <div class="kr-actions"><button class="kr-action">View history</button></div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn">Previous</button>
+    <span class="pos-ind">2 of 4</span>
+    <button class="nav-btn">Next</button>
+  </div>
+
+  <div class="decision-note">
+    <b>What's Exec-specific here?</b>
+    <ul style="margin: 8px 0 0 20px;">
+      <li><b>Alignment health strip</b> at the top of Map view — 4 tiles: on-track / at-risk / behind / contributors-linked count for the current quarter</li>
+      <li><b>AI summary promoted</b> to the card itself (not just inside History panel) — Exec's primary information need is "what's the state of this objective?"</li>
+      <li><b>All contributors' avatars</b> visible on each KR (not just the viewer's own) — Exec needs to see who's on the hook</li>
+      <li>KR actions reduce to "View history" — Exec doesn't check in on other people's KRs</li>
+      <li>Exec can still open History → sees the full chronological check-in trail + summary</li>
+    </ul>
+  </div>
+</div>
+
+<!-- =========================================== -->
+<!-- HIROSHI - MY THREAD -->
+<!-- =========================================== -->
+<div class="section">
+  <h2><span class="badge exec">Exec</span> 5. Hiroshi's My Thread — Team Overview</h2>
+  <p class="subtitle">Exec often owns few personal objectives. Instead, My Thread pivots to a Team Overview — direct reports' individual objectives, grouped by contributor, so alignment issues surface quickly.</p>
+
+  <div class="appbar">
+    <div class="appbar-left">
+      <span class="brand">be-one</span>
+      <span class="quarter-pill">Q3 2026 ▾</span>
+    </div>
+    <div class="viewer-chip">
+      <div class="avatar" style="background: var(--ink-900);">HT</div>
+      <span>Hiroshi Tanaka · CEO</span>
+    </div>
+  </div>
+
+  <div class="toggle">
+    <button>OKR map</button>
+    <button class="active">My thread</button>
+  </div>
+
+  <div class="team-grid">
+    <div class="report-card">
+      <div class="report-header">
+        <div class="avatar" style="background: var(--coral-500);">SK</div>
+        <div>
+          <div class="report-name">Satoshi Kimura</div>
+          <div class="report-role">Engineering</div>
+        </div>
+      </div>
+      <div class="report-obj"><span>Ship AI summary end-to-end</span><span class="status-dot on"></span></div>
+      <div class="report-obj"><span>Enhance SRE support</span><span class="status-dot at"></span></div>
+      <div class="report-obj"><span>Update AI cycle</span><span class="status-dot on"></span></div>
+    </div>
+    <div class="report-card">
+      <div class="report-header">
+        <div class="avatar" style="background: var(--atrisk);">AM</div>
+        <div>
+          <div class="report-name">Aiko Matsuda</div>
+          <div class="report-role">Design</div>
+        </div>
+      </div>
+      <div class="report-obj"><span>NPS survey design</span><span class="status-dot at"></span></div>
+      <div class="report-obj"><span>Onboarding flow v2</span><span class="status-dot be"></span></div>
+    </div>
+    <div class="report-card">
+      <div class="report-header">
+        <div class="avatar" style="background: var(--ontrack);">RK</div>
+        <div>
+          <div class="report-name">Ryo Katayama</div>
+          <div class="report-role">Product</div>
+        </div>
+      </div>
+      <div class="report-obj"><span>Design partner interviews</span><span class="status-dot on"></span></div>
+    </div>
+    <div class="report-card">
+      <div class="report-header">
+        <div class="avatar" style="background: var(--behind);">JT</div>
+        <div>
+          <div class="report-name">Jun Takahashi</div>
+          <div class="report-role">Sales</div>
+        </div>
+      </div>
+      <div class="report-obj"><span>Pilot conversion</span><span class="status-dot be"></span></div>
+    </div>
+  </div>
+
+  <div class="decision-note">
+    <b>Design decisions needing your confirmation:</b>
+    <ul style="margin: 8px 0 0 20px;">
+      <li><b>What defines a "direct report"?</b> Simplest: any user whose individual-objective's `linked_company_objective_id` matches a company objective Hiroshi owns. Cleaner (later): a proper `reports_to` column on users. Start with the first.</li>
+      <li>If Hiroshi has personal individual objectives too, they render <b>above</b> the Team Overview grid in a smaller "My own goals" section (not shown here)</li>
+      <li>Clicking a report card drills into their My Thread as a read-only view</li>
+      <li><b>Alternative framing considered but rejected:</b> a single flat list of every individual objective — too noisy for Execs with 5+ reports</li>
+    </ul>
+  </div>
+</div>
+
+<!-- =========================================== -->
+<!-- STORY IMPLICATIONS -->
+<!-- =========================================== -->
+<div class="section">
+  <h2><span class="badge new">Roadmap</span> 6. Story implications</h2>
+  <p class="subtitle">If we align on this design, here's the story chain to file. Numbers are proposed estimates.</p>
+
+  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+    <thead>
+      <tr style="background: var(--panel); text-align: left;">
+        <th style="padding: 8px 12px; border-radius: 6px 0 0 6px;">#</th>
+        <th style="padding: 8px 12px;">Story</th>
+        <th style="padding: 8px 12px; text-align: center;">Type</th>
+        <th style="padding: 8px 12px; text-align: center;">Pts</th>
+        <th style="padding: 8px 12px; border-radius: 0 6px 6px 0;">Depends on</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px;">A</td>
+        <td style="padding: 10px 12px;"><b>Chore:</b> add `user_profiles` table (email, display_name, role) + trigger to auto-insert on auth sign-up</td>
+        <td style="padding: 10px 12px; text-align: center;">Chore</td>
+        <td style="padding: 10px 12px; text-align: center;">—</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">none</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px;">B</td>
+        <td style="padding: 10px 12px;"><b>Feat:</b> open the login gate — remove hard-coded email restriction, allow any email to receive a magic link</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">1</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">A</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px;">C</td>
+        <td style="padding: 10px 12px;"><b>Feat:</b> first-login profile capture — after magic-link auth, prompt for display_name + role (IC / Exec) and persist to user_profiles</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">A, B</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px;">D</td>
+        <td style="padding: 10px 12px;"><b>Feat:</b> replace hard-coded "Satoshi Kimura" with session-driven display_name in owner fields, viewer chip, My Thread filter</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">A, B, C</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px;">E</td>
+        <td style="padding: 10px 12px;"><b>Feat:</b> Exec alignment-health strip on Map view (4 tiles: on-track / at-risk / behind / contributors)</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">C (needs role)</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px;">F</td>
+        <td style="padding: 10px 12px;"><b>Feat:</b> promote AI summary onto Map card when viewer is Exec (currently only in History panel)</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">C, E</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px;">G</td>
+        <td style="padding: 10px 12px;"><b>Feat:</b> Exec My Thread → Team Overview (grid of direct reports, each with their objectives + status)</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">3</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">C, D</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 12px;">H</td>
+        <td style="padding: 10px 12px;"><b>Feat:</b> role-gated KR action buttons — Check-in / History for own KRs (IC); View-only for others' KRs (Exec)</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">C, D</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="decision-note">
+    <b>Suggested Iteration 3 slice</b> (unblocks multi-user + role differentiation in one iteration):
+    <br>A → B → C → D → then E in parallel with H once C lands. Total: ~9 pts. F and G land in Iteration 4 once we've validated the design in the wild.
+  </div>
+</div>
+
+</div>
+</body>
+</html>
