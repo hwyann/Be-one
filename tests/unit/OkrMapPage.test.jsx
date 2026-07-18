@@ -478,6 +478,50 @@ describe('OkrMapPage', () => {
     })
   })
 
+  describe('link-type legend row', () => {
+    it('renders both legend labels in Map view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByText('Direct KR link')).toBeInTheDocument()
+      expect(screen.getByText('Objective-level')).toBeInTheDocument()
+    })
+
+    it('renders the solid line icon with stroke-width 2.5 and ink-900 color', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const solid = screen.getByTestId('legend-icon-direct')
+      const line = solid.querySelector('line')
+      expect(line).not.toBeNull()
+      expect(line.getAttribute('stroke-width')).toBe('2.5')
+      expect(line.getAttribute('stroke')).toBe('var(--ink-900)')
+      expect(line.getAttribute('stroke-dasharray')).toBeNull()
+    })
+
+    it('renders the dashed line icon with stroke-width 2 and dasharray "5 4"', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const dashed = screen.getByTestId('legend-icon-objective')
+      const line = dashed.querySelector('line')
+      expect(line).not.toBeNull()
+      expect(line.getAttribute('stroke-width')).toBe('2')
+      expect(line.getAttribute('stroke-dasharray')).toBe('5 4')
+    })
+
+    it('does not render the legend in My thread view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      expect(screen.queryByText('Direct KR link')).not.toBeInTheDocument()
+      expect(screen.queryByText('Objective-level')).not.toBeInTheDocument()
+    })
+  })
+
   describe('alignment summary strip', () => {
     const linkedIndividualObjectives = [
       { id: 'io-1', title: 'A', link_type: 'direct_kr' },
