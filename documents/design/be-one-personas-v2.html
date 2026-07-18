@@ -256,15 +256,20 @@ body {
 <div class="wrap">
 
 <div class="intro">
-  <h1>Be-one — Personas v2 Design Review</h1>
-  <p>Prepared for Jess · 2026-07-18 · this artifact proposes the multi-user + persona-differentiated UX for the post-hackathon phase.</p>
-  <p style="margin-top:16px;"><b>What's new vs. today:</b></p>
+  <h1>Be-one — Personas v2 Design (Confirmed)</h1>
+  <p>Prepared for Jess · updated 2026-07-18 · reflects all product decisions confirmed in this session. All 10 stories filed in Tracker Boot (#200029768–#200029778) with matching estimates.</p>
+  <p style="margin-top:16px;"><b>Confirmed decisions:</b></p>
   <ul style="margin: 8px 0 0 20px; color: var(--text-secondary); font-size: 14px;">
-    <li>Login accepts any email (removes the single-user restriction)</li>
-    <li>On first login, capture <b>display name</b> + <b>role</b> (IC or Exec)</li>
-    <li>Map view stays universal; My Thread differs per role</li>
-    <li>Exec map adds an <b>alignment health strip</b> and gives the AI summary top billing</li>
-    <li>Exec My Thread swaps to a <b>Team Overview</b> if they have direct reports (or a lightweight "my own goals" list if they don't)</li>
+    <li><b>Sign-in</b>: Google SSO restricted to <code>@bekindlabs.com</code> — magic-link removed (#200029769)</li>
+    <li><b>First-login profile capture</b>: display name (prefilled from Google), role (IC or Exec), <code>reports_to</code> manager selector (#200029770)</li>
+    <li><b>Two roles only</b>: IC and Exec (Team Lead lives under Exec — same view + authority)</li>
+    <li><b>Proper hierarchy</b> via <code>reports_to</code> FK column on user_profiles — not derived (#200029768)</li>
+    <li><b>Execs check in on their own KRs too</b> — Exec My Thread has "My own goals" ABOVE Team Overview (#200029777)</li>
+    <li><b>AI summary architecture inverted</b>: generated on Satoshi's check-in save (write-path), cached in <code>kr_summaries</code>, shown pre-generated to Hiroshi. Owned by the IC's KR context (#200029773, #200029774, #200029775)</li>
+    <li><b>Context input</b> on personal OKR add — uses existing <code>individual_objectives.description</code> column, no schema change (#200029772)</li>
+    <li><b>Alignment health strip</b> on Exec Map view (4 tiles, role-gated) (#200029776)</li>
+    <li><b>Ownership-gated KR actions</b>: Check-in only on your own KRs; History on any (#200029778)</li>
+    <li><b>Session-driven viewer</b> replaces hard-coded "Satoshi Kimura" everywhere (#200029771)</li>
   </ul>
 </div>
 
@@ -272,36 +277,45 @@ body {
 <!-- LOGIN v2 -->
 <!-- =========================================== -->
 <div class="section">
-  <h2><span class="badge new">New</span> 1. Login v2 — open sign-in + first-time profile capture</h2>
-  <p class="subtitle">Two flows in one screen. Existing users just enter their email. First-time users see the profile step after clicking the magic link.</p>
+  <h2><span class="badge new">Confirmed</span> 1. Login v2 — Google SSO + first-time profile</h2>
+  <p class="subtitle">Google OAuth restricted to <code>@bekindlabs.com</code>. First-time users complete a lightweight profile after Google returns their session.</p>
 
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
     <div>
-      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 1 — Any email</p>
+      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 1 — Sign in with Google (#200029769)</p>
       <div class="login-card">
         <h3>Sign in to Be-one</h3>
-        <p class="sub">Enter your email — we'll send you a magic link.</p>
-        <div class="field">
-          <label>Email</label>
-          <input type="email" placeholder="you@company.com" value="hiroshi@company.com">
-        </div>
-        <button class="btn-primary">Send magic link</button>
+        <p class="sub">Use your Bekind Labs Google account.</p>
+        <button class="btn-primary" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--hairline); display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24c0-1.5-.1-2.9-.4-4.3H24v8.1h11.8c-.5 2.7-2 5-4.3 6.5v5.4h7C42.6 36 45 30.5 45 24z"/><path fill="#34A853" d="M24 46c5.8 0 10.6-1.9 14.2-5.2l-7-5.4c-1.9 1.3-4.4 2.1-7.1 2.1-5.5 0-10.1-3.7-11.8-8.7H5v5.5C8.6 41.1 15.7 46 24 46z"/><path fill="#FBBC05" d="M12.2 28.8c-.4-1.3-.7-2.6-.7-4s.3-2.7.7-4V15.3H5C3.5 18.2 2.5 21 2.5 24s1 5.8 2.5 8.7l7.2-3.9z"/><path fill="#EA4335" d="M24 10.4c3.1 0 5.9 1.1 8.1 3.1l6.1-6.1C34.6 3.7 29.8 2 24 2 15.7 2 8.6 6.9 5 14.3l7.2 5.5c1.7-5 6.3-8.7 11.8-8.7z"/></svg>
+          Sign in with Google
+        </button>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 12px; text-align: center;">Only <code>@bekindlabs.com</code> accounts are allowed.</p>
       </div>
+      <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Rejection message on wrong domain: "Only Bekind Labs accounts are allowed."</p>
     </div>
     <div>
-      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 2 — First-time profile (after magic link)</p>
+      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 2 — First-time profile (#200029770)</p>
       <div class="login-card">
         <h3>Welcome to Be-one</h3>
         <p class="sub">Quick setup — you'll only see this once.</p>
         <div class="field">
-          <label>Display name</label>
+          <label>Display name <span style="color: var(--text-muted); font-weight: 400;">(from Google)</span></label>
           <input type="text" value="Hiroshi Tanaka">
         </div>
         <div class="field">
           <label>Role</label>
           <select>
             <option>Individual Contributor (IC)</option>
-            <option selected>Executive / Team Lead</option>
+            <option selected>Executive (includes Team Lead)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Reports to</label>
+          <select>
+            <option value="">— No manager (top of org) —</option>
+            <option>Alice Chen · Exec</option>
+            <option>Bob Kim · Exec</option>
           </select>
         </div>
         <button class="btn-primary">Continue</button>
@@ -310,13 +324,14 @@ body {
   </div>
 
   <div class="decision-note">
-    <b>Design decisions needing your confirmation:</b>
+    <b>Confirmed decisions:</b>
     <ul style="margin: 8px 0 0 20px;">
-      <li>Roles are just two options for MVP: <b>IC</b> and <b>Exec</b>. Team Lead lives under Exec. Room to add later.</li>
-      <li>Role affects which My Thread rendering they see; both roles see the same Map view.</li>
-      <li>Role is user-editable via a settings link (deferred story) — not locked at signup.</li>
-      <li>Any email is allowed. If you want to gate at a domain level (e.g. `@bekindlabs.com` for now), that's a one-line variable — flag it.</li>
+      <li>✅ Two roles: <b>IC</b> and <b>Exec</b> (Team Lead = Exec, same view + authority)</li>
+      <li>✅ Domain-gated Google SSO for <code>@bekindlabs.com</code> — magic-link flow deleted</li>
+      <li>✅ <code>reports_to</code> FK column captured at first-login (nullable — top of org has no manager)</li>
+      <li>Display name prefilled from <code>session.user.user_metadata.full_name</code>; user can edit before saving</li>
     </ul>
+    <b>Stories:</b> #200029768 (schema), #200029769 (Google SSO), #200029770 (profile capture)
   </div>
 </div>
 
@@ -426,7 +441,8 @@ body {
   <div style="max-width: 640px; margin: 0 auto;">
     <div class="ind-obj">
       <div class="ind-obj-title">Ship the AI-summary display end-to-end</div>
-      <div class="ind-obj-link">Contributes to <b>Validate product–market fit</b><span class="solid"></span>Direct KR: <i>NPS score from early adopter interviews</i></div>
+      <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; padding: 6px 10px; background: var(--panel); border-radius: 6px; border-left: 2px solid var(--coral-500);"><b>Context:</b> The AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path generation so Hiroshi always sees a fresh cached summary.</div>
+      <div class="ind-obj-link" style="margin-top: 6px;">Contributes to <b>Validate product–market fit</b><span class="solid"></span>Direct KR: <i>NPS score from early adopter interviews</i></div>
     </div>
     <div class="ind-obj">
       <div class="ind-obj-title">Enhance the SRE support operation</div>
@@ -439,14 +455,38 @@ body {
     <div class="add-obj">+ Add my objective</div>
   </div>
 
+  <div style="max-width: 640px; margin: 32px auto 0;">
+    <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Add / edit dialog with Context field (#200029772)</p>
+    <div class="login-card" style="max-width: none;">
+      <h3>Add my objective</h3>
+      <div class="field">
+        <label>Title</label>
+        <input type="text" value="Ship the AI-summary display end-to-end">
+      </div>
+      <div class="field">
+        <label>Context (optional)</label>
+        <textarea rows="3" style="width: 100%; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 8px; font-family: var(--font-sans); font-size: 14px; resize: vertical;">The AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path generation.</textarea>
+      </div>
+      <div class="field">
+        <label>Link to company objective</label>
+        <select>
+          <option>Validate product–market fit — direct KR</option>
+          <option>Establish reliable engineering foundation — objective-level</option>
+        </select>
+      </div>
+      <button class="btn-primary">Save</button>
+    </div>
+  </div>
+
   <div class="decision-note">
-    <b>Design decisions:</b>
+    <b>Confirmed decisions:</b>
     <ul style="margin: 8px 0 0 20px;">
-      <li>Each row shows the upward link explicitly (solid = direct KR, dashed = objective-level) — reuses Dale's legend language</li>
-      <li>"+ Add my objective" is prominent — the primary CTA of this view</li>
-      <li>Clicking a row expands it inline (like today) to show KRs + check-in surface</li>
-      <li><b>Where do check-ins live?</b> On individual-objective KRs, per the #200029526 flow — the coral summary block from #200029544 renders when there are ≥3 check-ins</li>
+      <li>✅ New <b>Context</b> textarea on OkrDialog — reuses the existing <code>individual_objectives.description</code> column (no schema change)</li>
+      <li>✅ Context renders inline on the My Thread row (short) or expandable (long)</li>
+      <li>Each row's upward link uses Dale's legend language: solid = direct KR, dashed = objective-level (shipped)</li>
+      <li>Check-ins live per-KR after #200029526 lands (currently queued for Chip)</li>
     </ul>
+    <b>Stories:</b> #200029772 (Context input), #200029526 (KR check-ins — currently queued)
   </div>
 </div>
 
@@ -490,7 +530,7 @@ body {
     <h3 class="card-title"><span class="status-dot on"></span>Validate product–market fit with early adopters</h3>
 
     <div class="ai-summary">
-      <div class="ai-summary-label">Objective summary · AI</div>
+      <div class="ai-summary-label">KR summary · pre-generated (last written by Satoshi's check-in, 2h ago)</div>
       Trajectory is on track — 3 of 5 pilot conversations converted this week. Recurring theme across check-ins: onboarding friction on day-2. Latest signal: Satoshi shipped the NPS instrument on Wednesday.
     </div>
 
@@ -521,14 +561,14 @@ body {
   </div>
 
   <div class="decision-note">
-    <b>What's Exec-specific here?</b>
+    <b>Confirmed decisions:</b>
     <ul style="margin: 8px 0 0 20px;">
-      <li><b>Alignment health strip</b> at the top of Map view — 4 tiles: on-track / at-risk / behind / contributors-linked count for the current quarter</li>
-      <li><b>AI summary promoted</b> to the card itself (not just inside History panel) — Exec's primary information need is "what's the state of this objective?"</li>
-      <li><b>All contributors' avatars</b> visible on each KR (not just the viewer's own) — Exec needs to see who's on the hook</li>
-      <li>KR actions reduce to "View history" — Exec doesn't check in on other people's KRs</li>
-      <li>Exec can still open History → sees the full chronological check-in trail + summary</li>
+      <li>✅ <b>Alignment health strip</b> at the top of Map view — 4 tiles, role-gated to Exec only</li>
+      <li>✅ <b>AI summary is pre-generated</b> (owned by Satoshi's KR context, written on his check-in save, cached in <code>kr_summaries</code>) — Hiroshi reads instantly from cache, no Anthropic call on his view</li>
+      <li>✅ <b>Ownership-gated KR actions</b>: Hiroshi sees "View history" on Satoshi's KRs (no Check-in button), but full Check-in + Edit on KRs he owns himself</li>
+      <li>All contributors' avatars stack on each KR — Exec needs to see who's on the hook</li>
     </ul>
+    <b>Stories:</b> #200029776 (health strip), #200029773 + #200029774 + #200029775 (AI summary inversion chain), #200029778 (ownership gating)
   </div>
 </div>
 
@@ -536,8 +576,8 @@ body {
 <!-- HIROSHI - MY THREAD -->
 <!-- =========================================== -->
 <div class="section">
-  <h2><span class="badge exec">Exec</span> 5. Hiroshi's My Thread — Team Overview</h2>
-  <p class="subtitle">Exec often owns few personal objectives. Instead, My Thread pivots to a Team Overview — direct reports' individual objectives, grouped by contributor, so alignment issues surface quickly.</p>
+  <h2><span class="badge exec">Exec</span> 5. Hiroshi's My Thread — My Own Goals + Team Overview</h2>
+  <p class="subtitle">Two sections stacked. Execs check in on their own goals too, so "My own goals" sits at the top with full add/edit/check-in affordances. Team Overview below surfaces alignment for direct reports (resolved via <code>reports_to</code>).</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -555,6 +595,21 @@ body {
     <button class="active">My thread</button>
   </div>
 
+  <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">My own goals</p>
+  <div style="max-width: 640px; margin: 0 0 24px;">
+    <div class="ind-obj">
+      <div class="ind-obj-title">Drive alignment cadence across leadership</div>
+      <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; padding: 6px 10px; background: var(--panel); border-radius: 6px; border-left: 2px solid var(--coral-500);"><b>Context:</b> Board asked for a weekly rollup by Q4 — need to make sure exec team is checking in weekly on their own goals, not just their reports'.</div>
+      <div class="ind-obj-link" style="margin-top: 6px;">Contributes to <b>Deliver a usable end-to-end OKR cycle</b><span class="solid"></span>Direct KR: <i>Weekly check-in participation ≥ 90%</i></div>
+    </div>
+    <div class="ind-obj">
+      <div class="ind-obj-title">Publish the FY roadmap by end of Q3</div>
+      <div class="ind-obj-link">Contributes to <b>Establish a reliable engineering foundation</b><span class="dashed"></span>Objective-level</div>
+    </div>
+    <div class="add-obj">+ Add my objective</div>
+  </div>
+
+  <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Team overview — direct reports (via <code>reports_to</code>)</p>
   <div class="team-grid">
     <div class="report-card">
       <div class="report-header">
@@ -602,13 +657,14 @@ body {
   </div>
 
   <div class="decision-note">
-    <b>Design decisions needing your confirmation:</b>
+    <b>Confirmed decisions:</b>
     <ul style="margin: 8px 0 0 20px;">
-      <li><b>What defines a "direct report"?</b> Simplest: any user whose individual-objective's `linked_company_objective_id` matches a company objective Hiroshi owns. Cleaner (later): a proper `reports_to` column on users. Start with the first.</li>
-      <li>If Hiroshi has personal individual objectives too, they render <b>above</b> the Team Overview grid in a smaller "My own goals" section (not shown here)</li>
-      <li>Clicking a report card drills into their My Thread as a read-only view</li>
-      <li><b>Alternative framing considered but rejected:</b> a single flat list of every individual objective — too noisy for Execs with 5+ reports</li>
+      <li>✅ <b>My own goals</b> above Team Overview — Execs check in on their own KRs (same affordances as IC My Thread)</li>
+      <li>✅ <b>Direct reports resolved via <code>reports_to</code> FK</b> (not derived from company-objective ownership) — added to user_profiles in #200029768</li>
+      <li>Clicking a report card drills into their My Thread as a read-only view (Exec cannot check in on reports' KRs — enforced by ownership gate in #200029778)</li>
+      <li>If an Exec has no direct reports, only "My own goals" renders (Team Overview section hidden or empty-state note)</li>
     </ul>
+    <b>Stories:</b> #200029768 (reports_to column), #200029777 (My Thread layout), #200029778 (ownership gating enforces read-only drill-in)
   </div>
 </div>
 
@@ -616,13 +672,13 @@ body {
 <!-- STORY IMPLICATIONS -->
 <!-- =========================================== -->
 <div class="section">
-  <h2><span class="badge new">Roadmap</span> 6. Story implications</h2>
-  <p class="subtitle">If we align on this design, here's the story chain to file. Numbers are proposed estimates.</p>
+  <h2><span class="badge new">Roadmap</span> 6. Story implications — filed in Tracker Boot</h2>
+  <p class="subtitle">All 10 stories filed and estimated. Two Chores, eight Features, ~17 pts of Feature work total.</p>
 
   <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
     <thead>
       <tr style="background: var(--panel); text-align: left;">
-        <th style="padding: 8px 12px; border-radius: 6px 0 0 6px;">#</th>
+        <th style="padding: 8px 12px; border-radius: 6px 0 0 6px;">TB ID</th>
         <th style="padding: 8px 12px;">Story</th>
         <th style="padding: 8px 12px; text-align: center;">Type</th>
         <th style="padding: 8px 12px; text-align: center;">Pts</th>
@@ -631,67 +687,93 @@ body {
     </thead>
     <tbody>
       <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px;">A</td>
-        <td style="padding: 10px 12px;"><b>Chore:</b> add `user_profiles` table (email, display_name, role) + trigger to auto-insert on auth sign-up</td>
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029768</td>
+        <td style="padding: 10px 12px;">Create <code>user_profiles</code> table with role + <code>reports_to</code> columns, plus auto-insert trigger on auth sign-up</td>
         <td style="padding: 10px 12px; text-align: center;">Chore</td>
         <td style="padding: 10px 12px; text-align: center;">—</td>
         <td style="padding: 10px 12px; color: var(--text-secondary);">none</td>
       </tr>
       <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px;">B</td>
-        <td style="padding: 10px 12px;"><b>Feat:</b> open the login gate — remove hard-coded email restriction, allow any email to receive a magic link</td>
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029769</td>
+        <td style="padding: 10px 12px;">Sign in with Google, restricted to <code>@bekindlabs.com</code> (replaces magic-link)</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029768</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029770</td>
+        <td style="padding: 10px 12px;">First-login profile capture (display_name, role, reports_to)</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029768, #200029769</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029771</td>
+        <td style="padding: 10px 12px;">Session-driven viewer (replaces hard-coded "Satoshi Kimura")</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">2</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029768–770</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline);">
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029772</td>
+        <td style="padding: 10px 12px;">Context input on individual OKR add/edit (uses existing <code>description</code> column)</td>
         <td style="padding: 10px 12px; text-align: center;">Feature</td>
         <td style="padding: 10px 12px; text-align: center;">1</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">A</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">independent</td>
       </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px;">C</td>
-        <td style="padding: 10px 12px;"><b>Feat:</b> first-login profile capture — after magic-link auth, prompt for display_name + role (IC / Exec) and persist to user_profiles</td>
+      <tr style="border-bottom: 1px solid var(--hairline); background: rgba(242,107,91,0.04);">
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029773</td>
+        <td style="padding: 10px 12px;">Extend <code>kr_summaries</code> schema with <code>key_result_id</code> FK</td>
+        <td style="padding: 10px 12px; text-align: center;">Chore</td>
+        <td style="padding: 10px 12px; text-align: center;">—</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029523 ✅</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline); background: rgba(242,107,91,0.04);">
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029774</td>
+        <td style="padding: 10px 12px;">AI summary generated on Satoshi's check-in save (write-path)</td>
         <td style="padding: 10px 12px; text-align: center;">Feature</td>
         <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">A, B</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029773, #200029526</td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--hairline); background: rgba(242,107,91,0.04);">
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029775</td>
+        <td style="padding: 10px 12px;"><code>useKrSummary</code> reads from cache only (completes the inversion)</td>
+        <td style="padding: 10px 12px; text-align: center;">Feature</td>
+        <td style="padding: 10px 12px; text-align: center;">1</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029774</td>
       </tr>
       <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px;">D</td>
-        <td style="padding: 10px 12px;"><b>Feat:</b> replace hard-coded "Satoshi Kimura" with session-driven display_name in owner fields, viewer chip, My Thread filter</td>
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029776</td>
+        <td style="padding: 10px 12px;">Alignment-health strip on Exec Map view (4 tiles, role-gated)</td>
         <td style="padding: 10px 12px; text-align: center;">Feature</td>
         <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">A, B, C</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029770, #200029771</td>
       </tr>
       <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px;">E</td>
-        <td style="padding: 10px 12px;"><b>Feat:</b> Exec alignment-health strip on Map view (4 tiles: on-track / at-risk / behind / contributors)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">C (needs role)</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px;">F</td>
-        <td style="padding: 10px 12px;"><b>Feat:</b> promote AI summary onto Map card when viewer is Exec (currently only in History panel)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">C, E</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px;">G</td>
-        <td style="padding: 10px 12px;"><b>Feat:</b> Exec My Thread → Team Overview (grid of direct reports, each with their objectives + status)</td>
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029777</td>
+        <td style="padding: 10px 12px;">Exec My Thread — Personal Goals + Team Overview</td>
         <td style="padding: 10px 12px; text-align: center;">Feature</td>
         <td style="padding: 10px 12px; text-align: center;">3</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">C, D</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029770, #200029771</td>
       </tr>
       <tr>
-        <td style="padding: 10px 12px;">H</td>
-        <td style="padding: 10px 12px;"><b>Feat:</b> role-gated KR action buttons — Check-in / History for own KRs (IC); View-only for others' KRs (Exec)</td>
+        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029778</td>
+        <td style="padding: 10px 12px;">Ownership-gated KR actions (Check-in only on own KRs)</td>
         <td style="padding: 10px 12px; text-align: center;">Feature</td>
         <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">C, D</td>
+        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029770, #200029771, #200029526</td>
       </tr>
     </tbody>
   </table>
 
   <div class="decision-note">
-    <b>Suggested Iteration 3 slice</b> (unblocks multi-user + role differentiation in one iteration):
-    <br>A → B → C → D → then E in parallel with H once C lands. Total: ~9 pts. F and G land in Iteration 4 once we've validated the design in the wild.
+    <b>Ordering rationale</b> (top-down = build order):
+    <ol style="margin: 8px 0 0 20px;">
+      <li><b>Foundation</b>: #200029768 → #200029769 → #200029770 → #200029771 (auth + viewer plumbing)</li>
+      <li><b>Independent slice</b>: #200029772 (Context input — no dependencies, can ship in parallel)</li>
+      <li><b>AI summary inversion chain</b> (highlighted rows): #200029773 → #200029774 → #200029775 — blocked by Chip's queued #200029526 (KR-level check-ins) landing first</li>
+      <li><b>Exec-shaped UX</b>: #200029776 (health strip) + #200029777 (My Thread) + #200029778 (ownership gate) — all need viewer context in place</li>
+    </ol>
   </div>
 </div>
 
