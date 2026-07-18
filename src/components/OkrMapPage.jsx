@@ -118,6 +118,37 @@ function carouselButtonStyle(disabled) {
   }
 }
 
+function LinkTypeLegend() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '18px',
+      marginBottom: '14px',
+      font: '600 12px var(--font-display)',
+      color: 'var(--text-secondary)',
+    }}>
+      <LegendEntry testId="legend-icon-direct" label="Direct KR link">
+        <line x1="2" y1="6" x2="26" y2="6" stroke="var(--ink-900)" strokeWidth="2.5" strokeLinecap="round" />
+      </LegendEntry>
+      <LegendEntry testId="legend-icon-objective" label="Objective-level">
+        <line x1="2" y1="6" x2="26" y2="6" stroke="var(--ink-900)" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" />
+      </LegendEntry>
+    </div>
+  )
+}
+
+function LegendEntry({ testId, label, children }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+      <svg data-testid={testId} width="28" height="12" viewBox="0 0 28 12" aria-hidden="true">
+        {children}
+      </svg>
+      {label}
+    </span>
+  )
+}
+
 function AlignmentSummaryStrip({ objectives }) {
   const directKrCount = objectives.filter(o => o.link_type === 'direct_kr').length
   const objectiveLevelCount = objectives.filter(
@@ -243,6 +274,7 @@ export default function OkrMapPage() {
       </div>
       {view === 'map' ? (
         <>
+          <LinkTypeLegend />
           {objectives.length > 0 && (
             <ObjectiveCarousel
               objectives={objectives}
