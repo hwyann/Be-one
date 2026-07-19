@@ -12,6 +12,7 @@
     "test:unit": "bash tests/unit/promote.test.sh"
   },
   "dependencies": {
+    "@shadergradient/react": "^2.4.20",
     "@supabase/supabase-js": "^2.110.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

@@ -2,146 +2,251 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Be-one — Personas v2 Design Review</title>
+<title>Be-one — Personas v2 Design (Glass + ShaderGradient)</title>
 <style>
 :root {
   --font-display: "M PLUS Rounded 1c", "Nunito", ui-rounded, sans-serif;
   --font-sans: "DM Sans", "Inter", system-ui, sans-serif;
   --coral-500: #F26B5B; --coral-600: #E85D48;
   --ink-900: #131E28;
-  --canvas: #F9FAFF; --surface: #FFFFFF; --panel: #EFF2FA; --hairline: #E0E4F0;
-  --text-primary: #131E28; --text-secondary: #5E6E7D; --text-muted: #BDC1CD;
-  --ontrack: #10B981; --ontrack-bg: #ECFDF5; --ontrack-text: #047857;
-  --atrisk: #F59E0B; --atrisk-bg: #FFFBEB; --atrisk-text: #B45309;
-  --behind: #E11D48; --behind-bg: #FFF1F2; --behind-text: #BE123C;
-  --radius-card: 16px;
-  --shadow-card: 0 1px 2px rgba(19,30,40,.06), 0 1px 3px rgba(19,30,40,.08);
+  --text-primary: #131E28; --text-secondary: #384858; --text-muted: #6B7A8A;
+  --ontrack: #10B981; --ontrack-text: #047857;
+  --atrisk: #F59E0B; --atrisk-text: #B45309;
+  --behind: #E11D48; --behind-text: #BE123C;
+  --radius-card: 20px;
+  --radius-small: 12px;
+
+  /* Glass tokens */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.75);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.35);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-border-strong: rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 8px 32px rgba(19, 30, 40, 0.12), 0 2px 8px rgba(19, 30, 40, 0.06);
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 * { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100vh; }
 body {
-  margin: 0;
   font-family: var(--font-sans);
-  background: var(--canvas);
   color: var(--text-primary);
   padding: 40px 24px;
   line-height: 1.5;
+  position: relative;
+  background:
+    radial-gradient(circle at 15% 20%, #FFB199 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, #FF7A93 0%, transparent 45%),
+    radial-gradient(circle at 75% 80%, #93C5FD 0%, transparent 50%),
+    radial-gradient(circle at 20% 90%, #C4B5FD 0%, transparent 40%),
+    linear-gradient(120deg, #FEE4E1 0%, #FCE7F3 30%, #DBEAFE 65%, #E9D5FF 100%);
+  background-size: 200% 200%, 220% 220%, 240% 240%, 200% 200%, 400% 400%;
+  animation: shaderShift 22s ease-in-out infinite alternate;
 }
-.wrap { max-width: 1200px; margin: 0 auto; }
-.intro {
-  background: var(--surface);
+@keyframes shaderShift {
+  0%   { background-position:   0% 0%,  100% 0%,  50% 100%,  0% 100%,   0% 50%; }
+  50%  { background-position:  40% 30%,  60% 40%, 80% 60%,  30% 70%,  100% 50%; }
+  100% { background-position: 100% 100%,  0% 100%,  0% 0%,  100% 0%,   0% 50%; }
+}
+.wrap { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+
+/* ========== Glass primitives ========== */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-inner);
   border-radius: var(--radius-card);
-  padding: 32px;
-  box-shadow: var(--shadow-card);
+}
+.glass-subtle {
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-small);
+}
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--glass-shadow), var(--glass-inner);
+  border-radius: var(--radius-card);
+}
+
+.intro {
+  padding: 36px;
   margin-bottom: 40px;
 }
-.intro h1 { font-family: var(--font-display); font-size: 32px; margin: 0 0 8px; }
+.intro h1 { font-family: var(--font-display); font-size: 34px; margin: 0 0 8px; letter-spacing: -0.01em; }
 .intro p { color: var(--text-secondary); margin: 6px 0; }
+.intro code { background: rgba(19,30,40,0.06); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+
 .section {
-  background: var(--surface);
-  border-radius: var(--radius-card);
-  padding: 32px;
-  box-shadow: var(--shadow-card);
+  padding: 36px;
   margin-bottom: 32px;
 }
 .section h2 {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 24px;
   margin: 0 0 4px;
   display: flex;
   align-items: center;
   gap: 12px;
+  letter-spacing: -0.01em;
 }
 .badge {
   font: 700 10px/1 var(--font-display);
-  letter-spacing: .16em;
+  letter-spacing: .14em;
   text-transform: uppercase;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: var(--coral-500);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(19,30,40,0.9);
   color: white;
+  backdrop-filter: blur(10px);
 }
-.badge.ic { background: var(--ontrack); }
-.badge.exec { background: var(--coral-500); }
-.badge.new { background: var(--ink-900); }
+.badge.ic { background: rgba(16, 185, 129, 0.9); }
+.badge.exec { background: rgba(242, 107, 91, 0.9); }
+.badge.admin { background: rgba(19, 30, 40, 0.9); }
+.badge.new { background: rgba(88, 28, 135, 0.85); }
+.badge.confirmed { background: rgba(16, 185, 129, 0.85); }
 .subtitle { color: var(--text-secondary); font-size: 14px; margin: 0 0 24px; }
+code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: rgba(19,30,40,0.06); padding: 1px 6px; border-radius: 4px; }
+
 .decision-note {
-  background: var(--panel);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
   border-left: 3px solid var(--coral-500);
-  padding: 12px 16px;
-  border-radius: 4px;
+  border-radius: 8px;
+  padding: 14px 18px;
   font-size: 13px;
   margin-top: 20px;
   color: var(--text-primary);
 }
 .decision-note b { color: var(--coral-600); }
+.decision-note ul, .decision-note ol { margin: 8px 0 8px 20px; }
 
-/* ===== Login card ===== */
+/* ========== Login glass card ========== */
 .login-card {
   max-width: 420px;
   margin: 0 auto;
   padding: 32px;
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-card);
-  background: var(--surface);
 }
-.login-card h3 { font-family: var(--font-display); font-size: 24px; margin: 0 0 8px; }
-.login-card .sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; }
+.login-card h3 { font-family: var(--font-display); font-size: 24px; margin: 0 0 8px; letter-spacing: -0.01em; }
+.login-card .sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
 .field { margin-bottom: 16px; }
 .field label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; }
-.field input, .field select {
-  width: 100%; padding: 10px 12px; border: 1px solid var(--hairline);
-  border-radius: 8px; font-family: var(--font-sans); font-size: 14px; background: var(--surface);
+.field input, .field select, .field textarea {
+  width: 100%; padding: 11px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--text-primary);
 }
-.btn-primary {
-  display: block; width: 100%; padding: 12px 16px;
-  background: var(--coral-500); color: white; border: none;
-  border-radius: 8px; font-family: var(--font-display); font-weight: 700; font-size: 14px;
-  cursor: pointer;
-}
-.btn-primary:hover { background: var(--coral-600); }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid rgba(242, 107, 91, 0.5); outline-offset: 1px; }
 
-/* ===== Header / navbar ===== */
+.btn-primary {
+  display: block; width: 100%;
+  padding: 13px 16px;
+  background: rgba(19, 30, 40, 0.9);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-primary:hover { background: var(--ink-900); }
+
+.btn-google {
+  display: flex; width: 100%;
+  padding: 13px 16px;
+  align-items: center; justify-content: center; gap: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(19,30,40,0.05);
+}
+
+/* ========== App bar / chips ========== */
 .appbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 20px; background: var(--surface);
-  border: 1px solid var(--hairline); border-radius: 12px;
+  padding: 12px 20px;
+  border-radius: 16px;
   margin-bottom: 16px;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-inner);
 }
 .appbar-left { display: flex; align-items: center; gap: 16px; }
-.brand { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--coral-600); }
+.brand {
+  font-family: var(--font-display); font-weight: 700; font-size: 18px;
+  background: linear-gradient(135deg, var(--coral-500), var(--coral-600));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 .quarter-pill {
-  padding: 4px 10px; border-radius: 999px; background: var(--panel);
+  padding: 5px 12px; border-radius: 999px;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.9);
   font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  backdrop-filter: blur(10px);
 }
 .viewer-chip {
   display: flex; align-items: center; gap: 8px;
-  padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--panel);
+  padding: 4px 14px 4px 4px; border-radius: 999px;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.9);
   font-size: 12px; font-weight: 600;
+  backdrop-filter: blur(10px);
 }
 .avatar {
-  width: 28px; height: 28px; border-radius: 50%;
+  width: 30px; height: 30px; border-radius: 50%;
   background: var(--coral-500); color: white;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display); font-size: 12px; font-weight: 700;
+  border: 1.5px solid rgba(255,255,255,0.6);
 }
-.avatar.small { width: 22px; height: 22px; font-size: 10px; }
+.avatar.small { width: 24px; height: 24px; font-size: 10px; }
 
-/* ===== View toggle ===== */
+/* ========== Toggle ========== */
 .toggle {
-  display: inline-flex; padding: 4px; background: var(--panel);
-  border-radius: 8px; margin-bottom: 16px; gap: 4px;
+  display: inline-flex; padding: 4px;
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 12px; margin-bottom: 16px; gap: 4px;
 }
 .toggle button {
-  padding: 6px 14px; border: none; background: transparent;
+  padding: 7px 16px; border: none; background: transparent;
   font-family: var(--font-sans); font-weight: 600; font-size: 13px;
-  color: var(--text-secondary); border-radius: 6px; cursor: pointer;
+  color: var(--text-secondary); border-radius: 8px; cursor: pointer;
 }
-.toggle button.active { background: var(--surface); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.toggle button.active {
+  background: rgba(255,255,255,0.9);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
 
-/* ===== OKR Card ===== */
+/* ========== OKR Card ========== */
 .okr-card {
-  background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius-card);
-  padding: 24px; margin: 0 auto; width: 70%;
+  padding: 28px;
+  margin: 0 auto;
+  width: 72%;
 }
 .kicker {
   font: 700 10px var(--font-display); letter-spacing: .16em;
@@ -150,98 +255,130 @@ body {
 .card-title {
   font-family: var(--font-display); font-size: 22px; font-weight: 700;
   color: var(--ink-900); margin: 0 0 12px; display: flex; align-items: center; gap: 10px;
+  letter-spacing: -0.01em;
 }
-.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px rgba(255,255,255,0.6); }
 .status-dot.on { background: var(--ontrack); }
 .status-dot.at { background: var(--atrisk); }
 .status-dot.be { background: var(--behind); }
 
-/* ===== AI summary block (from Dale's #200029544) ===== */
+/* ========== AI summary block ========== */
 .ai-summary {
   border-left: 3px solid var(--coral-500);
-  padding: 12px 14px; margin: 16px 0; background: rgba(0,0,0,0.02);
-  border-radius: 4px; font-size: 13px; line-height: 1.5;
+  padding: 14px 16px; margin: 16px 0;
+  background: rgba(255, 241, 239, 0.55);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  font-size: 13px; line-height: 1.55;
 }
 .ai-summary-label {
-  font: 700 9px var(--font-display); letter-spacing: .16em;
-  text-transform: uppercase; color: var(--coral-600); margin-bottom: 4px;
+  font: 700 9px var(--font-display); letter-spacing: .14em;
+  text-transform: uppercase; color: var(--coral-600); margin-bottom: 6px;
 }
 
-/* ===== KR row ===== */
+/* ========== KR rows ========== */
 .kr-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 0; border-top: 1px solid var(--hairline);
+  padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.6);
   gap: 12px;
 }
 .kr-row:first-of-type { border-top: none; }
 .kr-text { flex: 1; font-size: 14px; }
 .kr-target-note { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
-.kr-owners { display: flex; gap: -6px; }
+.kr-owners { display: flex; }
 .kr-actions { display: flex; gap: 6px; }
 .kr-action {
-  padding: 3px 10px; border: 1px solid var(--hairline); border-radius: 999px;
-  background: var(--surface); font-size: 11px; color: var(--text-secondary); cursor: pointer;
+  padding: 4px 12px; border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(6px);
+  font-size: 11px; color: var(--text-secondary); cursor: pointer;
 }
-.kr-action.primary { color: var(--coral-600); border-color: var(--coral-500); }
+.kr-action.primary { color: var(--coral-600); border-color: rgba(242,107,91,0.6); background: rgba(255,241,239,0.6); }
 
-/* ===== Nav controls ===== */
+/* ========== Nav controls ========== */
 .nav-row {
   display: flex; align-items: center; justify-content: center;
   gap: 16px; margin-top: 20px;
 }
 .nav-btn {
-  padding: 6px 14px; border: 1px solid var(--hairline);
-  border-radius: 8px; background: var(--surface);
-  font-family: var(--font-display); font-weight: 600; font-size: 13px; cursor: pointer;
+  padding: 8px 16px;
+  border: 1px solid rgba(255,255,255,0.9);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(10px);
+  font-family: var(--font-display);
+  font-weight: 600; font-size: 13px; cursor: pointer;
 }
 .pos-ind { font-size: 12px; color: var(--text-secondary); font-weight: 600; min-width: 52px; text-align: center; }
 
-/* ===== Alignment health strip (exec only) ===== */
+/* ========== Alignment health strip ========== */
 .exec-health {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
 }
 .health-stat {
-  padding: 14px 16px; background: var(--panel); border-radius: 12px;
-  border: 1px solid var(--hairline);
+  padding: 16px 18px;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 14px;
+  box-shadow: var(--glass-inner);
 }
 .health-stat .num {
-  font-family: var(--font-display); font-size: 24px; font-weight: 700;
+  font-family: var(--font-display); font-size: 26px; font-weight: 700;
   color: var(--ink-900); line-height: 1;
 }
 .health-stat .num.on { color: var(--ontrack-text); }
 .health-stat .num.at { color: var(--atrisk-text); }
 .health-stat .num.be { color: var(--behind-text); }
-.health-stat .lbl { font-size: 11px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+.health-stat .lbl { font-size: 11px; color: var(--text-secondary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
 
-/* ===== Individual objectives list (My Thread) ===== */
+/* ========== Individual objectives list ========== */
 .ind-obj {
-  padding: 14px 16px; border: 1px solid var(--hairline); border-radius: 12px;
-  margin-bottom: 10px; background: var(--surface);
+  padding: 16px 18px;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--glass-inner);
 }
-.ind-obj-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+.ind-obj-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; margin-bottom: 4px; letter-spacing: -0.005em; }
 .ind-obj-link { font-size: 12px; color: var(--text-secondary); }
 .ind-obj-link .solid { display: inline-block; width: 22px; border-top: 2.5px solid var(--ink-900); vertical-align: middle; margin: 0 4px; }
 .ind-obj-link .dashed { display: inline-block; width: 22px; border-top: 2px dashed var(--text-secondary); vertical-align: middle; margin: 0 4px; }
+.context-inline {
+  font-size: 12px; color: var(--text-secondary); margin-top: 6px;
+  padding: 8px 12px; background: rgba(255,241,239,0.5); backdrop-filter: blur(6px);
+  border-left: 2px solid var(--coral-500); border-radius: 6px;
+}
 .add-obj {
-  padding: 12px 16px; border: 2px dashed var(--hairline); border-radius: 12px;
+  padding: 14px 16px;
+  border: 2px dashed rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
   text-align: center; color: var(--coral-600); font-weight: 600; font-size: 14px;
   cursor: pointer; margin-top: 10px;
 }
-.add-obj:hover { border-color: var(--coral-500); background: var(--coral-500); background: rgba(242,107,91,0.04); }
 
-/* ===== Team Overview (Hiroshi's My Thread alternative) ===== */
+/* ========== Team Overview ========== */
 .team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .report-card {
-  padding: 14px; border: 1px solid var(--hairline); border-radius: 12px;
-  background: var(--surface);
+  padding: 16px;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 14px;
+  box-shadow: var(--glass-inner);
 }
 .report-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .report-name { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
 .report-role { font-size: 11px; color: var(--text-secondary); }
-.report-obj { font-size: 12px; padding: 4px 0; border-top: 1px solid var(--hairline); display: flex; justify-content: space-between; }
+.report-obj { font-size: 12px; padding: 5px 0; border-top: 1px solid rgba(255,255,255,0.6); display: flex; justify-content: space-between; align-items: center; }
 .report-obj:first-of-type { border-top: none; padding-top: 8px; }
 
-/* ===== Legend row (Dale's #200029034) ===== */
+/* ========== Legend row ========== */
 .legend {
   display: flex; gap: 20px; font-size: 12px; color: var(--text-secondary);
   padding: 8px 0; margin-bottom: 12px;
@@ -250,97 +387,135 @@ body {
 .legend-line { display: inline-block; width: 24px; }
 .legend-line.solid { border-top: 2.5px solid var(--ink-900); }
 .legend-line.dashed { border-top: 2px dashed var(--text-secondary); }
+
+/* ========== Admin: Users management table ========== */
+.users-table {
+  width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 13px;
+}
+.users-table thead th {
+  text-align: left; padding: 8px 14px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+  color: var(--text-secondary);
+}
+.users-table tbody tr {
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.85);
+}
+.users-table tbody td {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.7);
+}
+.users-table tbody td:first-child { border-left: 1px solid rgba(255,255,255,0.7); border-radius: 12px 0 0 12px; }
+.users-table tbody td:last-child  { border-right: 1px solid rgba(255,255,255,0.7); border-radius: 0 12px 12px 0; }
+.pill {
+  padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
+}
+.pill.pending { background: rgba(245,158,11,0.15); color: var(--atrisk-text); }
+.pill.ic { background: rgba(16,185,129,0.15); color: var(--ontrack-text); }
+.pill.exec { background: rgba(242,107,91,0.15); color: var(--coral-600); }
+.inline-select {
+  padding: 4px 8px; border: 1px solid rgba(255,255,255,0.9); background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(6px); border-radius: 8px; font-size: 12px;
+}
+
+/* ========== Locked-out screen ========== */
+.locked-screen {
+  max-width: 480px; margin: 0 auto; padding: 40px; text-align: center;
+}
+.locked-icon {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  border: 1px solid rgba(255,255,255,0.9);
+}
+.locked-screen h3 { font-family: var(--font-display); font-size: 22px; margin: 0 0 8px; letter-spacing: -0.01em; }
+.locked-screen p { color: var(--text-secondary); font-size: 14px; margin: 6px 0; }
+
+.note-eyebrow {
+  font-size: 12px; color: var(--text-secondary); text-transform: uppercase;
+  letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;
+}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<div class="intro">
-  <h1>Be-one — Personas v2 Design (Confirmed)</h1>
-  <p>Prepared for Jess · updated 2026-07-18 · reflects all product decisions confirmed in this session. All 10 stories filed in Tracker Boot (#200029768–#200029778) with matching estimates.</p>
-  <p style="margin-top:16px;"><b>Confirmed decisions:</b></p>
+<!-- =========================================== -->
+<!-- INTRO -->
+<!-- =========================================== -->
+<div class="intro glass">
+  <h1>Be-one — Personas v2 Design</h1>
+  <p>Prepared for Jess · updated 2026-07-19 · glass + shader-gradient aesthetic · all 10 stories filed in TB (#200029768–#200029778).</p>
+  <p style="margin-top:16px;"><b>Confirmed decisions (latest):</b></p>
   <ul style="margin: 8px 0 0 20px; color: var(--text-secondary); font-size: 14px;">
+    <li><b>Visual system</b>: animated shader-gradient background (ShaderGradient library — <a href="https://github.com/ruucm/shadergradient" target="_blank" style="color: var(--coral-600);">ruucm/shadergradient</a>) with Apple-style glass panels layered over. This mock approximates with CSS gradients + <code>backdrop-filter: blur()</code>; real impl uses the library.</li>
     <li><b>Sign-in</b>: Google SSO restricted to <code>@bekindlabs.com</code> — magic-link removed (#200029769)</li>
-    <li><b>First-login profile capture</b>: display name (prefilled from Google), role (IC or Exec), <code>reports_to</code> manager selector (#200029770)</li>
-    <li><b>Two roles only</b>: IC and Exec (Team Lead lives under Exec — same view + authority)</li>
-    <li><b>Proper hierarchy</b> via <code>reports_to</code> FK column on user_profiles — not derived (#200029768)</li>
+    <li><b>No user-facing profile setup</b> — <b>admin sets role + reports_to</b>. Admin gate: <b>any Exec/manager</b> (anyone with <code>role = 'exec'</code>)</li>
+    <li><b>Locked-out state for new users</b>: signed in but no role assigned → full-screen "Awaiting profile assignment" block (no app access until admin acts)</li>
+    <li><b>Display name = Google metadata</b> (auto-populated, not admin-editable in v1)</li>
+    <li><b>Proper hierarchy</b> via <code>reports_to</code> FK column on user_profiles (#200029768)</li>
     <li><b>Execs check in on their own KRs too</b> — Exec My Thread has "My own goals" ABOVE Team Overview (#200029777)</li>
-    <li><b>AI summary architecture inverted</b>: generated on Satoshi's check-in save (write-path), cached in <code>kr_summaries</code>, shown pre-generated to Hiroshi. Owned by the IC's KR context (#200029773, #200029774, #200029775)</li>
-    <li><b>Context input</b> on personal OKR add — uses existing <code>individual_objectives.description</code> column, no schema change (#200029772)</li>
+    <li><b>AI summary inverted</b>: generated on Satoshi's check-in save, cached, shown pre-generated to Hiroshi (#200029773, #200029774, #200029775)</li>
+    <li><b>Context input</b> on personal OKR add — reuses <code>individual_objectives.description</code> (#200029772)</li>
     <li><b>Alignment health strip</b> on Exec Map view (4 tiles, role-gated) (#200029776)</li>
     <li><b>Ownership-gated KR actions</b>: Check-in only on your own KRs; History on any (#200029778)</li>
-    <li><b>Session-driven viewer</b> replaces hard-coded "Satoshi Kimura" everywhere (#200029771)</li>
+    <li><b>Session-driven viewer</b> replaces hard-coded "Satoshi Kimura" (#200029771)</li>
   </ul>
 </div>
 
 <!-- =========================================== -->
 <!-- LOGIN v2 -->
 <!-- =========================================== -->
-<div class="section">
-  <h2><span class="badge new">Confirmed</span> 1. Login v2 — Google SSO + first-time profile</h2>
-  <p class="subtitle">Google OAuth restricted to <code>@bekindlabs.com</code>. First-time users complete a lightweight profile after Google returns their session.</p>
+<div class="section glass">
+  <h2><span class="badge confirmed">Confirmed</span> 1. Login — Google SSO only (no user profile setup)</h2>
+  <p class="subtitle">Single-button Google sign-in. If admin hasn't assigned a role yet, the user hits the locked screen.</p>
 
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
     <div>
-      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 1 — Sign in with Google (#200029769)</p>
-      <div class="login-card">
+      <p class="note-eyebrow">Sign in with Google (#200029769)</p>
+      <div class="login-card glass-strong">
         <h3>Sign in to Be-one</h3>
         <p class="sub">Use your Bekind Labs Google account.</p>
-        <button class="btn-primary" style="background: var(--surface); color: var(--text-primary); border: 1px solid var(--hairline); display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <button class="btn-google">
           <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24c0-1.5-.1-2.9-.4-4.3H24v8.1h11.8c-.5 2.7-2 5-4.3 6.5v5.4h7C42.6 36 45 30.5 45 24z"/><path fill="#34A853" d="M24 46c5.8 0 10.6-1.9 14.2-5.2l-7-5.4c-1.9 1.3-4.4 2.1-7.1 2.1-5.5 0-10.1-3.7-11.8-8.7H5v5.5C8.6 41.1 15.7 46 24 46z"/><path fill="#FBBC05" d="M12.2 28.8c-.4-1.3-.7-2.6-.7-4s.3-2.7.7-4V15.3H5C3.5 18.2 2.5 21 2.5 24s1 5.8 2.5 8.7l7.2-3.9z"/><path fill="#EA4335" d="M24 10.4c3.1 0 5.9 1.1 8.1 3.1l6.1-6.1C34.6 3.7 29.8 2 24 2 15.7 2 8.6 6.9 5 14.3l7.2 5.5c1.7-5 6.3-8.7 11.8-8.7z"/></svg>
           Sign in with Google
         </button>
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 12px; text-align: center;">Only <code>@bekindlabs.com</code> accounts are allowed.</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 14px; text-align: center;">Only <code>@bekindlabs.com</code> accounts.</p>
       </div>
-      <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Rejection message on wrong domain: "Only Bekind Labs accounts are allowed."</p>
     </div>
     <div>
-      <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Step 2 — First-time profile (#200029770)</p>
-      <div class="login-card">
-        <h3>Welcome to Be-one</h3>
-        <p class="sub">Quick setup — you'll only see this once.</p>
-        <div class="field">
-          <label>Display name <span style="color: var(--text-muted); font-weight: 400;">(from Google)</span></label>
-          <input type="text" value="Hiroshi Tanaka">
-        </div>
-        <div class="field">
-          <label>Role</label>
-          <select>
-            <option>Individual Contributor (IC)</option>
-            <option selected>Executive (includes Team Lead)</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Reports to</label>
-          <select>
-            <option value="">— No manager (top of org) —</option>
-            <option>Alice Chen · Exec</option>
-            <option>Bob Kim · Exec</option>
-          </select>
-        </div>
-        <button class="btn-primary">Continue</button>
+      <p class="note-eyebrow">Locked-out state (new user, no role yet)</p>
+      <div class="locked-screen glass-strong" style="border-radius: var(--radius-card);">
+        <div class="locked-icon">🔒</div>
+        <h3>Awaiting profile assignment</h3>
+        <p>You're signed in as <b>alice@bekindlabs.com</b>.</p>
+        <p>An Exec on your team needs to assign your role and manager before you can use Be-one.</p>
+        <p style="margin-top: 20px; font-size: 12px; color: var(--text-muted);">This page auto-refreshes when access is granted.</p>
       </div>
     </div>
   </div>
 
   <div class="decision-note">
     <b>Confirmed decisions:</b>
-    <ul style="margin: 8px 0 0 20px;">
-      <li>✅ Two roles: <b>IC</b> and <b>Exec</b> (Team Lead = Exec, same view + authority)</li>
-      <li>✅ Domain-gated Google SSO for <code>@bekindlabs.com</code> — magic-link flow deleted</li>
-      <li>✅ <code>reports_to</code> FK column captured at first-login (nullable — top of org has no manager)</li>
-      <li>Display name prefilled from <code>session.user.user_metadata.full_name</code>; user can edit before saving</li>
+    <ul>
+      <li>✅ Google SSO restricted to <code>@bekindlabs.com</code> — magic-link deleted</li>
+      <li>✅ <b>No user-facing profile capture</b> — display_name comes from Google metadata automatically</li>
+      <li>✅ Unassigned users see the locked screen — no read-only fallback, cleanest gate</li>
+      <li>✅ Admin flow lives in a separate Users management screen (see §7 below)</li>
     </ul>
-    <b>Stories:</b> #200029768 (schema), #200029769 (Google SSO), #200029770 (profile capture)
+    <b>Stories:</b> #200029768 (schema), #200029769 (Google SSO) — <b>#200029770 restructured to admin-facing (see §7)</b>
   </div>
 </div>
 
 <!-- =========================================== -->
 <!-- SATOSHI - MAP -->
 <!-- =========================================== -->
-<div class="section">
+<div class="section glass">
   <h2><span class="badge ic">IC</span> 2. Satoshi's OKR Map view</h2>
-  <p class="subtitle">Same carousel as today, but the "who owns" affordance foregrounds Satoshi's contributions.</p>
+  <p class="subtitle">Same carousel as today — glassmorphic reskin. Check-in / History primary on his KRs.</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -363,7 +538,7 @@ body {
     <div class="legend-item"><span class="legend-line dashed"></span> Objective-level</div>
   </div>
 
-  <div class="okr-card">
+  <div class="okr-card glass-strong">
     <div class="kicker">Company Objective · 2 of 4</div>
     <h3 class="card-title"><span class="status-dot on"></span>Validate product–market fit with early adopters</h3>
     <div class="kr-row">
@@ -405,22 +580,16 @@ body {
   </div>
 
   <div class="decision-note">
-    <b>What's IC-specific here?</b>
-    <ul style="margin: 8px 0 0 20px;">
-      <li>Satoshi's own avatar shown on KRs he contributes to (already implied by linked individual objectives)</li>
-      <li>Check in / History affordances on <b>every KR</b> (requires #200029523 chore + #200029526 feature currently queued for Chip)</li>
-      <li>No AI summary block on Map view for IC — that lives in History panel per today's #200029544</li>
-      <li>Legend row up top (Dale's #200029034 currently in flight)</li>
-    </ul>
+    <b>IC lens:</b> Check in + History on <b>every</b> KR (unblocked by Chip's queued #200029526). AI summary lives in History panel, not on card.
   </div>
 </div>
 
 <!-- =========================================== -->
 <!-- SATOSHI - MY THREAD -->
 <!-- =========================================== -->
-<div class="section">
+<div class="section glass">
   <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread</h2>
-  <p class="subtitle">Focused on his own objectives + upward alignment. This is where an IC lives day-to-day.</p>
+  <p class="subtitle">His own objectives + upward alignment. Context field is prominent both on the row and in the add/edit dialog.</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -441,8 +610,8 @@ body {
   <div style="max-width: 640px; margin: 0 auto;">
     <div class="ind-obj">
       <div class="ind-obj-title">Ship the AI-summary display end-to-end</div>
-      <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; padding: 6px 10px; background: var(--panel); border-radius: 6px; border-left: 2px solid var(--coral-500);"><b>Context:</b> The AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path generation so Hiroshi always sees a fresh cached summary.</div>
-      <div class="ind-obj-link" style="margin-top: 6px;">Contributes to <b>Validate product–market fit</b><span class="solid"></span>Direct KR: <i>NPS score from early adopter interviews</i></div>
+      <div class="context-inline"><b>Context:</b> AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path so Hiroshi always sees a fresh cached summary.</div>
+      <div class="ind-obj-link" style="margin-top: 8px;">Contributes to <b>Validate product–market fit</b><span class="solid"></span>Direct KR: <i>NPS score</i></div>
     </div>
     <div class="ind-obj">
       <div class="ind-obj-title">Enhance the SRE support operation</div>
@@ -456,16 +625,16 @@ body {
   </div>
 
   <div style="max-width: 640px; margin: 32px auto 0;">
-    <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Add / edit dialog with Context field (#200029772)</p>
-    <div class="login-card" style="max-width: none;">
-      <h3>Add my objective</h3>
+    <p class="note-eyebrow">Add / edit dialog with Context field (#200029772)</p>
+    <div class="glass-strong" style="padding: 28px;">
+      <h3 style="font-family: var(--font-display); font-size: 20px; margin: 0 0 16px;">Add my objective</h3>
       <div class="field">
         <label>Title</label>
         <input type="text" value="Ship the AI-summary display end-to-end">
       </div>
       <div class="field">
         <label>Context (optional)</label>
-        <textarea rows="3" style="width: 100%; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 8px; font-family: var(--font-sans); font-size: 14px; resize: vertical;">The AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path generation.</textarea>
+        <textarea rows="3">AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path generation.</textarea>
       </div>
       <div class="field">
         <label>Link to company objective</label>
@@ -479,23 +648,16 @@ body {
   </div>
 
   <div class="decision-note">
-    <b>Confirmed decisions:</b>
-    <ul style="margin: 8px 0 0 20px;">
-      <li>✅ New <b>Context</b> textarea on OkrDialog — reuses the existing <code>individual_objectives.description</code> column (no schema change)</li>
-      <li>✅ Context renders inline on the My Thread row (short) or expandable (long)</li>
-      <li>Each row's upward link uses Dale's legend language: solid = direct KR, dashed = objective-level (shipped)</li>
-      <li>Check-ins live per-KR after #200029526 lands (currently queued for Chip)</li>
-    </ul>
-    <b>Stories:</b> #200029772 (Context input), #200029526 (KR check-ins — currently queued)
+    <b>Confirmed:</b> Context uses existing <code>individual_objectives.description</code> column — no schema change. Renders inline on the row (short) or expandable (long). <b>Story:</b> #200029772
   </div>
 </div>
 
 <!-- =========================================== -->
 <!-- HIROSHI - MAP -->
 <!-- =========================================== -->
-<div class="section">
+<div class="section glass">
   <h2><span class="badge exec">Exec</span> 4. Hiroshi's OKR Map view</h2>
-  <p class="subtitle">Same underlying data, but Exec-shaped hierarchy: alignment-health strip first, AI summary promoted onto the card, all reports' avatars visible on KRs.</p>
+  <p class="subtitle">Alignment-health strip on top. AI summary is pre-generated by Satoshi's write-path (not generated on Hiroshi's view).</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -504,7 +666,7 @@ body {
     </div>
     <div class="viewer-chip">
       <div class="avatar" style="background: var(--ink-900);">HT</div>
-      <span>Hiroshi Tanaka · CEO</span>
+      <span>Hiroshi Tanaka · Exec</span>
     </div>
   </div>
 
@@ -517,7 +679,7 @@ body {
     <div class="health-stat"><div class="num on">2</div><div class="lbl">On track</div></div>
     <div class="health-stat"><div class="num at">1</div><div class="lbl">At risk</div></div>
     <div class="health-stat"><div class="num be">1</div><div class="lbl">Behind</div></div>
-    <div class="health-stat"><div class="num">8</div><div class="lbl">Contributors linked</div></div>
+    <div class="health-stat"><div class="num">8</div><div class="lbl">Contributors</div></div>
   </div>
 
   <div class="legend">
@@ -525,7 +687,7 @@ body {
     <div class="legend-item"><span class="legend-line dashed"></span> Objective-level</div>
   </div>
 
-  <div class="okr-card">
+  <div class="okr-card glass-strong">
     <div class="kicker">Company Objective · 2 of 4</div>
     <h3 class="card-title"><span class="status-dot on"></span>Validate product–market fit with early adopters</h3>
 
@@ -561,23 +723,17 @@ body {
   </div>
 
   <div class="decision-note">
-    <b>Confirmed decisions:</b>
-    <ul style="margin: 8px 0 0 20px;">
-      <li>✅ <b>Alignment health strip</b> at the top of Map view — 4 tiles, role-gated to Exec only</li>
-      <li>✅ <b>AI summary is pre-generated</b> (owned by Satoshi's KR context, written on his check-in save, cached in <code>kr_summaries</code>) — Hiroshi reads instantly from cache, no Anthropic call on his view</li>
-      <li>✅ <b>Ownership-gated KR actions</b>: Hiroshi sees "View history" on Satoshi's KRs (no Check-in button), but full Check-in + Edit on KRs he owns himself</li>
-      <li>All contributors' avatars stack on each KR — Exec needs to see who's on the hook</li>
-    </ul>
-    <b>Stories:</b> #200029776 (health strip), #200029773 + #200029774 + #200029775 (AI summary inversion chain), #200029778 (ownership gating)
+    <b>Exec lens:</b> Health strip at top · pre-generated AI summary on the card · ownership-gated actions (only "View history" on others' KRs; Check-in only on own KRs) · avatars stack shows who's on the hook.
+    <br><b>Stories:</b> #200029776 (health strip), #200029773–#200029775 (AI summary inversion), #200029778 (ownership gating)
   </div>
 </div>
 
 <!-- =========================================== -->
 <!-- HIROSHI - MY THREAD -->
 <!-- =========================================== -->
-<div class="section">
+<div class="section glass">
   <h2><span class="badge exec">Exec</span> 5. Hiroshi's My Thread — My Own Goals + Team Overview</h2>
-  <p class="subtitle">Two sections stacked. Execs check in on their own goals too, so "My own goals" sits at the top with full add/edit/check-in affordances. Team Overview below surfaces alignment for direct reports (resolved via <code>reports_to</code>).</p>
+  <p class="subtitle">Two sections. Personal goals first (Execs check in on their own KRs too), then a grid of direct reports resolved via <code>reports_to</code>.</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -586,7 +742,7 @@ body {
     </div>
     <div class="viewer-chip">
       <div class="avatar" style="background: var(--ink-900);">HT</div>
-      <span>Hiroshi Tanaka · CEO</span>
+      <span>Hiroshi Tanaka · Exec</span>
     </div>
   </div>
 
@@ -595,12 +751,12 @@ body {
     <button class="active">My thread</button>
   </div>
 
-  <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">My own goals</p>
-  <div style="max-width: 640px; margin: 0 0 24px;">
+  <p class="note-eyebrow">My own goals</p>
+  <div style="max-width: 640px; margin: 0 0 28px;">
     <div class="ind-obj">
       <div class="ind-obj-title">Drive alignment cadence across leadership</div>
-      <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; padding: 6px 10px; background: var(--panel); border-radius: 6px; border-left: 2px solid var(--coral-500);"><b>Context:</b> Board asked for a weekly rollup by Q4 — need to make sure exec team is checking in weekly on their own goals, not just their reports'.</div>
-      <div class="ind-obj-link" style="margin-top: 6px;">Contributes to <b>Deliver a usable end-to-end OKR cycle</b><span class="solid"></span>Direct KR: <i>Weekly check-in participation ≥ 90%</i></div>
+      <div class="context-inline"><b>Context:</b> Board asked for a weekly rollup by Q4 — need exec team checking in weekly on their own goals, not just their reports'.</div>
+      <div class="ind-obj-link" style="margin-top: 8px;">Contributes to <b>Deliver a usable end-to-end OKR cycle</b><span class="solid"></span>Direct KR: <i>Weekly check-in participation ≥ 90%</i></div>
     </div>
     <div class="ind-obj">
       <div class="ind-obj-title">Publish the FY roadmap by end of Q3</div>
@@ -609,7 +765,7 @@ body {
     <div class="add-obj">+ Add my objective</div>
   </div>
 
-  <p style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px;">Team overview — direct reports (via <code>reports_to</code>)</p>
+  <p class="note-eyebrow">Team overview — direct reports (via <code>reports_to</code>)</p>
   <div class="team-grid">
     <div class="report-card">
       <div class="report-header">
@@ -657,123 +813,161 @@ body {
   </div>
 
   <div class="decision-note">
-    <b>Confirmed decisions:</b>
-    <ul style="margin: 8px 0 0 20px;">
-      <li>✅ <b>My own goals</b> above Team Overview — Execs check in on their own KRs (same affordances as IC My Thread)</li>
-      <li>✅ <b>Direct reports resolved via <code>reports_to</code> FK</b> (not derived from company-objective ownership) — added to user_profiles in #200029768</li>
-      <li>Clicking a report card drills into their My Thread as a read-only view (Exec cannot check in on reports' KRs — enforced by ownership gate in #200029778)</li>
-      <li>If an Exec has no direct reports, only "My own goals" renders (Team Overview section hidden or empty-state note)</li>
-    </ul>
-    <b>Stories:</b> #200029768 (reports_to column), #200029777 (My Thread layout), #200029778 (ownership gating enforces read-only drill-in)
+    <b>Confirmed:</b> My own goals above Team Overview · reports_to FK-resolved · read-only drill-in on a report card (Exec can't check in on reports' KRs per #200029778).
+    <br><b>Stories:</b> #200029768 (reports_to), #200029777 (layout), #200029778 (ownership gate)
   </div>
 </div>
 
 <!-- =========================================== -->
-<!-- STORY IMPLICATIONS -->
+<!-- NEW: ADMIN USERS MANAGEMENT -->
 <!-- =========================================== -->
-<div class="section">
-  <h2><span class="badge new">Roadmap</span> 6. Story implications — filed in Tracker Boot</h2>
-  <p class="subtitle">All 10 stories filed and estimated. Two Chores, eight Features, ~17 pts of Feature work total.</p>
+<div class="section glass">
+  <h2><span class="badge admin">Admin</span> 6. Admin — Users management (any Exec can access)</h2>
+  <p class="subtitle">A new screen behind a nav item visible only when <code>viewer.role === 'exec'</code>. Lists all users; admin assigns role + reports_to. This replaces the user-facing profile setup — no self-service.</p>
 
-  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+  <div class="appbar">
+    <div class="appbar-left">
+      <span class="brand">be-one</span>
+      <span class="quarter-pill">Q3 2026 ▾</span>
+    </div>
+    <div class="viewer-chip">
+      <div class="avatar" style="background: var(--ink-900);">HT</div>
+      <span>Hiroshi Tanaka · Exec</span>
+    </div>
+  </div>
+
+  <div class="toggle">
+    <button>OKR map</button>
+    <button>My thread</button>
+    <button class="active">Users</button>
+  </div>
+
+  <p class="note-eyebrow">All signed-up users (5)</p>
+  <table class="users-table">
     <thead>
-      <tr style="background: var(--panel); text-align: left;">
-        <th style="padding: 8px 12px; border-radius: 6px 0 0 6px;">TB ID</th>
-        <th style="padding: 8px 12px;">Story</th>
-        <th style="padding: 8px 12px; text-align: center;">Type</th>
-        <th style="padding: 8px 12px; text-align: center;">Pts</th>
-        <th style="padding: 8px 12px; border-radius: 0 6px 6px 0;">Depends on</th>
+      <tr>
+        <th>Name (from Google)</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Reports to</th>
+        <th style="text-align:right;">Actions</th>
       </tr>
     </thead>
     <tbody>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029768</td>
-        <td style="padding: 10px 12px;">Create <code>user_profiles</code> table with role + <code>reports_to</code> columns, plus auto-insert trigger on auth sign-up</td>
-        <td style="padding: 10px 12px; text-align: center;">Chore</td>
-        <td style="padding: 10px 12px; text-align: center;">—</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">none</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029769</td>
-        <td style="padding: 10px 12px;">Sign in with Google, restricted to <code>@bekindlabs.com</code> (replaces magic-link)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029768</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029770</td>
-        <td style="padding: 10px 12px;">First-login profile capture (display_name, role, reports_to)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029768, #200029769</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029771</td>
-        <td style="padding: 10px 12px;">Session-driven viewer (replaces hard-coded "Satoshi Kimura")</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029768–770</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029772</td>
-        <td style="padding: 10px 12px;">Context input on individual OKR add/edit (uses existing <code>description</code> column)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">1</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">independent</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline); background: rgba(242,107,91,0.04);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029773</td>
-        <td style="padding: 10px 12px;">Extend <code>kr_summaries</code> schema with <code>key_result_id</code> FK</td>
-        <td style="padding: 10px 12px; text-align: center;">Chore</td>
-        <td style="padding: 10px 12px; text-align: center;">—</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029523 ✅</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline); background: rgba(242,107,91,0.04);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029774</td>
-        <td style="padding: 10px 12px;">AI summary generated on Satoshi's check-in save (write-path)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029773, #200029526</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline); background: rgba(242,107,91,0.04);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029775</td>
-        <td style="padding: 10px 12px;"><code>useKrSummary</code> reads from cache only (completes the inversion)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">1</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029774</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029776</td>
-        <td style="padding: 10px 12px;">Alignment-health strip on Exec Map view (4 tiles, role-gated)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029770, #200029771</td>
-      </tr>
-      <tr style="border-bottom: 1px solid var(--hairline);">
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029777</td>
-        <td style="padding: 10px 12px;">Exec My Thread — Personal Goals + Team Overview</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">3</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029770, #200029771</td>
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar small" style="background: var(--coral-500);">HT</div>Hiroshi Tanaka</div></td>
+        <td>hiroshi@bekindlabs.com</td>
+        <td><span class="pill exec">Exec</span></td>
+        <td style="color: var(--text-muted);">— (top of org)</td>
+        <td style="text-align:right;"><button class="kr-action">Edit</button></td>
       </tr>
       <tr>
-        <td style="padding: 10px 12px; font-family: var(--font-display); font-weight: 700;">#200029778</td>
-        <td style="padding: 10px 12px;">Ownership-gated KR actions (Check-in only on own KRs)</td>
-        <td style="padding: 10px 12px; text-align: center;">Feature</td>
-        <td style="padding: 10px 12px; text-align: center;">2</td>
-        <td style="padding: 10px 12px; color: var(--text-secondary);">#200029770, #200029771, #200029526</td>
+        <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar small" style="background: var(--coral-500);">SK</div>Satoshi Kimura</div></td>
+        <td>satoshi@bekindlabs.com</td>
+        <td><span class="pill ic">IC</span></td>
+        <td>Hiroshi Tanaka</td>
+        <td style="text-align:right;"><button class="kr-action">Edit</button></td>
       </tr>
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar small" style="background: var(--ontrack);">RK</div>Ryo Katayama</div></td>
+        <td>ryo@bekindlabs.com</td>
+        <td><span class="pill ic">IC</span></td>
+        <td>Hiroshi Tanaka</td>
+        <td style="text-align:right;"><button class="kr-action">Edit</button></td>
+      </tr>
+      <tr style="background: rgba(255, 251, 235, 0.7);">
+        <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar small" style="background: var(--text-muted);">AC</div>Alice Chen</div></td>
+        <td>alice@bekindlabs.com</td>
+        <td>
+          <select class="inline-select">
+            <option selected>— Pending —</option>
+            <option>IC</option>
+            <option>Exec</option>
+          </select>
+        </td>
+        <td>
+          <select class="inline-select">
+            <option selected>— None —</option>
+            <option>Hiroshi Tanaka</option>
+          </select>
+        </td>
+        <td style="text-align:right;"><button class="kr-action primary">Assign</button></td>
+      </tr>
+      <tr style="background: rgba(255, 251, 235, 0.7);">
+        <td><div style="display:flex;align-items:center;gap:8px;"><div class="avatar small" style="background: var(--text-muted);">BK</div>Bob Kim</div></td>
+        <td>bob@bekindlabs.com</td>
+        <td>
+          <select class="inline-select">
+            <option selected>— Pending —</option>
+            <option>IC</option>
+            <option>Exec</option>
+          </select>
+        </td>
+        <td>
+          <select class="inline-select">
+            <option selected>— None —</option>
+            <option>Hiroshi Tanaka</option>
+          </select>
+        </td>
+        <td style="text-align:right;"><button class="kr-action primary">Assign</button></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;"><i>Pending rows highlighted amber — Alice and Bob currently see the locked-out screen (§1) until an Exec assigns their role here.</i></p>
+
+  <div class="decision-note">
+    <b>Confirmed decisions:</b>
+    <ul>
+      <li>✅ Admin gate: <b>any user with <code>role = 'exec'</code></b> can access this screen — no separate "admin" role/flag</li>
+      <li>✅ Display name comes from Google metadata — <b>read-only in this admin table</b> (col 1)</li>
+      <li>✅ Editable fields: <b>Role</b> (IC / Exec dropdown) + <b>Reports to</b> (select from user_profiles list)</li>
+      <li>✅ Pending users highlighted; assigning is a single "Assign" click after picking role + reports_to</li>
+      <li>Optional follow-up: bulk-assign, invite flow (send email), deactivate — all deferred</li>
+    </ul>
+    <b>Story:</b> #200029770 needs restructuring — see roadmap below.
+  </div>
+</div>
+
+<!-- =========================================== -->
+<!-- ROADMAP -->
+<!-- =========================================== -->
+<div class="section glass">
+  <h2><span class="badge new">Roadmap</span> 7. Story implications — TB filed</h2>
+  <p class="subtitle">Highlighted row = needs rewrite based on today's admin decision.</p>
+
+  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+    <thead>
+      <tr style="text-align: left; background: rgba(255,255,255,0.55); backdrop-filter: blur(10px);">
+        <th style="padding: 10px 14px; border-radius: 8px 0 0 8px;">TB ID</th>
+        <th style="padding: 10px 14px;">Story</th>
+        <th style="padding: 10px 14px; text-align: center;">Type</th>
+        <th style="padding: 10px 14px; text-align: center;">Pts</th>
+        <th style="padding: 10px 14px; border-radius: 0 8px 8px 0;">Depends on</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029768</td><td style="padding: 10px 14px;">Create <code>user_profiles</code> table with role + <code>reports_to</code> + auto-insert trigger</td><td style="padding: 10px 14px; text-align: center;">Chore</td><td style="padding: 10px 14px; text-align: center;">—</td><td style="padding: 10px 14px; color: var(--text-secondary);">none</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029769</td><td style="padding: 10px 14px;">Google SSO restricted to <code>@bekindlabs.com</code></td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">2</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029768</td></tr>
+      <tr style="background: rgba(255, 226, 91, 0.25);"><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029770 ⚠️</td><td style="padding: 10px 14px;"><b>REWRITE NEEDED</b>: was "First-login profile capture" → becomes "As Exec (admin), I want to assign role and reports_to to signed-up users on the Users management screen, so that new users are unlocked from the pending state." Also spec the locked-out screen for unassigned users (or split into a small B' story). Est: <b>3 pts</b> (was 2 — bigger scope now).</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">3</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029768, #200029769</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029771</td><td style="padding: 10px 14px;">Session-driven viewer (replaces hard-coded "Satoshi Kimura")</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">2</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029768–770</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029772</td><td style="padding: 10px 14px;">Context input on individual OKR add/edit</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">1</td><td style="padding: 10px 14px; color: var(--text-secondary);">independent</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029773</td><td style="padding: 10px 14px;">Extend <code>kr_summaries</code> with <code>key_result_id</code> FK</td><td style="padding: 10px 14px; text-align: center;">Chore</td><td style="padding: 10px 14px; text-align: center;">—</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029523 ✅</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029774</td><td style="padding: 10px 14px;">AI summary generated on check-in save (write-path)</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">2</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029773, #200029526</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029775</td><td style="padding: 10px 14px;"><code>useKrSummary</code> reads from cache only</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">1</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029774</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029776</td><td style="padding: 10px 14px;">Alignment-health strip on Exec Map (4 tiles, role-gated)</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">2</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029770, #200029771</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029777</td><td style="padding: 10px 14px;">Exec My Thread — Personal Goals + Team Overview</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">3</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029770, #200029771</td></tr>
+      <tr><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700;">#200029778</td><td style="padding: 10px 14px;">Ownership-gated KR actions (own KRs only)</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">2</td><td style="padding: 10px 14px; color: var(--text-secondary);">#200029770, #200029771, #200029526</td></tr>
+      <tr style="background: rgba(147, 197, 253, 0.2);"><td style="padding: 10px 14px; font-family: var(--font-display); font-weight: 700; color: var(--text-muted);">NEW?</td><td style="padding: 10px 14px;"><b>Optional new story</b>: adopt ShaderGradient + Apple-glass design system across all screens (install <code>@shadergradient/react</code>, add background component to <code>App.jsx</code>, migrate existing surfaces to glass tokens). Est: <b>3 pts</b>. Say the word and I'll file it.</td><td style="padding: 10px 14px; text-align: center;">Feature</td><td style="padding: 10px 14px; text-align: center;">3</td><td style="padding: 10px 14px; color: var(--text-secondary);">independent, but pairs well with #200029769 LoginPage rewrite</td></tr>
     </tbody>
   </table>
 
   <div class="decision-note">
-    <b>Ordering rationale</b> (top-down = build order):
-    <ol style="margin: 8px 0 0 20px;">
-      <li><b>Foundation</b>: #200029768 → #200029769 → #200029770 → #200029771 (auth + viewer plumbing)</li>
-      <li><b>Independent slice</b>: #200029772 (Context input — no dependencies, can ship in parallel)</li>
-      <li><b>AI summary inversion chain</b> (highlighted rows): #200029773 → #200029774 → #200029775 — blocked by Chip's queued #200029526 (KR-level check-ins) landing first</li>
-      <li><b>Exec-shaped UX</b>: #200029776 (health strip) + #200029777 (My Thread) + #200029778 (ownership gate) — all need viewer context in place</li>
+    <b>What needs your OK:</b>
+    <ol>
+      <li>Rewrite <b>#200029770</b> to be admin-facing (bump estimate 2 → 3 due to added scope: admin gate + Users table UI + inline edit + locked-out screen)</li>
+      <li>File the <b>ShaderGradient + Glass design system</b> as a new Feature story? Or fold the visual reskin into the LoginPage rewrite in #200029769?</li>
     </ol>
+    Say "restructure 770 and file glass story" (or adjust) and I'll do it.
   </div>
 </div>
 
