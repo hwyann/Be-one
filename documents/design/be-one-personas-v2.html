@@ -296,6 +296,161 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
 }
 .kr-action.primary { color: var(--coral-600); border-color: rgba(242,107,91,0.6); background: rgba(255,241,239,0.6); }
 
+/* ========== Cascading tree lines for KR hierarchy ========== */
+.kr-tree {
+  position: relative;
+  padding-left: 32px;
+  margin-top: 12px;
+}
+.kr-tree::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  bottom: 32px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--coral-500) 0%, var(--coral-500) 100%);
+  opacity: 0.45;
+  border-radius: 2px;
+}
+.kr-tree .kr-row { position: relative; border-top-color: rgba(242,107,91,0.15); }
+.kr-tree .kr-row::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 26px;
+  width: 14px;
+  height: 2px;
+  background: var(--coral-500);
+  opacity: 0.45;
+  border-radius: 2px;
+}
+.kr-tree .kr-row:last-child::after {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 26px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,0);
+}
+
+/* ========== My Thread option preview cards ========== */
+.option-preview {
+  padding: 24px;
+  margin-top: 12px;
+}
+.option-preview h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  margin: 0 0 4px;
+  letter-spacing: -0.005em;
+}
+.option-preview .option-desc {
+  font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;
+}
+.option-label-kr, .option-label-obj {
+  font: 700 10px var(--font-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.option-label-kr {
+  background: rgba(19, 30, 40, 0.08);
+  color: var(--ink-900);
+  border: 1px solid rgba(19, 30, 40, 0.15);
+}
+.option-label-obj {
+  background: rgba(94, 110, 125, 0.08);
+  color: var(--text-secondary);
+  border: 1px dashed rgba(94, 110, 125, 0.4);
+}
+.option-column-title {
+  font: 700 11px var(--font-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.6);
+}
+.mini-ind {
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.mini-ind-title { font-family: var(--font-display); font-weight: 700; font-size: 13px; line-height: 1.3; }
+.mini-ind-sub { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+
+/* Option B — Grouped under company objective */
+.parent-group {
+  padding: 16px;
+  background: rgba(255,255,255,0.35);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+.parent-group .parent-title {
+  font: 700 10px var(--font-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--coral-600);
+  margin-bottom: 4px;
+}
+.parent-group .parent-obj-name {
+  font-family: var(--font-display); font-weight: 700; font-size: 15px;
+  margin-bottom: 12px; letter-spacing: -0.005em;
+}
+.kr-branch {
+  position: relative;
+  padding-left: 24px;
+  margin: 6px 0;
+}
+.kr-branch::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 12px;
+  width: 12px;
+  height: 2px;
+  background: var(--ink-900);
+  opacity: 0.6;
+  border-radius: 2px;
+}
+.kr-branch-name {
+  font-size: 12px; color: var(--text-secondary);
+  padding: 2px 0 6px;
+  border-left: 2px solid var(--ink-900);
+  padding-left: 12px;
+  margin-left: -18px;
+}
+.kr-branch .mini-ind {
+  border-left: 3px solid var(--ink-900);
+  background: rgba(255,255,255,0.7);
+}
+.obj-level-branch {
+  position: relative;
+  padding-left: 24px;
+  margin: 6px 0;
+}
+.obj-level-branch::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 12px;
+  width: 12px;
+  border-top: 2px dashed rgba(94, 110, 125, 0.7);
+}
+.obj-level-branch .mini-ind {
+  border-left: 3px dashed rgba(94, 110, 125, 0.6);
+}
+
 /* ========== Nav controls ========== */
 .nav-row {
   display: flex; align-items: center; justify-content: center;
@@ -463,6 +618,8 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <li><b>Alignment health strip</b> on Exec Map view (4 tiles, role-gated) (#200029776)</li>
     <li><b>Ownership-gated KR actions</b>: Check-in only on your own KRs; History on any (#200029778)</li>
     <li><b>Session-driven viewer</b> replaces hard-coded "Satoshi Kimura" (#200029771)</li>
+    <li><b>NEW — Only Exec (Hiroshi) can add/edit company OKRs</b>: ICs see company objectives + KRs as read-only. Add / Edit affordances hidden. Filed as a new story below.</li>
+    <li><b>NEW — Bundled personal-objective dialog</b>: Satoshi enters title + Context + one or more KRs + alignment link all in one dialog. No separate "add KR after save" step. Filed as a new story below.</li>
   </ul>
 </div>
 
@@ -541,34 +698,36 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
   <div class="okr-card glass-strong">
     <div class="kicker">Company Objective · 2 of 4</div>
     <h3 class="card-title"><span class="status-dot on"></span>Validate product–market fit with early adopters</h3>
-    <div class="kr-row">
-      <div class="kr-text">
-        NPS score from early adopter interviews
-        <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
+    <div class="kr-tree">
+      <div class="kr-row">
+        <div class="kr-text">
+          NPS score from early adopter interviews
+          <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
+        </div>
+        <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div></div>
+        <div class="kr-actions">
+          <button class="kr-action">Edit</button>
+          <button class="kr-action primary">Check in</button>
+          <button class="kr-action">History</button>
+        </div>
       </div>
-      <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div></div>
-      <div class="kr-actions">
-        <button class="kr-action">Edit</button>
-        <button class="kr-action primary">Check in</button>
-        <button class="kr-action">History</button>
+      <div class="kr-row">
+        <div class="kr-text">10 recorded design-partner interviews</div>
+        <div class="kr-owners"></div>
+        <div class="kr-actions">
+          <button class="kr-action">Edit</button>
+          <button class="kr-action primary">Check in</button>
+          <button class="kr-action">History</button>
+        </div>
       </div>
-    </div>
-    <div class="kr-row">
-      <div class="kr-text">10 recorded design-partner interviews</div>
-      <div class="kr-owners"></div>
-      <div class="kr-actions">
-        <button class="kr-action">Edit</button>
-        <button class="kr-action primary">Check in</button>
-        <button class="kr-action">History</button>
-      </div>
-    </div>
-    <div class="kr-row">
-      <div class="kr-text">3 signed pilots</div>
-      <div class="kr-owners"></div>
-      <div class="kr-actions">
-        <button class="kr-action">Edit</button>
-        <button class="kr-action primary">Check in</button>
-        <button class="kr-action">History</button>
+      <div class="kr-row">
+        <div class="kr-text">3 signed pilots</div>
+        <div class="kr-owners"></div>
+        <div class="kr-actions">
+          <button class="kr-action">Edit</button>
+          <button class="kr-action primary">Check in</button>
+          <button class="kr-action">History</button>
+        </div>
       </div>
     </div>
   </div>
@@ -580,16 +739,17 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
   </div>
 
   <div class="decision-note">
-    <b>IC lens:</b> Check in + History on <b>every</b> KR (unblocked by Chip's queued #200029526). AI summary lives in History panel, not on card.
+    <b>IC lens:</b> Check in + History on <b>every</b> KR he owns (#200029526 unblocks that). AI summary lives in History panel, not on card.
+    <br><b>Read-only company OKRs:</b> No "+ Add KR" / "Edit KR" affordances on company objectives or KRs — those are Exec-only (see new story below). Satoshi cannot rename a company KR or add one; only Hiroshi can.
   </div>
 </div>
 
 <!-- =========================================== -->
-<!-- SATOSHI - MY THREAD -->
+<!-- SATOSHI - MY THREAD (2 OPTIONS) -->
 <!-- =========================================== -->
 <div class="section glass">
-  <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread</h2>
-  <p class="subtitle">His own objectives + upward alignment. Context field is prominent both on the row and in the add/edit dialog.</p>
+  <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread — TWO layout options for review</h2>
+  <p class="subtitle">Both options make link type <b>visually distinguishable at a glance</b> — no need to read the small link text. Pick one below; the same choice applies to the "My own goals" section in Hiroshi's My Thread (§5).</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -607,27 +767,96 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <button class="active">My thread</button>
   </div>
 
-  <div style="max-width: 640px; margin: 0 auto;">
-    <div class="ind-obj">
-      <div class="ind-obj-title">Ship the AI-summary display end-to-end</div>
-      <div class="context-inline"><b>Context:</b> AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path so Hiroshi always sees a fresh cached summary.</div>
-      <div class="ind-obj-link" style="margin-top: 8px;">Contributes to <b>Validate product–market fit</b><span class="solid"></span>Direct KR: <i>NPS score</i></div>
+  <!-- ========== Option A ========== -->
+  <div class="option-preview glass-strong">
+    <h3>Option A — Two columns by link type</h3>
+    <p class="option-desc">Left column: objectives linked directly to a KR (solid pill).  Right column: objectives linked at the objective level (dashed pill).  Physical grouping = instant visual count of how many of each type you have.</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <div>
+        <div class="option-column-title"><span class="option-label-kr">Direct KR link</span> · 2</div>
+        <div class="mini-ind">
+          <div class="mini-ind-title">Ship the AI-summary display end-to-end</div>
+          <div class="mini-ind-sub">↳ <b>Validate product–market fit</b> · KR: NPS score</div>
+        </div>
+        <div class="mini-ind">
+          <div class="mini-ind-title">Update the AI-augmented cycle</div>
+          <div class="mini-ind-sub">↳ <b>Build lean documentation</b> · KR: Methodology guides in-product</div>
+        </div>
+      </div>
+      <div>
+        <div class="option-column-title"><span class="option-label-obj">Objective-level</span> · 1</div>
+        <div class="mini-ind">
+          <div class="mini-ind-title">Enhance the SRE support operation</div>
+          <div class="mini-ind-sub">↳ <b>Establish a reliable engineering foundation</b></div>
+        </div>
+      </div>
     </div>
-    <div class="ind-obj">
-      <div class="ind-obj-title">Enhance the SRE support operation</div>
-      <div class="ind-obj-link">Contributes to <b>Establish a reliable engineering foundation</b><span class="dashed"></span>Objective-level</div>
+    <p style="margin-top: 16px;"><span class="add-obj" style="margin: 0; display: inline-block; padding: 6px 14px; font-size: 12px;">+ Add my objective</span></p>
+
+    <div class="decision-note">
+      <b>Why Option A works:</b> categorical grouping — a KR-link is a stronger commitment (measurable target) than objective-level. Seeing them side by side makes the balance obvious. Scans well when you have 5–15 objectives.
+      <br><b>Weakness:</b> loses the connection to the parent company objective — you have to read the "↳" text.
     </div>
-    <div class="ind-obj">
-      <div class="ind-obj-title">Update the AI-augmented cycle</div>
-      <div class="ind-obj-link">Contributes to <b>Build lean documentation of the methodology layer</b><span class="solid"></span>Direct KR: <i>Methodology guides published in-product</i></div>
-    </div>
-    <div class="add-obj">+ Add my objective</div>
   </div>
 
-  <div style="max-width: 640px; margin: 32px auto 0;">
-    <p class="note-eyebrow">Add / edit dialog with Context field (#200029772)</p>
+  <!-- ========== Option B ========== -->
+  <div class="option-preview glass-strong" style="margin-top: 24px;">
+    <h3>Option B — Grouped under parent company objective, with cascading branches</h3>
+    <p class="option-desc">Each company objective is a container. KR-linked individuals nest under the specific KR (solid connector). Objective-level individuals attach with a dashed connector at the bottom of the group.  You see the whole tree in one glance.</p>
+
+    <div class="parent-group">
+      <div class="parent-title">Company Objective</div>
+      <div class="parent-obj-name"><span class="status-dot on"></span> Validate product–market fit with early adopters</div>
+      <div class="kr-branch">
+        <div class="kr-branch-name">KR · NPS score from early adopter interviews</div>
+        <div class="mini-ind">
+          <div class="mini-ind-title">Ship the AI-summary display end-to-end</div>
+          <div class="mini-ind-sub">Owner: Satoshi · Status: on track</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="parent-group">
+      <div class="parent-title">Company Objective</div>
+      <div class="parent-obj-name"><span class="status-dot at"></span> Build lean documentation of the methodology layer</div>
+      <div class="kr-branch">
+        <div class="kr-branch-name">KR · Methodology guides published in-product</div>
+        <div class="mini-ind">
+          <div class="mini-ind-title">Update the AI-augmented cycle</div>
+          <div class="mini-ind-sub">Owner: Satoshi · Status: on track</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="parent-group">
+      <div class="parent-title">Company Objective</div>
+      <div class="parent-obj-name"><span class="status-dot on"></span> Establish a reliable engineering foundation</div>
+      <div class="obj-level-branch">
+        <div class="mini-ind">
+          <div class="mini-ind-title">Enhance the SRE support operation</div>
+          <div class="mini-ind-sub"><i>Linked at objective level (no specific KR)</i></div>
+        </div>
+      </div>
+    </div>
+
+    <p><span class="add-obj" style="margin: 0; display: inline-block; padding: 6px 14px; font-size: 12px;">+ Add my objective</span></p>
+
+    <div class="decision-note">
+      <b>Why Option B works:</b> tree metaphor + connectors give instant answer to "how does my work ladder up?"  Solid vs dashed connector encodes link-type visually — no reading required.  Best when you want to communicate alignment story.
+      <br><b>Weakness:</b> more vertical scrolling if you have many parent objectives with only one individual under each.  Cascading connectors add design complexity to implement.
+    </div>
+  </div>
+
+  <!-- ========== Bundled Add dialog: objective + KRs + alignment in one flow ========== -->
+  <div style="max-width: 680px; margin: 32px auto 0;">
+    <p class="note-eyebrow">NEW — Bundled dialog: objective + KRs + alignment in one flow (#200029772 + new bundled-flow story)</p>
     <div class="glass-strong" style="padding: 28px;">
-      <h3 style="font-family: var(--font-display); font-size: 20px; margin: 0 0 16px;">Add my objective</h3>
+      <h3 style="font-family: var(--font-display); font-size: 20px; margin: 0 0 4px;">Add my objective</h3>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 20px;">Save your objective, its key results, and its alignment all at once.</p>
+
+      <!-- Section 1: Objective -->
+      <p class="note-eyebrow" style="margin-bottom: 8px;">Objective</p>
       <div class="field">
         <label>Title</label>
         <input type="text" value="Ship the AI-summary display end-to-end">
@@ -636,19 +865,68 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         <label>Context (optional)</label>
         <textarea rows="3">AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path generation.</textarea>
       </div>
+
+      <!-- Section 2: Personal KRs -->
+      <p class="note-eyebrow" style="margin: 20px 0 8px;">My key results</p>
+      <div style="padding: 14px; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.7); border-radius: 10px; margin-bottom: 10px;">
+        <div class="field" style="margin-bottom: 8px;">
+          <label>KR 1</label>
+          <input type="text" value="AI summary regenerates on every check-in save (write-path implemented)">
+        </div>
+        <div class="field" style="margin-bottom: 0;">
+          <label>Target note (optional)</label>
+          <input type="text" placeholder="e.g. ≥ 95% of check-ins trigger regen">
+        </div>
+      </div>
+      <div style="padding: 14px; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.7); border-radius: 10px; margin-bottom: 10px;">
+        <div class="field" style="margin-bottom: 8px;">
+          <label>KR 2</label>
+          <input type="text" value="useKrSummary hook rewritten as cache-only reader">
+        </div>
+        <div class="field" style="margin-bottom: 0;">
+          <label>Target note (optional)</label>
+          <input type="text" placeholder="">
+        </div>
+      </div>
+      <button class="kr-action" style="font-size: 12px; padding: 6px 14px; margin-bottom: 20px;">+ Add another KR</button>
+
+      <!-- Section 3: Alignment -->
+      <p class="note-eyebrow" style="margin: 4px 0 8px;">Alignment — link to a company objective</p>
       <div class="field">
-        <label>Link to company objective</label>
+        <label>Company objective</label>
         <select>
-          <option>Validate product–market fit — direct KR</option>
-          <option>Establish reliable engineering foundation — objective-level</option>
+          <option>Validate product–market fit with early adopters</option>
+          <option>Establish a reliable engineering foundation</option>
         </select>
       </div>
-      <button class="btn-primary">Save</button>
+      <div class="field">
+        <label>Link type</label>
+        <select>
+          <option>Direct KR — link to a specific company KR</option>
+          <option>Objective-level — supports the objective broadly</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Company KR (only when Direct KR selected)</label>
+        <select>
+          <option>NPS score from early adopter interviews</option>
+          <option>10 recorded design-partner interviews</option>
+          <option>3 signed pilots</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" style="margin-top: 12px;">Save objective, KRs & alignment</button>
     </div>
+    <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Single save persists the objective row + N key_results rows + the alignment fields.</p>
   </div>
 
-  <div class="decision-note">
-    <b>Confirmed:</b> Context uses existing <code>individual_objectives.description</code> column — no schema change. Renders inline on the row (short) or expandable (long). <b>Story:</b> #200029772
+  <div class="decision-note" style="border-left-color: var(--ontrack);">
+    <b>👉 PM decision needed:</b> pick <b>Option A</b> (columns by link type) or <b>Option B</b> (grouped under parent with cascading branches). Whichever wins:
+    <ul>
+      <li>Applies to Satoshi's My Thread AND Hiroshi's "My own goals" section in §5</li>
+      <li>Will need small revisions to story <b>#200029037</b> ("my thread view") — currently accepted but based on flat-list layout. Either amend that story or file a new "My Thread visual redesign" story.</li>
+      <li>Cascading connector CSS from Option B can be reused by the OKR map cards (already added — see §2 and §4).</li>
+    </ul>
   </div>
 </div>
 
@@ -682,10 +960,14 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <div class="health-stat"><div class="num">8</div><div class="lbl">Contributors</div></div>
   </div>
 
-  <div class="legend">
-    <div class="legend-item"><span class="legend-line solid"></span> Direct KR link</div>
-    <div class="legend-item"><span class="legend-line dashed"></span> Objective-level</div>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <div class="legend">
+      <div class="legend-item"><span class="legend-line solid"></span> Direct KR link</div>
+      <div class="legend-item"><span class="legend-line dashed"></span> Objective-level</div>
+    </div>
+    <button class="btn-primary" style="width: auto; padding: 8px 16px; margin: 0;">+ Add company objective</button>
   </div>
+  <p style="font-size: 11px; color: var(--text-muted); margin: -8px 0 12px; text-align: right;"><i>Exec-only affordance — hidden for ICs</i></p>
 
   <div class="okr-card glass-strong">
     <div class="kicker">Company Objective · 2 of 4</div>
@@ -696,23 +978,28 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
       Trajectory is on track — 3 of 5 pilot conversations converted this week. Recurring theme across check-ins: onboarding friction on day-2. Latest signal: Satoshi shipped the NPS instrument on Wednesday.
     </div>
 
-    <div class="kr-row">
-      <div class="kr-text">
-        NPS score from early adopter interviews
-        <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
+    <div class="kr-tree">
+      <div class="kr-row">
+        <div class="kr-text">
+          NPS score from early adopter interviews
+          <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
+        </div>
+        <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div><div class="avatar small" style="background: var(--atrisk); margin-left: -6px;">AM</div></div>
+        <div class="kr-actions"><button class="kr-action">Edit</button><button class="kr-action">View history</button></div>
       </div>
-      <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div><div class="avatar small" style="background: var(--atrisk); margin-left: -6px;">AM</div></div>
-      <div class="kr-actions"><button class="kr-action">View history</button></div>
-    </div>
-    <div class="kr-row">
-      <div class="kr-text">10 recorded design-partner interviews</div>
-      <div class="kr-owners"><div class="avatar small" style="background: var(--ontrack);">RK</div></div>
-      <div class="kr-actions"><button class="kr-action">View history</button></div>
-    </div>
-    <div class="kr-row">
-      <div class="kr-text">3 signed pilots</div>
-      <div class="kr-owners"><div class="avatar small" style="background: var(--behind);">JT</div></div>
-      <div class="kr-actions"><button class="kr-action">View history</button></div>
+      <div class="kr-row">
+        <div class="kr-text">10 recorded design-partner interviews</div>
+        <div class="kr-owners"><div class="avatar small" style="background: var(--ontrack);">RK</div></div>
+        <div class="kr-actions"><button class="kr-action">Edit</button><button class="kr-action">View history</button></div>
+      </div>
+      <div class="kr-row">
+        <div class="kr-text">3 signed pilots</div>
+        <div class="kr-owners"><div class="avatar small" style="background: var(--behind);">JT</div></div>
+        <div class="kr-actions"><button class="kr-action">Edit</button><button class="kr-action">View history</button></div>
+      </div>
+      <div class="kr-row" style="padding: 6px 0;">
+        <button class="kr-action" style="font-size: 11px; padding: 3px 12px; color: var(--coral-600); border-color: rgba(242,107,91,0.6);">+ Add KR</button>
+      </div>
     </div>
   </div>
 
