@@ -619,7 +619,8 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <li><b>Ownership-gated KR actions</b>: Check-in only on your own KRs; History on any (#200029778)</li>
     <li><b>Session-driven viewer</b> replaces hard-coded "Satoshi Kimura" (#200029771)</li>
     <li><b>NEW — Only Exec (Hiroshi) can add/edit company OKRs</b>: ICs see company objectives + KRs as read-only. Add / Edit affordances hidden. Filed as a new story below.</li>
-    <li><b>NEW — Bundled personal-objective dialog</b>: Satoshi enters title + Context + one or more KRs + alignment link all in one dialog. No separate "add KR after save" step. Filed as a new story below.</li>
+    <li><b>NEW — Bundled personal-objective dialog</b>: Satoshi enters title + Context + alignment link all in one dialog. <b>KRs are NOT in this dialog</b> — added separately from the My Thread view via the existing #200029259 per-row affordance. Filed as #200029788 (1 pt after scope trim on 2026-07-21).</li>
+    <li><b>NEW — Chosen: Option B for My Thread layout</b> — grouped under parent company objective with cascading solid/dashed branches. Option A (columns by link type) rejected. Applies to both Satoshi's My Thread AND Hiroshi's "My own goals" section.</li>
   </ul>
 </div>
 
@@ -748,8 +749,8 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
 <!-- SATOSHI - MY THREAD (2 OPTIONS) -->
 <!-- =========================================== -->
 <div class="section glass">
-  <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread — TWO layout options for review</h2>
-  <p class="subtitle">Both options make link type <b>visually distinguishable at a glance</b> — no need to read the small link text. Pick one below; the same choice applies to the "My own goals" section in Hiroshi's My Thread (§5).</p>
+  <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread — <span class="badge confirmed">Option B chosen</span></h2>
+  <p class="subtitle">Both options were reviewed. <b>Option B (grouped under parent with cascading branches) was chosen 2026-07-21</b>. Applies to Satoshi's My Thread AND Hiroshi's "My own goals" section (§5). Option A retained below for audit.</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -767,9 +768,9 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <button class="active">My thread</button>
   </div>
 
-  <!-- ========== Option A ========== -->
-  <div class="option-preview glass-strong">
-    <h3>Option A — Two columns by link type</h3>
+  <!-- ========== Option A — REJECTED ========== -->
+  <div class="option-preview glass-strong" style="opacity: 0.55;">
+    <h3>Option A — Two columns by link type <span style="font-size: 12px; color: var(--behind); font-weight: 400;">· ❌ Not chosen (retained for audit)</span></h3>
     <p class="option-desc">Left column: objectives linked directly to a KR (solid pill).  Right column: objectives linked at the objective level (dashed pill).  Physical grouping = instant visual count of how many of each type you have.</p>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -800,9 +801,9 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     </div>
   </div>
 
-  <!-- ========== Option B ========== -->
-  <div class="option-preview glass-strong" style="margin-top: 24px;">
-    <h3>Option B — Grouped under parent company objective, with cascading branches</h3>
+  <!-- ========== Option B — CHOSEN ========== -->
+  <div class="option-preview glass-strong" style="margin-top: 24px; border: 2px solid var(--ontrack);">
+    <h3>Option B — Grouped under parent company objective, with cascading branches <span style="font-size: 12px; color: var(--ontrack-text); font-weight: 700;">· ✅ CHOSEN</span></h3>
     <p class="option-desc">Each company objective is a container. KR-linked individuals nest under the specific KR (solid connector). Objective-level individuals attach with a dashed connector at the bottom of the group.  You see the whole tree in one glance.</p>
 
     <div class="parent-group">
@@ -848,12 +849,12 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     </div>
   </div>
 
-  <!-- ========== Bundled Add dialog: objective + KRs + alignment in one flow ========== -->
+  <!-- ========== Bundled Add dialog: objective + alignment (KRs excluded per 2026-07-21 decision) ========== -->
   <div style="max-width: 680px; margin: 32px auto 0;">
-    <p class="note-eyebrow">NEW — Bundled dialog: objective + KRs + alignment in one flow (#200029772 + new bundled-flow story)</p>
+    <p class="note-eyebrow">Bundled dialog: objective + alignment only — KRs added separately from My Thread (#200029772 + #200029788)</p>
     <div class="glass-strong" style="padding: 28px;">
       <h3 style="font-family: var(--font-display); font-size: 20px; margin: 0 0 4px;">Add my objective</h3>
-      <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 20px;">Save your objective, its key results, and its alignment all at once.</p>
+      <p style="font-size: 12px; color: var(--text-secondary); margin: 0 0 20px;">Save your objective and its upward alignment. Add key results afterwards from the My Thread view.</p>
 
       <!-- Section 1: Objective -->
       <p class="note-eyebrow" style="margin-bottom: 8px;">Objective</p>
@@ -866,32 +867,8 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         <textarea rows="3">AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path generation.</textarea>
       </div>
 
-      <!-- Section 2: Personal KRs -->
-      <p class="note-eyebrow" style="margin: 20px 0 8px;">My key results</p>
-      <div style="padding: 14px; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.7); border-radius: 10px; margin-bottom: 10px;">
-        <div class="field" style="margin-bottom: 8px;">
-          <label>KR 1</label>
-          <input type="text" value="AI summary regenerates on every check-in save (write-path implemented)">
-        </div>
-        <div class="field" style="margin-bottom: 0;">
-          <label>Target note (optional)</label>
-          <input type="text" placeholder="e.g. ≥ 95% of check-ins trigger regen">
-        </div>
-      </div>
-      <div style="padding: 14px; background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.7); border-radius: 10px; margin-bottom: 10px;">
-        <div class="field" style="margin-bottom: 8px;">
-          <label>KR 2</label>
-          <input type="text" value="useKrSummary hook rewritten as cache-only reader">
-        </div>
-        <div class="field" style="margin-bottom: 0;">
-          <label>Target note (optional)</label>
-          <input type="text" placeholder="">
-        </div>
-      </div>
-      <button class="kr-action" style="font-size: 12px; padding: 6px 14px; margin-bottom: 20px;">+ Add another KR</button>
-
-      <!-- Section 3: Alignment -->
-      <p class="note-eyebrow" style="margin: 4px 0 8px;">Alignment — link to a company objective</p>
+      <!-- Section 2: Alignment -->
+      <p class="note-eyebrow" style="margin: 20px 0 8px;">Alignment — link to a company objective</p>
       <div class="field">
         <label>Company objective</label>
         <select>
@@ -915,9 +892,9 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         </select>
       </div>
 
-      <button class="btn-primary" style="margin-top: 12px;">Save objective, KRs & alignment</button>
+      <button class="btn-primary" style="margin-top: 12px;">Save objective & alignment</button>
+      <p style="font-size: 11px; color: var(--text-muted); margin: 10px 0 0; text-align: center;">↳ After saving, add key results from the My Thread view (per #200029259).</p>
     </div>
-    <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">Single save persists the objective row + N key_results rows + the alignment fields.</p>
   </div>
 
   <div class="decision-note" style="border-left-color: var(--ontrack);">
