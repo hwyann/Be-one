@@ -546,6 +546,137 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
   text-align: center;
 }
 
+/* ========== Personal-objective-first card (My Thread v3, 2026-07-22) ========== */
+.pobj-card {
+  padding: 20px 22px;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(19, 30, 40, 0.08);
+  margin-bottom: 18px;
+}
+.pobj-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.pobj-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.005em;
+  color: var(--ink-900);
+}
+.pobj-context {
+  font-size: 13px; color: var(--text-secondary);
+  padding: 10px 12px;
+  background: rgba(255, 241, 239, 0.4);
+  border-left: 2px solid var(--coral-500);
+  border-radius: 6px;
+  margin: 8px 0 12px;
+  line-height: 1.5;
+}
+.pobj-section-label {
+  font: 700 10px var(--font-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 12px 0 8px;
+}
+.pobj-kr {
+  padding: 10px 0;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(255,255,255,0.7);
+}
+.pobj-kr:first-of-type { border-top: none; padding-top: 4px; }
+.pobj-kr-text {
+  flex: 1;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.pobj-kr-target {
+  font-size: 11px; color: var(--text-secondary); margin-top: 2px;
+}
+.pobj-kr-actions { display: flex; gap: 6px; align-items: center; }
+
+/* Upward alignment cascade — personal → company */
+.pobj-alignment {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(19, 30, 40, 0.08);
+  position: relative;
+}
+.pobj-alignment-arrow {
+  display: inline-block;
+  width: 18px; height: 18px;
+  margin-right: 8px;
+  vertical-align: middle;
+  color: var(--ink-900);
+  opacity: 0.7;
+}
+.pobj-alignment-line {
+  display: inline-block;
+  height: 0;
+  vertical-align: middle;
+  width: 26px;
+  margin: 0 6px;
+}
+.pobj-alignment-line.solid  { border-top: 2.5px solid var(--ink-900); }
+.pobj-alignment-line.dashed { border-top: 2px dashed var(--text-secondary); }
+.pobj-parent {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 4px;
+}
+.pobj-parent .parent-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink-900);
+  font-size: 13px;
+}
+.pobj-parent .parent-kr {
+  color: var(--text-primary);
+  font-style: italic;
+}
+.pobj-parent .contributes-label {
+  font: 700 10px var(--font-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--coral-600);
+}
+
+/* AI-summary popover for avatar-click (Map view) */
+.avatar-popover {
+  position: absolute; top: 34px; left: 0;
+  min-width: 320px; max-width: 380px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(19, 30, 40, 0.16);
+  z-index: 10;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.avatar-popover-title {
+  font: 700 10px var(--font-display);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--coral-600);
+  margin-bottom: 6px;
+}
+.avatar-popover-hint {
+  font-size: 10px; color: var(--text-muted);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(19, 30, 40, 0.06);
+}
+
 /* ========== Nav controls ========== */
 .nav-row {
   display: flex; align-items: center; justify-content: center;
@@ -715,7 +846,9 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <li><b>Session-driven viewer</b> replaces hard-coded "Satoshi Kimura" (#200029771)</li>
     <li><b>NEW — Only Exec (Hiroshi) can add/edit company OKRs</b>: ICs see company objectives + KRs as read-only. Add / Edit affordances hidden. Filed as a new story below.</li>
     <li><b>NEW — Bundled personal-objective dialog</b>: Satoshi enters title + Context + alignment link all in one dialog. <b>KRs are NOT in this dialog</b> — added separately from the My Thread view via the existing #200029259 per-row affordance. Filed as #200029788 (1 pt after scope trim on 2026-07-21).</li>
-    <li><b>NEW — Chosen: Option B for My Thread layout</b> — grouped under parent company objective with cascading solid/dashed branches. Option A (columns by link type) rejected. Applies to both Satoshi's My Thread AND Hiroshi's "My own goals" section.</li>
+    <li><b>NEW 2026-07-22 — Chosen: Option C for My Thread layout</b> — <b>personal objectives are the main sections</b> (personal-first workspace). Each section has Check-in / History / Edit affordances on its KRs. Linked company objective renders at the <b>end</b> of each section, cascading <b>upward</b> with solid/dashed connector. Options A and B (both parent-first) superseded. Applies to Satoshi's My Thread AND Hiroshi's "My own goals" section.</li>
+    <li><b>NEW 2026-07-22 — Map view becomes read-only</b>: no Check-in button on any KR row. Check-ins live exclusively in My Thread (on personal OKRs).</li>
+    <li><b>NEW 2026-07-22 — AI summary via avatar click</b>: the permanent summary block on Map cards is gone. Clicking a contributor's avatar reveals a popover with THAT person's summary for their linked individual objective. Same write-path generation (Satoshi's check-in save) — just a different trigger for display.</li>
   </ul>
 </div>
 
@@ -800,16 +933,18 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
           NPS score from early adopter interviews
           <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
         </div>
-        <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div></div>
+        <div class="kr-owners" style="position: relative;">
+          <div class="avatar small" style="background: var(--coral-500); cursor: pointer;" title="Click to see Satoshi's AI summary">SK</div>
+          <!-- Avatar-click popover shown open for demo -->
+          <div class="avatar-popover">
+            <div class="avatar-popover-title">Satoshi's contribution · AI summary</div>
+            Trajectory is on track — Ship AI-summary display is progressing steadily with the write-path fix landing this week. Recurring theme: cache invalidation edge cases. Latest signal: check-in count-based invalidation stabilized in v0.5.
+            <div class="avatar-popover-hint">Generated from Satoshi's check-ins on his linked individual objective. Cached in <code>kr_summaries</code>.</div>
+          </div>
+        </div>
         <div class="kr-actions">
-          <button class="kr-action primary">Check in</button>
           <div class="kebab-wrap">
             <button class="kebab-btn" aria-label="More actions">⋯</button>
-            <!-- Menu shown for demo — open state -->
-            <div class="kebab-menu">
-              <button class="kebab-menu-item">Edit</button>
-              <button class="kebab-menu-item">History</button>
-            </div>
           </div>
         </div>
       </div>
@@ -817,7 +952,6 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         <div class="kr-text">10 recorded design-partner interviews</div>
         <div class="kr-owners"></div>
         <div class="kr-actions">
-          <button class="kr-action primary">Check in</button>
           <div class="kebab-wrap">
             <button class="kebab-btn" aria-label="More actions">⋯</button>
           </div>
@@ -827,7 +961,6 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         <div class="kr-text">3 signed pilots</div>
         <div class="kr-owners"></div>
         <div class="kr-actions">
-          <button class="kr-action primary">Check in</button>
           <div class="kebab-wrap">
             <button class="kebab-btn" aria-label="More actions">⋯</button>
           </div>
@@ -843,9 +976,14 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
   </div>
 
   <div class="decision-note">
-    <b>IC lens:</b> Check in stays as a primary visible button on every KR he owns (#200029526 unblocks that). AI summary lives in History panel, not on card.
-    <br><b>Overflow menu (⋯):</b> Edit + History move into a kebab overflow menu — reduces per-row visual noise while keeping actions one tap away. Menu shown open on the top row for demo; other rows show it collapsed.
-    <br><b>Read-only company OKRs:</b> No "+ Add KR" / "Edit KR" affordances on company objectives or KRs for ICs — those are Exec-only (per #200029787). Satoshi cannot rename a company KR or add one; only Hiroshi can.
+    <b>IC lens (revised 2026-07-22):</b>
+    <ul>
+      <li><b>No Check-in on the Map view</b> — check-ins live in My Thread only (§3), on Satoshi's own personal objectives' KRs. The Map view is a <b>read-only lens</b> for company OKRs + alignment.</li>
+      <li><b>Click a member avatar</b> to reveal their <b>AI summary popover</b> — the summary is generated from THAT person's check-ins on their linked individual objective and cached in <code>kr_summaries</code>. Demo shows Satoshi's popover open on the top row.</li>
+      <li><b>Kebab (⋯)</b> houses History (available to everyone) and Edit (Exec-only per #200029787). ICs see only History in the menu.</li>
+      <li><b>No + Add KR</b> on company OKRs for ICs — Exec-only.</li>
+    </ul>
+    <b>Stories affected by this restructure:</b> #200029526 (KR check-in scope narrowed to My Thread), #200029544 & #200029774 & #200029775 (AI summary trigger becomes avatar click, no longer a permanent block).
   </div>
 </div>
 
@@ -853,8 +991,8 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
 <!-- SATOSHI - MY THREAD (2 OPTIONS) -->
 <!-- =========================================== -->
 <div class="section glass">
-  <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread — <span class="badge confirmed">Option B chosen</span></h2>
-  <p class="subtitle">Both options were reviewed. <b>Option B (grouped under parent with cascading branches) was chosen 2026-07-21</b>. Applies to Satoshi's My Thread AND Hiroshi's "My own goals" section (§5). Option A retained below for audit.</p>
+  <h2><span class="badge ic">IC</span> 3. Satoshi's My Thread — <span class="badge confirmed">Option C chosen (2026-07-22)</span></h2>
+  <p class="subtitle">Restructured 2026-07-22: <b>personal objectives are the main sections</b> (Satoshi's own OKRs = the roots), each with its own Check-in / History / Edit affordances. The linked company objective is shown at the <b>end</b> of each personal section with the cascading solid/dashed visual pointing <b>upward</b>. Options A (columns by link type) and B (parent-first cascade) below are retained for audit.</p>
 
   <div class="appbar">
     <div class="appbar-left">
@@ -872,9 +1010,140 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <button class="active">My thread</button>
   </div>
 
-  <!-- ========== Option A — REJECTED ========== -->
+  <!-- ========== Option C — CHOSEN 2026-07-22 (personal-first, cascade UP) ========== -->
+  <div class="option-preview glass-strong" style="border: 2px solid var(--ontrack); margin-bottom: 28px;">
+    <h3>Option C — Personal-objective-first sections, alignment cascades <b>UP</b> to company OKRs <span style="font-size: 12px; color: var(--ontrack-text); font-weight: 700;">· ✅ CHOSEN 2026-07-22</span></h3>
+    <p class="option-desc">Satoshi's own personal objectives are the main sections (his day-to-day work surface). Each section has Title + Context + KRs (with per-KR <b>Check-in / History / Edit</b> affordances) + <b>+ Add KR</b>. At the bottom of each section, a cascading connector points <b>up</b> to the linked company objective (solid = direct KR, dashed = objective-level). Same visual language as before, but the tree grows upward — reflecting that his contribution ladders up to leadership's goals.</p>
+
+    <!-- Personal Objective 1 — direct KR link -->
+    <div class="pobj-card">
+      <div class="pobj-header">
+        <div class="pobj-title">Ship the AI-summary display end-to-end</div>
+        <div class="kebab-wrap">
+          <button class="kebab-btn" aria-label="More actions">⋯</button>
+          <div class="kebab-menu">
+            <button class="kebab-menu-item">Edit objective</button>
+            <button class="kebab-menu-item">Delete</button>
+          </div>
+        </div>
+      </div>
+      <div class="pobj-context"><b>Context:</b> AI summary block landed in v0.4 but doesn't refresh on new check-ins. Goal is to invert to write-path so Hiroshi sees a fresh cached summary.</div>
+
+      <div class="pobj-section-label">My key results</div>
+      <div class="pobj-kr">
+        <div class="pobj-kr-text">
+          AI summary regenerates on every check-in save (write-path implemented)
+          <div class="pobj-kr-target">Target: ≥ 95% of check-ins trigger regen</div>
+        </div>
+        <div class="pobj-kr-actions">
+          <button class="kr-action primary">Check in</button>
+          <div class="kebab-wrap">
+            <button class="kebab-btn" aria-label="More actions">⋯</button>
+            <div class="kebab-menu">
+              <button class="kebab-menu-item">Edit KR</button>
+              <button class="kebab-menu-item">History</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pobj-kr">
+        <div class="pobj-kr-text">useKrSummary hook rewritten as cache-only reader</div>
+        <div class="pobj-kr-actions">
+          <button class="kr-action primary">Check in</button>
+          <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+        </div>
+      </div>
+      <button class="add-kr-inline">+ Add KR</button>
+
+      <!-- Upward alignment cascade -->
+      <div class="pobj-alignment">
+        <div class="pobj-parent">
+          <span class="contributes-label">Contributes upward</span>
+          <span class="pobj-alignment-line solid" title="Direct KR link"></span>
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="opacity:0.7;"><path d="M10 15V5m0 0l-4 4m4-4l4 4" stroke="var(--ink-900)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="parent-name">Validate product–market fit with early adopters</span>
+          <span style="color: var(--text-muted);">·</span>
+          <span class="parent-kr">KR: NPS score from early adopter interviews</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Objective 2 — direct KR link, different parent -->
+    <div class="pobj-card">
+      <div class="pobj-header">
+        <div class="pobj-title">Update the AI-augmented cycle</div>
+        <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+      </div>
+      <div class="pobj-section-label">My key results</div>
+      <div class="pobj-kr">
+        <div class="pobj-kr-text">Two rewritten sections published as in-product tooltips</div>
+        <div class="pobj-kr-actions">
+          <button class="kr-action primary">Check in</button>
+          <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+        </div>
+      </div>
+      <button class="add-kr-inline">+ Add KR</button>
+
+      <div class="pobj-alignment">
+        <div class="pobj-parent">
+          <span class="contributes-label">Contributes upward</span>
+          <span class="pobj-alignment-line solid"></span>
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="opacity:0.7;"><path d="M10 15V5m0 0l-4 4m4-4l4 4" stroke="var(--ink-900)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="parent-name">Build lean documentation of the methodology layer</span>
+          <span style="color: var(--text-muted);">·</span>
+          <span class="parent-kr">KR: Methodology guides published in-product</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Objective 3 — objective-level link (dashed) -->
+    <div class="pobj-card">
+      <div class="pobj-header">
+        <div class="pobj-title">Enhance the SRE support operation</div>
+        <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+      </div>
+      <div class="pobj-section-label">My key results</div>
+      <div class="pobj-kr">
+        <div class="pobj-kr-text">Weekly on-call rotation staffed at 100%</div>
+        <div class="pobj-kr-actions">
+          <button class="kr-action primary">Check in</button>
+          <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+        </div>
+      </div>
+      <button class="add-kr-inline">+ Add KR</button>
+
+      <div class="pobj-alignment">
+        <div class="pobj-parent">
+          <span class="contributes-label">Contributes upward</span>
+          <span class="pobj-alignment-line dashed"></span>
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="opacity:0.7;"><path d="M10 15V5m0 0l-4 4m4-4l4 4" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5 2"/></svg>
+          <span class="parent-name">Establish a reliable engineering foundation</span>
+          <span style="color: var(--text-muted);">·</span>
+          <span style="font-style: italic; color: var(--text-secondary);">objective-level (no specific KR)</span>
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align: center; margin-top: 16px;">
+      <span class="add-obj" style="margin: 0; display: inline-block; padding: 8px 18px; font-size: 13px;">+ Add my objective</span>
+    </p>
+
+    <div class="decision-note" style="border-left-color: var(--ontrack);">
+      <b>Why Option C works:</b>
+      <ul>
+        <li><b>Personal-first framing</b> — Satoshi's own OKRs are the roots of his workspace; his day-to-day work lives here (check-ins, edits, history).</li>
+        <li><b>Actions live where the work lives</b> — Check-in / History / Edit on the KR row, "+ Add KR" per section, Edit-objective in the section kebab. Nothing hidden behind the alignment cascade.</li>
+        <li><b>Alignment cascade upward</b> preserves the mental model — but now it's "here's what I'm working on, and here's what it ladders up to" (personal → company) rather than "here's the company OKR, and here's my slice of it" (company → personal).</li>
+        <li><b>Solid/dashed visual retained</b> — same link-type language as Options A/B (solid = direct KR, dashed = objective-level). No new learning cost.</li>
+      </ul>
+      <b>Trade-off:</b> loses the "grouped under parent" visual that helped Execs see "who's contributing to what". Compensated by <b>Hiroshi's Team Overview</b> (§5 second section) and the <b>Alignment health strip</b> (§4) which now do that job.
+      <br><b>Applies to:</b> Satoshi's My Thread AND Hiroshi's "My own goals" section in §5 (identical layout).
+    </div>
+  </div>
+
+  <!-- ========== Option A — REJECTED (retained for audit) ========== -->
   <div class="option-preview glass-strong" style="opacity: 0.55;">
-    <h3>Option A — Two columns by link type <span style="font-size: 12px; color: var(--behind); font-weight: 400;">· ❌ Not chosen (retained for audit)</span></h3>
+    <h3>Option A — Two columns by link type <span style="font-size: 12px; color: var(--behind); font-weight: 400;">· ❌ Superseded 2026-07-19</span></h3>
     <p class="option-desc">Left column: objectives linked directly to a KR (solid pill).  Right column: objectives linked at the objective level (dashed pill).  Physical grouping = instant visual count of how many of each type you have.</p>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -905,9 +1174,9 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     </div>
   </div>
 
-  <!-- ========== Option B — CHOSEN ========== -->
-  <div class="option-preview glass-strong" style="margin-top: 24px; border: 2px solid var(--ontrack);">
-    <h3>Option B — Grouped under parent company objective, with cascading branches <span style="font-size: 12px; color: var(--ontrack-text); font-weight: 700;">· ✅ CHOSEN</span></h3>
+  <!-- ========== Option B — SUPERSEDED (was chosen 2026-07-21, restructured 2026-07-22) ========== -->
+  <div class="option-preview glass-strong" style="margin-top: 24px; opacity: 0.55;">
+    <h3>Option B — Grouped under parent company objective, with cascading branches <span style="font-size: 12px; color: var(--behind); font-weight: 400;">· ⚠️ Superseded by Option C 2026-07-22 (personal-first restructure)</span></h3>
     <p class="option-desc">Each company objective is a container. KR-linked individuals nest under the specific KR (solid connector). Objective-level individuals attach with a dashed connector at the bottom of the group.  You see the whole tree in one glance.</p>
 
     <div class="parent-group">
@@ -1065,10 +1334,7 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <div class="kicker">Company Objective · 2 of 4</div>
     <h3 class="card-title"><span class="status-dot on"></span>Validate product–market fit with early adopters</h3>
 
-    <div class="ai-summary">
-      <div class="ai-summary-label">KR summary · pre-generated (last written by Satoshi's check-in, 2h ago)</div>
-      Trajectory is on track — 3 of 5 pilot conversations converted this week. Recurring theme across check-ins: onboarding friction on day-2. Latest signal: Satoshi shipped the NPS instrument on Wednesday.
-    </div>
+    <p style="font-size: 11px; color: var(--text-muted); margin: 4px 0 14px;"><i>💡 Click any contributor avatar below to reveal their AI progress summary. No permanent summary block on the card — it appears on-demand per contributor.</i></p>
 
     <div class="kr-tree">
       <div class="kr-row">
@@ -1076,11 +1342,20 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
           NPS score from early adopter interviews
           <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
         </div>
-        <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div><div class="avatar small" style="background: var(--atrisk); margin-left: -6px;">AM</div></div>
+        <div class="kr-owners" style="position: relative;">
+          <div class="avatar small" style="background: var(--coral-500); cursor: pointer;">SK</div>
+          <div class="avatar small" style="background: var(--atrisk); margin-left: -6px; cursor: pointer;">AM</div>
+          <!-- Popover shown open for Satoshi's avatar -->
+          <div class="avatar-popover">
+            <div class="avatar-popover-title">Satoshi's contribution · AI summary</div>
+            Trajectory is on track — 3 of 5 pilot conversations converted this week. Recurring theme across check-ins: onboarding friction on day-2. Latest signal: Satoshi shipped the NPS instrument on Wednesday.
+            <div class="avatar-popover-hint">From Satoshi's individual objective "Ship AI-summary display end-to-end". Pre-generated on his check-in save.</div>
+          </div>
+        </div>
         <div class="kr-actions">
           <div class="kebab-wrap">
             <button class="kebab-btn" aria-label="More actions">⋯</button>
-            <!-- Menu shown for demo — open state (Exec-only surface) -->
+            <!-- Menu shown for demo — open state (Exec view) -->
             <div class="kebab-menu">
               <button class="kebab-menu-item">Edit</button>
               <button class="kebab-menu-item">View history</button>
@@ -1119,8 +1394,15 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
   </div>
 
   <div class="decision-note">
-    <b>Exec lens:</b> Health strip at top · pre-generated AI summary on the card · ownership-gated actions (only "View history" on others' KRs; Check-in only on own KRs) · avatars stack shows who's on the hook.
-    <br><b>Stories:</b> #200029776 (health strip), #200029773–#200029775 (AI summary inversion), #200029778 (ownership gating)
+    <b>Exec lens (revised 2026-07-22):</b>
+    <ul>
+      <li>✅ <b>No Check-in on Map view</b> — check-ins live in My Thread only. Hiroshi's Map view is read-only for company OKRs + alignment aggregate.</li>
+      <li>✅ <b>AI summary via avatar click</b> — the permanent summary block on the card is gone. Click any contributor avatar to reveal their pre-generated summary popover.</li>
+      <li>✅ <b>Alignment health strip</b> at top (Exec-only, from #200029776).</li>
+      <li>✅ <b>Edit + View history in kebab (⋯)</b>. Edit is Exec-only per #200029787.</li>
+      <li>✅ <b>+ Add KR / + Add company objective</b> — Exec-only affordances for shaping company OKRs.</li>
+    </ul>
+    <b>Stories:</b> #200029776 (health strip), #200029773–#200029775 (AI summary write-path — trigger changes from card render → avatar click), #200029778 (ownership gating — Check-in moves to My Thread), #200029787 (Exec-only company OKR editing), <b>NEW: avatar-click AI summary popover story (to be filed).</b>
   </div>
 </div>
 
@@ -1147,39 +1429,75 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <button class="active">My thread</button>
   </div>
 
-  <p class="note-eyebrow">My own goals — same Option B layout as Satoshi's My Thread</p>
+  <p class="note-eyebrow">My own goals — same Option C layout as Satoshi's My Thread (personal-first, alignment cascades up)</p>
   <div style="margin: 0 0 28px;">
-    <div class="parent-group">
-      <div class="parent-title">Company Objective</div>
-      <div class="parent-obj-name"><span class="status-dot on"></span> Deliver a usable end-to-end OKR cycle</div>
-      <div class="kr-branch">
-        <div class="kr-branch-name">KR · Weekly check-in participation ≥ 90%</div>
-        <div class="mini-ind">
-          <div class="mini-ind-title">Drive alignment cadence across leadership</div>
-          <div class="mini-ind-sub">Owner: Hiroshi · Status: on track</div>
-          <div class="context-inline" style="margin-top: 8px;"><b>Context:</b> Board asked for a weekly rollup by Q4 — exec team must check in weekly on their own goals, not just their reports'.</div>
-          <div class="mini-kr-list">
-            <div class="mini-kr">Weekly leadership check-in ritual scheduled for Q3</div>
-            <div class="mini-kr">Participation dashboard shipped to Slack #leadership</div>
-          </div>
-          <button class="add-kr-inline">+ Add KR</button>
+
+    <div class="pobj-card">
+      <div class="pobj-header">
+        <div class="pobj-title">Drive alignment cadence across leadership</div>
+        <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+      </div>
+      <div class="pobj-context"><b>Context:</b> Board asked for a weekly rollup by Q4 — exec team must check in weekly on their own goals, not just their reports'.</div>
+
+      <div class="pobj-section-label">My key results</div>
+      <div class="pobj-kr">
+        <div class="pobj-kr-text">Weekly leadership check-in ritual scheduled for Q3</div>
+        <div class="pobj-kr-actions">
+          <button class="kr-action primary">Check in</button>
+          <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+        </div>
+      </div>
+      <div class="pobj-kr">
+        <div class="pobj-kr-text">Participation dashboard shipped to Slack #leadership</div>
+        <div class="pobj-kr-actions">
+          <button class="kr-action primary">Check in</button>
+          <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+        </div>
+      </div>
+      <button class="add-kr-inline">+ Add KR</button>
+
+      <div class="pobj-alignment">
+        <div class="pobj-parent">
+          <span class="contributes-label">Contributes upward</span>
+          <span class="pobj-alignment-line solid"></span>
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="opacity:0.7;"><path d="M10 15V5m0 0l-4 4m4-4l4 4" stroke="var(--ink-900)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="parent-name">Deliver a usable end-to-end OKR cycle</span>
+          <span style="color: var(--text-muted);">·</span>
+          <span class="parent-kr">KR: Weekly check-in participation ≥ 90%</span>
         </div>
       </div>
     </div>
 
-    <div class="parent-group">
-      <div class="parent-title">Company Objective</div>
-      <div class="parent-obj-name"><span class="status-dot at"></span> Establish a reliable engineering foundation</div>
-      <div class="obj-level-branch">
-        <div class="mini-ind">
-          <div class="mini-ind-title">Publish the FY roadmap by end of Q3</div>
-          <div class="mini-ind-sub"><i>Linked at objective level (no specific KR)</i></div>
-          <button class="add-kr-inline">+ Add KR</button>
+    <div class="pobj-card">
+      <div class="pobj-header">
+        <div class="pobj-title">Publish the FY roadmap by end of Q3</div>
+        <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+      </div>
+      <div class="pobj-section-label">My key results</div>
+      <div class="pobj-kr">
+        <div class="pobj-kr-text">Draft roadmap circulated to leadership by Aug 15</div>
+        <div class="pobj-kr-actions">
+          <button class="kr-action primary">Check in</button>
+          <div class="kebab-wrap"><button class="kebab-btn" aria-label="More actions">⋯</button></div>
+        </div>
+      </div>
+      <button class="add-kr-inline">+ Add KR</button>
+
+      <div class="pobj-alignment">
+        <div class="pobj-parent">
+          <span class="contributes-label">Contributes upward</span>
+          <span class="pobj-alignment-line dashed"></span>
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none" style="opacity:0.7;"><path d="M10 15V5m0 0l-4 4m4-4l4 4" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5 2"/></svg>
+          <span class="parent-name">Establish a reliable engineering foundation</span>
+          <span style="color: var(--text-muted);">·</span>
+          <span style="font-style: italic; color: var(--text-secondary);">objective-level (no specific KR)</span>
         </div>
       </div>
     </div>
 
-    <p><span class="add-obj" style="margin: 0; display: inline-block; padding: 6px 14px; font-size: 12px;">+ Add my objective</span></p>
+    <p style="text-align: center;">
+      <span class="add-obj" style="margin: 0; display: inline-block; padding: 8px 18px; font-size: 13px;">+ Add my objective</span>
+    </p>
   </div>
 
   <p class="note-eyebrow">Team overview — direct reports (via <code>reports_to</code>)</p>
