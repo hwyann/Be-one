@@ -451,6 +451,101 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
   border-left: 3px dashed rgba(94, 110, 125, 0.6);
 }
 
+/* ========== Inline KRs inside a mini-ind (individual objective card) ========== */
+.mini-kr-list {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.mini-kr {
+  font-size: 12px;
+  color: var(--text-primary);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.4;
+}
+.mini-kr::before {
+  content: '';
+  position: absolute;
+  left: 4px; top: 8px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--coral-500);
+}
+.mini-kr-target {
+  font-size: 11px; color: var(--text-secondary);
+  padding-left: 16px;
+  margin-top: -2px;
+}
+.mini-kr-actions {
+  display: flex; gap: 6px; margin-top: 6px; align-items: center;
+}
+.add-kr-inline {
+  padding: 3px 12px;
+  font-size: 11px; font-weight: 600;
+  color: var(--coral-600);
+  border: 1px dashed rgba(242, 107, 91, 0.6);
+  border-radius: 999px;
+  background: rgba(255, 241, 239, 0.4);
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 8px;
+}
+
+/* ========== Kebab (⋯) overflow menu ========== */
+.kebab-wrap {
+  position: relative;
+  display: inline-block;
+}
+.kebab-btn {
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(6px);
+  font-size: 16px; line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.kebab-menu {
+  position: absolute;
+  right: 0; top: calc(100% + 4px);
+  min-width: 140px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(19, 30, 40, 0.15);
+  display: flex; flex-direction: column;
+  z-index: 10;
+}
+.kebab-menu-item {
+  padding: 7px 12px;
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-primary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+.kebab-menu-item:hover {
+  background: rgba(19, 30, 40, 0.06);
+}
+.kebab-menu-hint {
+  font-size: 10px; color: var(--text-muted);
+  padding: 4px 12px 6px;
+  border-top: 1px solid rgba(19, 30, 40, 0.06);
+  margin-top: 4px;
+  text-align: center;
+}
+
 /* ========== Nav controls ========== */
 .nav-row {
   display: flex; align-items: center; justify-content: center;
@@ -707,27 +802,35 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         </div>
         <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div></div>
         <div class="kr-actions">
-          <button class="kr-action">Edit</button>
           <button class="kr-action primary">Check in</button>
-          <button class="kr-action">History</button>
+          <div class="kebab-wrap">
+            <button class="kebab-btn" aria-label="More actions">⋯</button>
+            <!-- Menu shown for demo — open state -->
+            <div class="kebab-menu">
+              <button class="kebab-menu-item">Edit</button>
+              <button class="kebab-menu-item">History</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="kr-row">
         <div class="kr-text">10 recorded design-partner interviews</div>
         <div class="kr-owners"></div>
         <div class="kr-actions">
-          <button class="kr-action">Edit</button>
           <button class="kr-action primary">Check in</button>
-          <button class="kr-action">History</button>
+          <div class="kebab-wrap">
+            <button class="kebab-btn" aria-label="More actions">⋯</button>
+          </div>
         </div>
       </div>
       <div class="kr-row">
         <div class="kr-text">3 signed pilots</div>
         <div class="kr-owners"></div>
         <div class="kr-actions">
-          <button class="kr-action">Edit</button>
           <button class="kr-action primary">Check in</button>
-          <button class="kr-action">History</button>
+          <div class="kebab-wrap">
+            <button class="kebab-btn" aria-label="More actions">⋯</button>
+          </div>
         </div>
       </div>
     </div>
@@ -740,8 +843,9 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
   </div>
 
   <div class="decision-note">
-    <b>IC lens:</b> Check in + History on <b>every</b> KR he owns (#200029526 unblocks that). AI summary lives in History panel, not on card.
-    <br><b>Read-only company OKRs:</b> No "+ Add KR" / "Edit KR" affordances on company objectives or KRs — those are Exec-only (see new story below). Satoshi cannot rename a company KR or add one; only Hiroshi can.
+    <b>IC lens:</b> Check in stays as a primary visible button on every KR he owns (#200029526 unblocks that). AI summary lives in History panel, not on card.
+    <br><b>Overflow menu (⋯):</b> Edit + History move into a kebab overflow menu — reduces per-row visual noise while keeping actions one tap away. Menu shown open on the top row for demo; other rows show it collapsed.
+    <br><b>Read-only company OKRs:</b> No "+ Add KR" / "Edit KR" affordances on company objectives or KRs for ICs — those are Exec-only (per #200029787). Satoshi cannot rename a company KR or add one; only Hiroshi can.
   </div>
 </div>
 
@@ -814,6 +918,11 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         <div class="mini-ind">
           <div class="mini-ind-title">Ship the AI-summary display end-to-end</div>
           <div class="mini-ind-sub">Owner: Satoshi · Status: on track</div>
+          <div class="mini-kr-list">
+            <div class="mini-kr">Write-path implemented — summary regenerates on every check-in save</div>
+            <div class="mini-kr">useKrSummary rewritten as cache-only reader</div>
+          </div>
+          <button class="add-kr-inline">+ Add KR</button>
         </div>
       </div>
     </div>
@@ -826,6 +935,10 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         <div class="mini-ind">
           <div class="mini-ind-title">Update the AI-augmented cycle</div>
           <div class="mini-ind-sub">Owner: Satoshi · Status: on track</div>
+          <div class="mini-kr-list">
+            <div class="mini-kr">Two rewritten sections published as in-product tooltips</div>
+          </div>
+          <button class="add-kr-inline">+ Add KR</button>
         </div>
       </div>
     </div>
@@ -837,6 +950,7 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
         <div class="mini-ind">
           <div class="mini-ind-title">Enhance the SRE support operation</div>
           <div class="mini-ind-sub"><i>Linked at objective level (no specific KR)</i></div>
+          <button class="add-kr-inline">+ Add KR</button>
         </div>
       </div>
     </div>
@@ -845,7 +959,8 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
 
     <div class="decision-note">
       <b>Why Option B works:</b> tree metaphor + connectors give instant answer to "how does my work ladder up?"  Solid vs dashed connector encodes link-type visually — no reading required.  Best when you want to communicate alignment story.
-      <br><b>Weakness:</b> more vertical scrolling if you have many parent objectives with only one individual under each.  Cascading connectors add design complexity to implement.
+      <br><b>KR-add flow (new — 2026-07-21):</b> per-card <b>"+ Add KR"</b> pill (coral-dashed) is where personal KRs are added. Click → inline expand or small dialog. Existing KRs render as bulleted list inside each individual objective card. This is the ONLY place Satoshi/Hiroshi add personal KRs — the "+ Add my objective" dialog (#200029788) intentionally excludes KR entry.
+      <br><b>Weakness:</b> more vertical scrolling if you have many parent objectives with only one individual under each.
     </div>
   </div>
 
@@ -962,17 +1077,34 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
           <div class="kr-target-note">Target: ≥ 40 by end of Q3</div>
         </div>
         <div class="kr-owners"><div class="avatar small" style="background: var(--coral-500);">SK</div><div class="avatar small" style="background: var(--atrisk); margin-left: -6px;">AM</div></div>
-        <div class="kr-actions"><button class="kr-action">Edit</button><button class="kr-action">View history</button></div>
+        <div class="kr-actions">
+          <div class="kebab-wrap">
+            <button class="kebab-btn" aria-label="More actions">⋯</button>
+            <!-- Menu shown for demo — open state (Exec-only surface) -->
+            <div class="kebab-menu">
+              <button class="kebab-menu-item">Edit</button>
+              <button class="kebab-menu-item">View history</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="kr-row">
         <div class="kr-text">10 recorded design-partner interviews</div>
         <div class="kr-owners"><div class="avatar small" style="background: var(--ontrack);">RK</div></div>
-        <div class="kr-actions"><button class="kr-action">Edit</button><button class="kr-action">View history</button></div>
+        <div class="kr-actions">
+          <div class="kebab-wrap">
+            <button class="kebab-btn" aria-label="More actions">⋯</button>
+          </div>
+        </div>
       </div>
       <div class="kr-row">
         <div class="kr-text">3 signed pilots</div>
         <div class="kr-owners"><div class="avatar small" style="background: var(--behind);">JT</div></div>
-        <div class="kr-actions"><button class="kr-action">Edit</button><button class="kr-action">View history</button></div>
+        <div class="kr-actions">
+          <div class="kebab-wrap">
+            <button class="kebab-btn" aria-label="More actions">⋯</button>
+          </div>
+        </div>
       </div>
       <div class="kr-row" style="padding: 6px 0;">
         <button class="kr-action" style="font-size: 11px; padding: 3px 12px; color: var(--coral-600); border-color: rgba(242,107,91,0.6);">+ Add KR</button>
@@ -1015,18 +1147,39 @@ code { font-family: "SF Mono", Menlo, monospace; font-size: 0.88em; background: 
     <button class="active">My thread</button>
   </div>
 
-  <p class="note-eyebrow">My own goals</p>
-  <div style="max-width: 640px; margin: 0 0 28px;">
-    <div class="ind-obj">
-      <div class="ind-obj-title">Drive alignment cadence across leadership</div>
-      <div class="context-inline"><b>Context:</b> Board asked for a weekly rollup by Q4 — need exec team checking in weekly on their own goals, not just their reports'.</div>
-      <div class="ind-obj-link" style="margin-top: 8px;">Contributes to <b>Deliver a usable end-to-end OKR cycle</b><span class="solid"></span>Direct KR: <i>Weekly check-in participation ≥ 90%</i></div>
+  <p class="note-eyebrow">My own goals — same Option B layout as Satoshi's My Thread</p>
+  <div style="margin: 0 0 28px;">
+    <div class="parent-group">
+      <div class="parent-title">Company Objective</div>
+      <div class="parent-obj-name"><span class="status-dot on"></span> Deliver a usable end-to-end OKR cycle</div>
+      <div class="kr-branch">
+        <div class="kr-branch-name">KR · Weekly check-in participation ≥ 90%</div>
+        <div class="mini-ind">
+          <div class="mini-ind-title">Drive alignment cadence across leadership</div>
+          <div class="mini-ind-sub">Owner: Hiroshi · Status: on track</div>
+          <div class="context-inline" style="margin-top: 8px;"><b>Context:</b> Board asked for a weekly rollup by Q4 — exec team must check in weekly on their own goals, not just their reports'.</div>
+          <div class="mini-kr-list">
+            <div class="mini-kr">Weekly leadership check-in ritual scheduled for Q3</div>
+            <div class="mini-kr">Participation dashboard shipped to Slack #leadership</div>
+          </div>
+          <button class="add-kr-inline">+ Add KR</button>
+        </div>
+      </div>
     </div>
-    <div class="ind-obj">
-      <div class="ind-obj-title">Publish the FY roadmap by end of Q3</div>
-      <div class="ind-obj-link">Contributes to <b>Establish a reliable engineering foundation</b><span class="dashed"></span>Objective-level</div>
+
+    <div class="parent-group">
+      <div class="parent-title">Company Objective</div>
+      <div class="parent-obj-name"><span class="status-dot at"></span> Establish a reliable engineering foundation</div>
+      <div class="obj-level-branch">
+        <div class="mini-ind">
+          <div class="mini-ind-title">Publish the FY roadmap by end of Q3</div>
+          <div class="mini-ind-sub"><i>Linked at objective level (no specific KR)</i></div>
+          <button class="add-kr-inline">+ Add KR</button>
+        </div>
+      </div>
     </div>
-    <div class="add-obj">+ Add my objective</div>
+
+    <p><span class="add-obj" style="margin: 0; display: inline-block; padding: 6px 14px; font-size: 12px;">+ Add my objective</span></p>
   </div>
 
   <p class="note-eyebrow">Team overview — direct reports (via <code>reports_to</code>)</p>
