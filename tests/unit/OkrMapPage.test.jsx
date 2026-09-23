@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   useIndividualObjectives: vi.fn(),
   useActiveQuarter: vi.fn(),
   useViewMode: vi.fn(),
+  useCanCreateObjective: vi.fn(),
   OkrDialog: vi.fn(),
   MyThreadPage: vi.fn(),
 }))
@@ -24,6 +25,10 @@ vi.mock('../../src/hooks/useActiveQuarter', () => ({
 
 vi.mock('../../src/hooks/useViewMode', () => ({
   default: mocks.useViewMode,
+}))
+
+vi.mock('../../src/hooks/useCanCreateObjective', () => ({
+  default: mocks.useCanCreateObjective,
 }))
 
 vi.mock('../../src/components/OkrDialog', () => ({
@@ -73,6 +78,12 @@ describe('OkrMapPage', () => {
       selectQuarter: vi.fn(),
     })
     mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+    mocks.useCanCreateObjective.mockReturnValue({
+      canCreate: true,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
   })
 
   it('renders only the first objective initially (carousel core)', () => {
@@ -732,6 +743,38 @@ describe('OkrMapPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
       expect(props.readOnly).toBe(false)
+    })
+  })
+
+  describe('quarter restart gated by finalized reviews (#8b)', () => {
+    it('hides the "+ Add objective" trigger when useCanCreateObjective reports canCreate: false, even for the current quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useCanCreateObjective.mockReturnValue({
+        canCreate: false,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      expect(screen.queryByRole('button', { name: /add objective/i })).not.toBeInTheDocument()
+    })
+
+    it('shows the "+ Add objective" trigger when useCanCreateObjective reports canCreate: true for the current quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useCanCreateObjective.mockReturnValue({
+        canCreate: true,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
+    })
+
+    it('passes the active quarterId to useCanCreateObjective', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(mocks.useCanCreateObjective).toHaveBeenCalledWith('q1')
     })
   })
 
