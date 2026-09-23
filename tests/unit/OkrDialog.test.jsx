@@ -412,4 +412,26 @@ describe('OkrDialog', () => {
       expect.objectContaining({ individual_objective_id: 'new-1', title: 'Ship v1' })
     )
   })
+
+  it('surfaces an error and does not close the dialog when a Key Result write fails', async () => {
+    const saved = { id: 'new-1', title: 'Grow revenue' }
+    mocks.select.mockResolvedValue({ data: [saved], error: null })
+    mocks.krInsert.mockResolvedValue({ error: { message: 'KR insert failed' } })
+    render(
+      <OkrDialog
+        quarterId="q1"
+        companyObjectives={companyObjectivesFixture}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+    fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+    fireEvent.change(screen.getByLabelText(/aligns with/i), {
+      target: { value: 'objective_level:co-1' },
+    })
+    await addDraftKr('Ship v1')
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/key result/i)
+    expect(onSave).not.toHaveBeenCalled()
+  })
 })

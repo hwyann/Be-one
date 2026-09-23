@@ -55,11 +55,17 @@ export default function OkrDialog({
     const savedObjective = data[0]
     if (!objective) {
       for (const kr of draftKrs) {
-        await createKr({
+        const ok = await createKr({
           individualObjectiveId: savedObjective.id,
           title: kr.title,
           targetNote: kr.targetNote,
         })
+        if (!ok) {
+          setError(
+            `Objective saved, but a key result failed to save: "${kr.title}". Please retry before closing.`
+          )
+          return
+        }
       }
     }
     if (Object.keys(coachAnswers).length > 0) {
