@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   krUpdate: vi.fn(),
   rationaleRefetch: vi.fn(),
   useRationaleMock: vi.fn(),
+  useQuarterReviewMock: vi.fn(),
+  quarterReviewSave: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCheckIns', () => ({
@@ -34,6 +36,10 @@ vi.mock('../../src/hooks/useRationale', () => ({
   default: (...args) => mocks.useRationaleMock(...args),
 }))
 
+vi.mock('../../src/hooks/useQuarterReview', () => ({
+  default: (...args) => mocks.useQuarterReviewMock(...args),
+}))
+
 import ObjectiveCard from '../../src/components/ObjectiveCard'
 
 beforeEach(() => {
@@ -48,6 +54,15 @@ beforeEach(() => {
     saving: false,
     save: vi.fn(),
     refetch: mocks.rationaleRefetch,
+  })
+  mocks.quarterReviewSave.mockResolvedValue(true)
+  mocks.useQuarterReviewMock.mockReturnValue({
+    review: null,
+    loading: false,
+    error: null,
+    saving: false,
+    save: mocks.quarterReviewSave,
+    refetch: vi.fn(),
   })
 })
 
@@ -505,6 +520,40 @@ describe('ObjectiveCard', () => {
     it('fetches rationale scoped to the objective id', () => {
       render(<ObjectiveCard objective={objective} />)
       expect(mocks.useRationaleMock).toHaveBeenCalledWith('1')
+    })
+  })
+
+  describe('quarter review', () => {
+    const individualObjective = { id: 'io-9', title: 'Ship MVP' }
+
+    it('does not render a Review trigger on a company-objective card', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByRole('button', { name: /^review$/i })).not.toBeInTheDocument()
+    })
+
+    it('renders a Review trigger when the card represents an individual objective', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
+    })
+
+    it('opens the QuarterReviewModal when Review is clicked', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      expect(screen.queryByRole('dialog', { name: /quarter review/i })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
+      expect(screen.getByRole('dialog', { name: /quarter review/i })).toBeInTheDocument()
+    })
+
+    it('scopes the review to the individual objective id', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
+      expect(mocks.useQuarterReviewMock).toHaveBeenCalledWith('io-9')
+    })
+
+    it('closes the modal when its Close button is clicked', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
+      fireEvent.click(screen.getByRole('button', { name: /close/i }))
+      expect(screen.queryByRole('dialog', { name: /quarter review/i })).not.toBeInTheDocument()
     })
   })
 })
