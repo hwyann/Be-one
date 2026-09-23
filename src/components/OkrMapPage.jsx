@@ -3,6 +3,7 @@ import useCompanyObjectives from '../hooks/useCompanyObjectives'
 import useIndividualObjectives from '../hooks/useIndividualObjectives'
 import useActiveQuarter from '../hooks/useActiveQuarter'
 import useQuarterIsPast from '../hooks/useQuarterIsPast'
+import useCanCreateObjective from '../hooks/useCanCreateObjective'
 import useViewMode from '../hooks/useViewMode'
 import ObjectiveCarousel from './ObjectiveCarousel'
 import OkrDialog from './OkrDialog'
@@ -146,6 +147,7 @@ function ViewModeToggle({ viewMode, onChange }) {
 export default function OkrMapPage() {
   const { quarterId, quarters = [], selectQuarter } = useActiveQuarter()
   const isPastQuarter = useQuarterIsPast(quarters, quarterId)
+  const { canCreate } = useCanCreateObjective(quarterId)
   const { objectives, loading, error, refetch } = useCompanyObjectives(quarterId)
   const {
     objectives: individualObjectives,
@@ -217,7 +219,7 @@ export default function OkrMapPage() {
           )}
           <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
-        {!isPastQuarter && (
+        {!isPastQuarter && canCreate && (
           <button
             type="button"
             onClick={() => setDialogState({})}
