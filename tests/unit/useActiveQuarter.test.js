@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -13,35 +13,43 @@ import useActiveQuarter from '../../src/hooks/useActiveQuarter'
 
 function makeQuartersMock(result) {
   return {
-    select: vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue(result),
-      }),
-    }),
+    select: vi.fn().mockReturnValue(Promise.resolve(result)),
   }
 }
+
+const quarters = [
+  { id: 'q1', label: 'Q1 2026', is_active: false },
+  { id: 'q2', label: 'Q2 2026', is_active: true },
+]
 
 describe('useActiveQuarter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('returns null while loading', () => {
+  it('returns null quarterId and no quarters while loading', () => {
     mocks.from.mockReturnValue(makeQuartersMock(new Promise(() => {})))
     const { result } = renderHook(() => useActiveQuarter())
     expect(result.current.quarterId).toBeNull()
+    expect(result.current.quarters).toEqual([])
     expect(result.current.error).toBeNull()
   })
 
-  it('returns the active quarter id on success', async () => {
-    mocks.from.mockReturnValue(makeQuartersMock({ data: { id: 'q1' }, error: null }))
+  it('defaults the selected quarter to the active quarter once loaded', async () => {
+    mocks.from.mockReturnValue(makeQuartersMock({ data: quarters, error: null }))
     const { result } = renderHook(() => useActiveQuarter())
-    await waitFor(() => expect(result.current.quarterId).toBe('q1'))
+    await waitFor(() => expect(result.current.quarterId).toBe('q2'))
     expect(result.current.error).toBeNull()
   })
 
-  it('queries the quarters table filtered by is_active', async () => {
-    mocks.from.mockReturnValue(makeQuartersMock({ data: { id: 'q1' }, error: null }))
+  it('returns the full list of quarters for the selector', async () => {
+    mocks.from.mockReturnValue(makeQuartersMock({ data: quarters, error: null }))
+    const { result } = renderHook(() => useActiveQuarter())
+    await waitFor(() => expect(result.current.quarters).toEqual(quarters))
+  })
+
+  it('queries the quarters table', async () => {
+    mocks.from.mockReturnValue(makeQuartersMock({ data: quarters, error: null }))
     renderHook(() => useActiveQuarter())
     await waitFor(() => expect(mocks.from).toHaveBeenCalledWith('quarters'))
   })
@@ -51,5 +59,13 @@ describe('useActiveQuarter', () => {
     const { result } = renderHook(() => useActiveQuarter())
     await waitFor(() => expect(result.current.error).toBe('DB down'))
     expect(result.current.quarterId).toBeNull()
+  })
+
+  it('selectQuarter updates quarterId to the chosen quarter', async () => {
+    mocks.from.mockReturnValue(makeQuartersMock({ data: quarters, error: null }))
+    const { result } = renderHook(() => useActiveQuarter())
+    await waitFor(() => expect(result.current.quarterId).toBe('q2'))
+    act(() => { result.current.selectQuarter('q1') })
+    expect(result.current.quarterId).toBe('q1')
   })
 })

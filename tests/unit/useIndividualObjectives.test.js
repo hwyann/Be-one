@@ -89,6 +89,41 @@ describe('useIndividualObjectives', () => {
     expect(result.current.objectives).toEqual([])
   })
 
+  it('queries individual_objectives by the given quarterId without looking up the active quarter', async () => {
+    const objectivesMock = makeObjectivesMock({ data: fakeObjectives, error: null })
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') throw new Error('should not look up the active quarter when quarterId is given')
+      return objectivesMock
+    })
+    const { result } = renderHook(() => useIndividualObjectives('q99'))
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(mocks.from).toHaveBeenCalledWith('individual_objectives')
+    const selectResult = objectivesMock.select.mock.results[0].value
+    expect(selectResult.eq).toHaveBeenCalledWith('quarter_id', 'q99')
+    expect(result.current.objectives).toEqual(fakeObjectives)
+  })
+
+  it('refetches with the new quarterId when the quarterId argument changes', async () => {
+    const forQ1 = [{ id: 'io-1', title: 'Q1 objective' }]
+    const forQ2 = [{ id: 'io-2', title: 'Q2 objective' }]
+    mocks.from.mockImplementation((table) => {
+      if (table === 'quarters') throw new Error('should not look up the active quarter when quarterId is given')
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockImplementation((_col, id) =>
+            Promise.resolve({ data: id === 'q1' ? forQ1 : forQ2, error: null })
+          ),
+        }),
+      }
+    })
+    const { result, rerender } = renderHook(({ quarterId }) => useIndividualObjectives(quarterId), {
+      initialProps: { quarterId: 'q1' },
+    })
+    await waitFor(() => expect(result.current.objectives).toEqual(forQ1))
+    rerender({ quarterId: 'q2' })
+    await waitFor(() => expect(result.current.objectives).toEqual(forQ2))
+  })
+
   it('selects owner_name and link fields', async () => {
     let capturedSelect
     const eqMock = vi.fn().mockResolvedValue({ data: [], error: null })

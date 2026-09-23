@@ -58,7 +58,15 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: vi.fn(),
     })
-    mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q1', error: null })
+    mocks.useActiveQuarter.mockReturnValue({
+      quarterId: 'q1',
+      quarters: [
+        { id: 'q1', label: 'Q1 2026', is_active: false },
+        { id: 'q2', label: 'Q2 2026', is_active: true },
+      ],
+      error: null,
+      selectQuarter: vi.fn(),
+    })
   })
 
   it('renders only the first objective initially (carousel core)', () => {
@@ -348,6 +356,74 @@ describe('OkrMapPage', () => {
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.queryByText('Company Objective')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('quarter selector', () => {
+    it('renders a quarter selector populated with the available quarters', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const selector = screen.getByRole('combobox', { name: /quarter/i })
+      expect(selector).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'Q1 2026' })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: 'Q2 2026' })).toBeInTheDocument()
+    })
+
+    it('defaults the selector to the currently selected quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      const selector = screen.getByRole('combobox', { name: /quarter/i })
+      expect(selector.value).toBe('q1')
+    })
+
+    it('calls selectQuarter with the chosen quarter id when a new quarter is picked', () => {
+      const selectQuarter = vi.fn()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1',
+        quarters: [
+          { id: 'q1', label: 'Q1 2026', is_active: false },
+          { id: 'q2', label: 'Q2 2026', is_active: true },
+        ],
+        error: null,
+        selectQuarter,
+      })
+      render(<OkrMapPage />)
+      fireEvent.change(screen.getByRole('combobox', { name: /quarter/i }), { target: { value: 'q2' } })
+      expect(selectQuarter).toHaveBeenCalledWith('q2')
+    })
+
+    it('passes the selected quarterId through to useCompanyObjectives and useIndividualObjectives', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q2',
+        quarters: [
+          { id: 'q1', label: 'Q1 2026', is_active: false },
+          { id: 'q2', label: 'Q2 2026', is_active: true },
+        ],
+        error: null,
+        selectQuarter: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      expect(mocks.useCompanyObjectives).toHaveBeenCalledWith('q2')
+      expect(mocks.useIndividualObjectives).toHaveBeenCalledWith('q2')
+    })
+
+    it('keeps the same selected quarter when toggling between Map and My Thread', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q2',
+        quarters: [
+          { id: 'q1', label: 'Q1 2026', is_active: false },
+          { id: 'q2', label: 'Q2 2026', is_active: true },
+        ],
+        error: null,
+        selectQuarter: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
+      expect(screen.getByRole('combobox', { name: /quarter/i }).value).toBe('q2')
     })
   })
 
