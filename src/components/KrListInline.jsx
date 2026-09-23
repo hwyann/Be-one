@@ -64,7 +64,7 @@ function formButtonStyle(primary) {
   }
 }
 
-function KrForm({ initialTitle = '', initialTargetNote = '', onSubmit, onCancel }) {
+export function KrForm({ initialTitle = '', initialTargetNote = '', onSubmit, onCancel, submitLabel = 'Save' }) {
   const [title, setTitle] = useState(initialTitle)
   const [targetNote, setTargetNote] = useState(initialTargetNote)
 
@@ -113,7 +113,7 @@ function KrForm({ initialTitle = '', initialTargetNote = '', onSubmit, onCancel 
       />
       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '2px' }}>
         <button type="button" onClick={onCancel} style={formButtonStyle(false)}>Cancel</button>
-        <button type="button" onClick={handleSubmit} style={formButtonStyle(true)}>Save</button>
+        <button type="button" onClick={handleSubmit} style={formButtonStyle(true)}>{submitLabel}</button>
       </div>
     </div>
   )

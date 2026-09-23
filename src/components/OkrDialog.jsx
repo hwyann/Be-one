@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import ObjectiveCard from './ObjectiveCard'
 import CoachPanel from './CoachPanel'
+import { KrForm } from './KrListInline'
 import useRationale from '../hooks/useRationale'
+import useKrMutation from '../hooks/useKrMutation'
 
 export default function OkrDialog({
   quarterId,
@@ -17,7 +19,10 @@ export default function OkrDialog({
   const [error, setError] = useState(null)
   const [showCoach, setShowCoach] = useState(false)
   const [coachAnswers, setCoachAnswers] = useState({})
+  const [draftKrs, setDraftKrs] = useState([])
+  const [showDraftKrForm, setShowDraftKrForm] = useState(false)
   const { save: saveRationale } = useRationale(null)
+  const { create: createKr } = useKrMutation()
 
   async function handleSave() {
     if (!title.trim()) return
@@ -32,6 +37,10 @@ export default function OkrDialog({
         setError('A company objective link is required')
         return
       }
+      if (draftKrs.length === 0) {
+        setError('At least one key result is required')
+        return
+      }
       query = supabase
         .from('individual_objectives')
         .insert([{ title, quarter_id: quarterId, owner_name: 'Satoshi Kimura', ...linkFields }])
@@ -44,6 +53,15 @@ export default function OkrDialog({
       return
     }
     const savedObjective = data[0]
+    if (!objective) {
+      for (const kr of draftKrs) {
+        await createKr({
+          individualObjectiveId: savedObjective.id,
+          title: kr.title,
+          targetNote: kr.targetNote,
+        })
+      }
+    }
     if (Object.keys(coachAnswers).length > 0) {
       await saveRationale({ targetId: savedObjective.id, answers: coachAnswers })
     }
@@ -79,6 +97,35 @@ export default function OkrDialog({
               </optgroup>
             ))}
           </select>
+          {draftKrs.length > 0 && (
+            <ul>
+              {draftKrs.map((kr, i) => (
+                <li key={i}>
+                  {kr.title}
+                  <button
+                    type="button"
+                    onClick={() => setDraftKrs(draftKrs.filter((_, idx) => idx !== i))}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {showDraftKrForm ? (
+            <KrForm
+              submitLabel="Add"
+              onSubmit={({ title: krTitle, targetNote }) => {
+                setDraftKrs([...draftKrs, { title: krTitle, targetNote }])
+                setShowDraftKrForm(false)
+              }}
+              onCancel={() => setShowDraftKrForm(false)}
+            />
+          ) : (
+            <button type="button" onClick={() => setShowDraftKrForm(true)}>
+              + Add key result
+            </button>
+          )}
         </>
       )}
       <button onClick={handleSave}>Save</button>

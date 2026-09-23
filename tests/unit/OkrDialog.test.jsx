@@ -24,14 +24,20 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
   single: vi.fn(),
   rationaleSave: vi.fn(),
+  krInsert: vi.fn(),
 }))
 
 vi.mock('../../src/lib/supabase', () => ({
   supabase: {
-    from: () => ({
-      insert: mocks.insert,
-      update: mocks.update,
-    }),
+    from: (table) => {
+      if (table === 'key_results') {
+        return { insert: mocks.krInsert }
+      }
+      return {
+        insert: mocks.insert,
+        update: mocks.update,
+      }
+    },
   },
 }))
 
@@ -59,7 +65,14 @@ describe('OkrDialog', () => {
     mocks.eq.mockReturnValue({ select: mocks.select })
     mocks.select.mockResolvedValue({ data: null, error: null })
     mocks.rationaleSave.mockResolvedValue(true)
+    mocks.krInsert.mockResolvedValue({ error: null })
   })
+
+  async function addDraftKr(title = 'Ship v1') {
+    fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
+    fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: title } })
+    fireEvent.click(screen.getByRole('button', { name: /^add$/i }))
+  }
 
   it('renders title input and Save/Cancel buttons', () => {
     render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
@@ -89,6 +102,7 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'objective_level:co-1' },
     })
+    await addDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
   })
@@ -199,6 +213,7 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'direct_kr:kr-2:co-1' },
     })
+    await addDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
     await waitFor(() =>
       expect(mocks.insert).toHaveBeenCalledWith([
@@ -228,6 +243,7 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'objective_level:co-2' },
     })
+    await addDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
     await waitFor(() =>
       expect(mocks.insert).toHaveBeenCalledWith([
@@ -256,6 +272,7 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'objective_level:co-1' },
     })
+    await addDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/DB error/i)
     expect(onSave).not.toHaveBeenCalled()
@@ -293,6 +310,7 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'objective_level:co-1' },
     })
+    await addDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
   })
@@ -319,6 +337,7 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'objective_level:co-1' },
     })
+    await addDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() =>
       expect(mocks.rationaleSave).toHaveBeenCalledWith({
@@ -346,8 +365,51 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'objective_level:co-1' },
     })
+    await addDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
     expect(mocks.rationaleSave).not.toHaveBeenCalled()
+  })
+
+  it('blocks save when creating a new objective with no key results added', async () => {
+    render(
+      <OkrDialog
+        quarterId="q1"
+        companyObjectives={companyObjectivesFixture}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+    fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+    fireEvent.change(screen.getByLabelText(/aligns with/i), {
+      target: { value: 'objective_level:co-1' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/at least one key result is required/i)
+    await waitFor(() => expect(mocks.insert).not.toHaveBeenCalled())
+    expect(onSave).not.toHaveBeenCalled()
+  })
+
+  it('proceeds with saving once exactly one key result has been added', async () => {
+    const saved = { id: 'new-1', title: 'Grow revenue' }
+    mocks.select.mockResolvedValue({ data: [saved], error: null })
+    render(
+      <OkrDialog
+        quarterId="q1"
+        companyObjectives={companyObjectivesFixture}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+    fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+    fireEvent.change(screen.getByLabelText(/aligns with/i), {
+      target: { value: 'objective_level:co-1' },
+    })
+    await addDraftKr('Ship v1')
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
+    expect(mocks.krInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ individual_objective_id: 'new-1', title: 'Ship v1' })
+    )
   })
 })
