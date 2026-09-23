@@ -61,8 +61,8 @@ describe('OkrMapPage', () => {
     mocks.useActiveQuarter.mockReturnValue({
       quarterId: 'q1',
       quarters: [
-        { id: 'q1', label: 'Q1 2026', is_active: false },
-        { id: 'q2', label: 'Q2 2026', is_active: true },
+        { id: 'q1', label: 'Q1 2026', is_active: true },
+        { id: 'q2', label: 'Q2 2026', is_active: false },
       ],
       error: null,
       selectQuarter: vi.fn(),
