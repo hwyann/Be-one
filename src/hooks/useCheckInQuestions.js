@@ -43,7 +43,10 @@ export default function useCheckInQuestions(checkInIds) {
       .select('id, check_in_id, question_text, reply_text, created_at, replied_at')
       .single()
     setSaving(false)
-    if (err) { setError(err.message); return false }
+    if (err) {
+      setError(err.code === '23505' ? 'A question has already been asked on this check-in.' : err.message)
+      return false
+    }
     setQuestionsByCheckInId(prev => ({ ...prev, [data.check_in_id]: data }))
     setError(null)
     return true

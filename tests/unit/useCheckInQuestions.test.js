@@ -110,6 +110,20 @@ describe('useCheckInQuestions', () => {
     expect(result.current.error).toBe('Insert boom')
   })
 
+  it('askQuestion surfaces a friendly "already asked" message on a 23505 uniqueness violation', async () => {
+    mocks.from.mockReturnValue(makeSelectMock({ data: [], error: null }))
+    const { result } = renderHook(() => useCheckInQuestions([]))
+    mocks.from.mockReturnValue(makeInsertMock({ data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint "check_in_questions_check_in_id_key"' } }))
+
+    let ok
+    await act(async () => {
+      ok = await result.current.askQuestion('c1', 'What blocked this?')
+    })
+
+    expect(ok).toBe(false)
+    expect(result.current.error).toBe('A question has already been asked on this check-in.')
+  })
+
   it('replyToQuestion updates reply_text and replied_at, and merges into state', async () => {
     mocks.from.mockReturnValue(makeSelectMock({ data: [], error: null }))
     const { result } = renderHook(() => useCheckInQuestions([]))
