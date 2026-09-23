@@ -183,6 +183,30 @@ function SummaryCard({ label, count, borderStyle }) {
   )
 }
 
+function QuarterSelector({ quarters, quarterId, onChange }) {
+  return (
+    <select
+      aria-label="Quarter"
+      value={quarterId ?? ''}
+      onChange={e => onChange(e.target.value)}
+      style={{
+        font: '600 13px var(--font-display)',
+        padding: '6px 10px',
+        borderRadius: '8px',
+        border: '1px solid var(--hairline)',
+        background: 'var(--surface)',
+        color: 'var(--ink-900)',
+      }}
+    >
+      {quarters.map(q => (
+        <option key={q.id} value={q.id}>
+          {q.label ?? q.name ?? q.title ?? q.id}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 function toggleButtonStyle(active) {
   return {
     font: '600 13px var(--font-display)',
@@ -197,16 +221,18 @@ function toggleButtonStyle(active) {
 }
 
 export default function OkrMapPage() {
-  const { objectives, loading, error, refetch } = useCompanyObjectives()
+  const { quarterId, quarters = [], selectQuarter } = useActiveQuarter()
+  const { objectives, loading, error, refetch } = useCompanyObjectives(quarterId)
   const {
     objectives: individualObjectives,
     refetch: refetchIndividual,
-  } = useIndividualObjectives()
-  const { quarterId } = useActiveQuarter()
+  } = useIndividualObjectives(quarterId)
   const [dialogState, setDialogState] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
   const [view, setView] = useState('map')
   const [carouselIndex, setCarouselIndex] = useState(0)
+
+  useEffect(() => { setCarouselIndex(0) }, [quarterId])
 
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
@@ -231,30 +257,39 @@ export default function OkrMapPage() {
         alignItems: 'center',
         marginBottom: '14px',
       }}>
-        <div style={{
-          display: 'inline-flex',
-          gap: '4px',
-          padding: '4px',
-          borderRadius: '10px',
-          background: 'var(--panel)',
-          border: '1px solid var(--hairline)',
-        }}>
-          <button
-            type="button"
-            aria-pressed={view === 'map'}
-            onClick={() => setView('map')}
-            style={toggleButtonStyle(view === 'map')}
-          >
-            OKR map
-          </button>
-          <button
-            type="button"
-            aria-pressed={view === 'my-thread'}
-            onClick={() => setView('my-thread')}
-            style={toggleButtonStyle(view === 'my-thread')}
-          >
-            My thread
-          </button>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            display: 'inline-flex',
+            gap: '4px',
+            padding: '4px',
+            borderRadius: '10px',
+            background: 'var(--panel)',
+            border: '1px solid var(--hairline)',
+          }}>
+            <button
+              type="button"
+              aria-pressed={view === 'map'}
+              onClick={() => setView('map')}
+              style={toggleButtonStyle(view === 'map')}
+            >
+              OKR map
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === 'my-thread'}
+              onClick={() => setView('my-thread')}
+              style={toggleButtonStyle(view === 'my-thread')}
+            >
+              My thread
+            </button>
+          </div>
+          {quarters.length > 0 && (
+            <QuarterSelector
+              quarters={quarters}
+              quarterId={quarterId}
+              onChange={selectQuarter}
+            />
+          )}
         </div>
         <button
           type="button"
