@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import useCompanyObjectives from '../hooks/useCompanyObjectives'
 import useIndividualObjectives from '../hooks/useIndividualObjectives'
 import useActiveQuarter from '../hooks/useActiveQuarter'
+import useQuarterIsPast from '../hooks/useQuarterIsPast'
 import ObjectiveCarousel from './ObjectiveCarousel'
 import OkrDialog from './OkrDialog'
 import Toast from './Toast'
@@ -113,6 +114,7 @@ function toggleButtonStyle(active) {
 
 export default function OkrMapPage() {
   const { quarterId, quarters = [], selectQuarter } = useActiveQuarter()
+  const isPastQuarter = useQuarterIsPast(quarters, quarterId)
   const { objectives, loading, error, refetch } = useCompanyObjectives(quarterId)
   const {
     objectives: individualObjectives,
@@ -182,21 +184,23 @@ export default function OkrMapPage() {
             />
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setDialogState({})}
-          style={{
-            font: '600 13px var(--font-display)',
-            padding: '8px 14px',
-            borderRadius: '10px',
-            border: '1px solid var(--hairline)',
-            background: 'var(--surface)',
-            color: 'var(--ink-900)',
-            cursor: 'pointer',
-          }}
-        >
-          + Add objective
-        </button>
+        {!isPastQuarter && (
+          <button
+            type="button"
+            onClick={() => setDialogState({})}
+            style={{
+              font: '600 13px var(--font-display)',
+              padding: '8px 14px',
+              borderRadius: '10px',
+              border: '1px solid var(--hairline)',
+              background: 'var(--surface)',
+              color: 'var(--ink-900)',
+              cursor: 'pointer',
+            }}
+          >
+            + Add objective
+          </button>
+        )}
       </div>
       {view === 'map' ? (
         <>
@@ -210,6 +214,7 @@ export default function OkrMapPage() {
               onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
               onStatusSaved={refetch}
               onKrSaved={refetch}
+              readOnly={isPastQuarter}
             />
           )}
           <AlignmentSummaryStrip objectives={individualObjectives} />
@@ -220,6 +225,7 @@ export default function OkrMapPage() {
           objectives={individualObjectives}
           companyObjectives={objectives}
           onEdit={objective => setDialogState({ objective })}
+          readOnly={isPastQuarter}
         />
       )}
       {toastMessage && (

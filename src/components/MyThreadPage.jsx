@@ -3,6 +3,7 @@ export default function MyThreadPage({
   objectives = [],
   companyObjectives = [],
   onEdit,
+  readOnly = false,
 }) {
   const mine = objectives.filter(o => o.owner_name === ownerName)
   if (mine.length === 0) return null
@@ -35,6 +36,7 @@ export default function MyThreadPage({
               <button
                 type="button"
                 onClick={() => onEdit?.(objective)}
+                disabled={readOnly}
                 style={{
                   font: '600 14px var(--font-display)',
                   padding: '10px 14px',
@@ -42,7 +44,8 @@ export default function MyThreadPage({
                   border: '1px solid var(--hairline)',
                   background: 'var(--surface)',
                   color: 'var(--ink-900)',
-                  cursor: 'pointer',
+                  cursor: readOnly ? 'default' : 'pointer',
+                  opacity: readOnly ? 0.6 : 1,
                   textAlign: 'left',
                   width: '100%',
                   display: 'flex',

@@ -657,4 +657,75 @@ describe('OkrMapPage', () => {
       expect(screen.queryByText(/Objective-level · /)).not.toBeInTheDocument()
     })
   })
+
+  describe('read-only past quarter (#5a-2)', () => {
+    function mockPastQuarter(quarterId = 'q1') {
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId,
+        quarters: [
+          { id: 'q1', label: 'Q1 2026', is_active: false },
+          { id: 'q2', label: 'Q2 2026', is_active: true },
+        ],
+        error: null,
+        selectQuarter: vi.fn(),
+      })
+    }
+
+    it('hides the "+ Add objective" trigger when the selected quarter is not the current quarter', () => {
+      mockPastQuarter()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByRole('button', { name: /add objective/i })).not.toBeInTheDocument()
+    })
+
+    it('keeps the "+ Add objective" trigger when the selected quarter is the current quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
+    })
+
+    it('prevents opening the status editor from the map carousel when the quarter is past', () => {
+      mockPastQuarter()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+    })
+
+    it('still allows opening the status editor from the map carousel for the current quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
+    })
+
+    it('passes readOnly to MyThreadPage when the selected quarter is past', () => {
+      mockPastQuarter()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
+      expect(props.readOnly).toBe(true)
+    })
+
+    it('passes readOnly false to MyThreadPage for the current quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
+      expect(props.readOnly).toBe(false)
+    })
+  })
 })

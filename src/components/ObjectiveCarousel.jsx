@@ -30,7 +30,12 @@ function carouselButtonStyle(disabled) {
   }
 }
 
-export default function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, onStatusSaved, onKrSaved }) {
+function swallowClick(e) {
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+export default function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, onStatusSaved, onKrSaved, readOnly }) {
   const total = objectives.length
   const current = objectives[index]
   const prefersReduced = usePrefersReducedMotion()
@@ -66,12 +71,18 @@ export default function ObjectiveCarousel({ objectives, index, onPrev, onNext, o
             animation: animate ? `carousel-slide-${direction} 280ms ease-out` : undefined,
           }}
         >
-          <ObjectiveCard
-            objective={current}
-            onCheckInSaved={onCheckInSaved}
-            onStatusSaved={onStatusSaved}
-            onKrSaved={onKrSaved}
-          />
+          <div
+            aria-disabled={readOnly || undefined}
+            onClickCapture={readOnly ? swallowClick : undefined}
+            style={readOnly ? { opacity: 0.6 } : undefined}
+          >
+            <ObjectiveCard
+              objective={current}
+              onCheckInSaved={onCheckInSaved}
+              onStatusSaved={onStatusSaved}
+              onKrSaved={onKrSaved}
+            />
+          </div>
         </div>
       </div>
       <div style={{

@@ -151,4 +151,38 @@ describe('MyThreadPage', () => {
     )
     expect(screen.getByText(/my thread/i)).toBeInTheDocument()
   })
+
+  describe('read-only past quarter (#5a-2)', () => {
+    it('disables the edit trigger when readOnly is true', () => {
+      const onEdit = vi.fn()
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          onEdit={onEdit}
+          readOnly
+        />
+      )
+      expect(screen.getByRole('button', { name: /Ship MVP/ })).toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: /Ship MVP/ }))
+      expect(onEdit).not.toHaveBeenCalled()
+    })
+
+    it('keeps the edit trigger enabled when readOnly is false', () => {
+      const onEdit = vi.fn()
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          onEdit={onEdit}
+          readOnly={false}
+        />
+      )
+      expect(screen.getByRole('button', { name: /Ship MVP/ })).not.toBeDisabled()
+      fireEvent.click(screen.getByRole('button', { name: /Ship MVP/ }))
+      expect(onEdit).toHaveBeenCalledWith(objectives[0])
+    })
+  })
 })
