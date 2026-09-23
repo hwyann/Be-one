@@ -247,4 +247,40 @@ describe('OkrDialog', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/DB error/i)
     expect(onSave).not.toHaveBeenCalled()
   })
+
+  it('expands the two coaching questions inline in the same dialog when "Coach me" is clicked', () => {
+    render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
+    expect(screen.queryByText(/これが達成されたら、他の誰か/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /coach me/i }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByText(/これが達成されたら、他の誰か/)).toBeInTheDocument()
+    expect(screen.getByText(/もしこれらのKRが目標の前進につながらなかったとしても/)).toBeInTheDocument()
+  })
+
+  it('closes the coach panel without requiring an answer when "Skip coaching" is clicked', () => {
+    render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
+    fireEvent.click(screen.getByRole('button', { name: /coach me/i }))
+    fireEvent.click(screen.getByRole('button', { name: /skip coaching/i }))
+    expect(screen.queryByText(/これが達成されたら、他の誰か/)).not.toBeInTheDocument()
+  })
+
+  it('proceeds with saving normally when the coach panel is open and unanswered', async () => {
+    const saved = { id: 'new-1', title: 'Grow revenue' }
+    mocks.select.mockResolvedValue({ data: [saved], error: null })
+    render(
+      <OkrDialog
+        quarterId="q1"
+        companyObjectives={companyObjectivesFixture}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /coach me/i }))
+    fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+    fireEvent.change(screen.getByLabelText(/aligns with/i), {
+      target: { value: 'objective_level:co-1' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
+  })
 })
