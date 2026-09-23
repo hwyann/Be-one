@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import ObjectiveCard from './ObjectiveCard'
 import CoachPanel from './CoachPanel'
+import useRationale from '../hooks/useRationale'
 
 export default function OkrDialog({
   quarterId,
@@ -15,6 +16,8 @@ export default function OkrDialog({
   const [link, setLink] = useState('')
   const [error, setError] = useState(null)
   const [showCoach, setShowCoach] = useState(false)
+  const [coachAnswers, setCoachAnswers] = useState({})
+  const { save: saveRationale } = useRationale(null)
 
   async function handleSave() {
     if (!title.trim()) return
@@ -40,7 +43,11 @@ export default function OkrDialog({
       setError(err.message)
       return
     }
-    onSave(data[0])
+    const savedObjective = data[0]
+    if (Object.keys(coachAnswers).length > 0) {
+      await saveRationale({ targetId: savedObjective.id, answers: coachAnswers })
+    }
+    onSave(savedObjective)
   }
 
   return (
@@ -79,7 +86,9 @@ export default function OkrDialog({
       <button type="button" onClick={() => setShowCoach(true)}>
         Coach me
       </button>
-      {showCoach && <CoachPanel onSkip={() => setShowCoach(false)} />}
+      {showCoach && (
+        <CoachPanel onSkip={() => setShowCoach(false)} onAnswersChange={setCoachAnswers} />
+      )}
       {objective && (
         <ObjectiveCard
           objective={objective}

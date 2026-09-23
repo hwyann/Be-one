@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import StatusEditor from './StatusEditor'
 import KrListInline from './KrListInline'
+import RationaleSection from './RationaleSection'
 import { STATUS_BY_VALUE } from '../lib/statuses'
+import useRationale from '../hooks/useRationale'
 
 export default function ObjectiveCard({
   objective,
@@ -16,6 +18,7 @@ export default function ObjectiveCard({
     : null
   const keyResults = objective.key_results ?? []
   const [editingStatus, setEditingStatus] = useState(false)
+  const { rationale } = useRationale(id)
 
   return (
     <div style={{
@@ -92,6 +95,7 @@ export default function ObjectiveCard({
         onCheckInSaved={onCheckInSaved}
         onKrSaved={onKrSaved}
       />
+      <RationaleSection rationale={rationale} />
     </div>
   )
 }

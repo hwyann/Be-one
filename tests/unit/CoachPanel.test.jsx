@@ -20,4 +20,20 @@ describe('CoachPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: /skip coaching/i }))
     expect(onSkip).toHaveBeenCalled()
   })
+
+  it('reports answers keyed by question_key (outcome_check / alignment_check) as they are typed', () => {
+    const onAnswersChange = vi.fn()
+    render(<CoachPanel onSkip={vi.fn()} onAnswersChange={onAnswersChange} />)
+    fireEvent.change(screen.getByLabelText(/これが達成されたら、他の誰か/), {
+      target: { value: 'Clients stop waiting.' },
+    })
+    expect(onAnswersChange).toHaveBeenLastCalledWith({ outcome_check: 'Clients stop waiting.' })
+    fireEvent.change(screen.getByLabelText(/もしこれらのKRが目標の前進につながらなかったとしても/), {
+      target: { value: 'Yes, still worth it.' },
+    })
+    expect(onAnswersChange).toHaveBeenLastCalledWith({
+      outcome_check: 'Clients stop waiting.',
+      alignment_check: 'Yes, still worth it.',
+    })
+  })
 })

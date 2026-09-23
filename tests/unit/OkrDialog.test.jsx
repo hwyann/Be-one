@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   eq: vi.fn(),
   select: vi.fn(),
   single: vi.fn(),
+  rationaleSave: vi.fn(),
 }))
 
 vi.mock('../../src/lib/supabase', () => ({
@@ -32,6 +33,17 @@ vi.mock('../../src/lib/supabase', () => ({
       update: mocks.update,
     }),
   },
+}))
+
+vi.mock('../../src/hooks/useRationale', () => ({
+  default: () => ({
+    rationale: [],
+    loading: false,
+    error: null,
+    saving: false,
+    save: mocks.rationaleSave,
+    refetch: vi.fn(),
+  }),
 }))
 
 import OkrDialog from '../../src/components/OkrDialog'
@@ -46,6 +58,7 @@ describe('OkrDialog', () => {
     mocks.update.mockReturnValue({ eq: mocks.eq })
     mocks.eq.mockReturnValue({ select: mocks.select })
     mocks.select.mockResolvedValue({ data: null, error: null })
+    mocks.rationaleSave.mockResolvedValue(true)
   })
 
   it('renders title input and Save/Cancel buttons', () => {
@@ -282,5 +295,59 @@ describe('OkrDialog', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
+  })
+
+  it('persists both coach answers as rationale rows linked to the saved objective', async () => {
+    const saved = { id: 'new-1', title: 'Grow revenue' }
+    mocks.select.mockResolvedValue({ data: [saved], error: null })
+    render(
+      <OkrDialog
+        quarterId="q1"
+        companyObjectives={companyObjectivesFixture}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: /coach me/i }))
+    fireEvent.change(screen.getByLabelText(/これが達成されたら、他の誰か/), {
+      target: { value: 'Clients stop waiting.' },
+    })
+    fireEvent.change(screen.getByLabelText(/もしこれらのKRが目標の前進につながらなかったとしても/), {
+      target: { value: 'Yes, still worth it.' },
+    })
+    fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+    fireEvent.change(screen.getByLabelText(/aligns with/i), {
+      target: { value: 'objective_level:co-1' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() =>
+      expect(mocks.rationaleSave).toHaveBeenCalledWith({
+        targetId: 'new-1',
+        answers: {
+          outcome_check: 'Clients stop waiting.',
+          alignment_check: 'Yes, still worth it.',
+        },
+      })
+    )
+  })
+
+  it('does not call rationale save when the coach panel was skipped (no answers)', async () => {
+    const saved = { id: 'new-1', title: 'Grow revenue' }
+    mocks.select.mockResolvedValue({ data: [saved], error: null })
+    render(
+      <OkrDialog
+        quarterId="q1"
+        companyObjectives={companyObjectivesFixture}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+    fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+    fireEvent.change(screen.getByLabelText(/aligns with/i), {
+      target: { value: 'objective_level:co-1' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
+    expect(mocks.rationaleSave).not.toHaveBeenCalled()
   })
 })

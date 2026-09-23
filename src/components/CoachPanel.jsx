@@ -1,21 +1,25 @@
 import { useState } from 'react'
 
-const QUESTIONS = [
+export const QUESTIONS = [
   {
-    id: 'outcome',
+    id: 'outcome_check',
     text: 'これが達成されたら、他の誰か（クライアント・チームメンバー・会社）にとって、何もしなければ変わらなかった何が変わりますか？',
   },
   {
-    id: 'alignment',
+    id: 'alignment_check',
     text: 'もしこれらのKRが目標の前進につながらなかったとしても、あなたはそれらをやりますか？',
   },
 ]
 
-export default function CoachPanel({ onSkip }) {
+export default function CoachPanel({ onSkip, onAnswersChange }) {
   const [answers, setAnswers] = useState({})
 
   function handleAnswerChange(id, value) {
-    setAnswers((prev) => ({ ...prev, [id]: value }))
+    setAnswers((prev) => {
+      const next = { ...prev, [id]: value }
+      onAnswersChange?.(next)
+      return next
+    })
   }
 
   return (

@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   krCreate: vi.fn(),
   krUpdate: vi.fn(),
+  rationaleRefetch: vi.fn(),
+  useRationaleMock: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCheckIns', () => ({
@@ -28,6 +30,10 @@ vi.mock('../../src/hooks/useKrMutation', () => ({
   }),
 }))
 
+vi.mock('../../src/hooks/useRationale', () => ({
+  default: (...args) => mocks.useRationaleMock(...args),
+}))
+
 import ObjectiveCard from '../../src/components/ObjectiveCard'
 
 beforeEach(() => {
@@ -35,6 +41,14 @@ beforeEach(() => {
   mocks.update.mockResolvedValue(true)
   mocks.krCreate.mockResolvedValue(true)
   mocks.krUpdate.mockResolvedValue(true)
+  mocks.useRationaleMock.mockReturnValue({
+    rationale: [],
+    loading: false,
+    error: null,
+    saving: false,
+    save: vi.fn(),
+    refetch: mocks.rationaleRefetch,
+  })
 })
 
 describe('ObjectiveCard', () => {
@@ -416,6 +430,81 @@ describe('ObjectiveCard', () => {
       }
       render(<ObjectiveCard objective={withKrs} />)
       expect(screen.getByText(/stretch: 200/)).toBeInTheDocument()
+    })
+  })
+
+  describe('rationale', () => {
+    const rationaleRows = [
+      { id: 'r1', question_key: 'outcome_check', answer: 'Clients stop waiting.' },
+      { id: 'r2', question_key: 'alignment_check', answer: 'Yes, still worth it.' },
+    ]
+
+    it('does not render a "View rationale" toggle when the objective has no saved rationale', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByRole('button', { name: /view rationale/i })).not.toBeInTheDocument()
+    })
+
+    it('renders a "View rationale" toggle when the objective has saved rationale', () => {
+      mocks.useRationaleMock.mockReturnValue({
+        rationale: rationaleRows,
+        loading: false,
+        error: null,
+        saving: false,
+        save: vi.fn(),
+        refetch: mocks.rationaleRefetch,
+      })
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.getByRole('button', { name: /view rationale/i })).toBeInTheDocument()
+    })
+
+    it('hides the rationale content by default', () => {
+      mocks.useRationaleMock.mockReturnValue({
+        rationale: rationaleRows,
+        loading: false,
+        error: null,
+        saving: false,
+        save: vi.fn(),
+        refetch: mocks.rationaleRefetch,
+      })
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByText('Clients stop waiting.')).not.toBeInTheDocument()
+      expect(screen.queryByText('Yes, still worth it.')).not.toBeInTheDocument()
+    })
+
+    it('shows the rationale question and answer after clicking "View rationale"', () => {
+      mocks.useRationaleMock.mockReturnValue({
+        rationale: rationaleRows,
+        loading: false,
+        error: null,
+        saving: false,
+        save: vi.fn(),
+        refetch: mocks.rationaleRefetch,
+      })
+      render(<ObjectiveCard objective={objective} />)
+      fireEvent.click(screen.getByRole('button', { name: /view rationale/i }))
+      expect(screen.getByText('Clients stop waiting.')).toBeInTheDocument()
+      expect(screen.getByText('Yes, still worth it.')).toBeInTheDocument()
+    })
+
+    it('hides the rationale content again when the toggle is clicked a second time', () => {
+      mocks.useRationaleMock.mockReturnValue({
+        rationale: rationaleRows,
+        loading: false,
+        error: null,
+        saving: false,
+        save: vi.fn(),
+        refetch: mocks.rationaleRefetch,
+      })
+      render(<ObjectiveCard objective={objective} />)
+      fireEvent.click(screen.getByRole('button', { name: /view rationale/i }))
+      expect(screen.getByText('Clients stop waiting.')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /view rationale/i }))
+      expect(screen.queryByText('Clients stop waiting.')).not.toBeInTheDocument()
+    })
+
+    it('fetches rationale scoped to the objective id', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(mocks.useRationaleMock).toHaveBeenCalledWith('1')
     })
   })
 })
