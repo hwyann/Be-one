@@ -1,5 +1,7 @@
 import useCheckInHistory from '../hooks/useCheckInHistory'
 import useKrSummary from '../hooks/useKrSummary'
+import useCheckInQuestions from '../hooks/useCheckInQuestions'
+import CheckInQuestion from './CheckInQuestion'
 import { STATUS_BY_VALUE } from '../lib/statuses'
 
 const DATE_FORMAT = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
@@ -54,6 +56,8 @@ function SummaryBlock({ status, summary }) {
 export default function CheckInHistory({ individualObjectiveId }) {
   const { checkIns, error } = useCheckInHistory(individualObjectiveId)
   const { summary, status: summaryStatus } = useKrSummary(individualObjectiveId)
+  const checkInIds = checkIns.map(ci => ci.id)
+  const { questionsByCheckInId, askQuestion, replyToQuestion } = useCheckInQuestions(checkInIds)
 
   return (
     <div
@@ -98,6 +102,11 @@ export default function CheckInHistory({ individualObjectiveId }) {
                     Next: {ci.plan_next}
                   </div>
                 )}
+                <CheckInQuestion
+                  question={questionsByCheckInId[ci.id] ?? null}
+                  onAsk={questionText => askQuestion(ci.id, questionText)}
+                  onReply={(questionId, replyText) => replyToQuestion(questionId, replyText)}
+                />
               </li>
             )
           })}
