@@ -138,6 +138,59 @@ describe('QuarterReviewModal', () => {
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
+  it('syncs form state when review data arrives asynchronously after initial render (#B3)', () => {
+    // Initial render happens while useQuarterReview is still loading (review: null).
+    setReview(null)
+    mocks.useQuarterReviewMock.mockReturnValueOnce({
+      review: null,
+      loading: true,
+      error: null,
+      saving: false,
+      save: mocks.save,
+      refetch: vi.fn(),
+    })
+    const { rerender } = render(<QuarterReviewModal objectiveId="io-1" onDone={() => {}} />)
+
+    // The async load resolves with an existing, possibly-finalized review.
+    mocks.useQuarterReviewMock.mockReturnValue({
+      review: {
+        id: 'qr-1',
+        final_status: 'behind',
+        member_reflection: 'Real reflection',
+        member_confirmed_at: '2026-09-20T00:00:00Z',
+        manager_comment: 'Real comment',
+        manager_confirmed_at: '2026-09-23T10:00:00.000Z',
+        finalized_at: '2026-09-23T10:00:00.000Z',
+      },
+      loading: false,
+      error: null,
+      saving: false,
+      save: mocks.save,
+      refetch: vi.fn(),
+    })
+    rerender(<QuarterReviewModal objectiveId="io-1" onDone={() => {}} />)
+
+    expect(screen.getByLabelText(/member's reflection/i)).toHaveValue('Real reflection')
+    expect(screen.getByLabelText(/manager's comment/i)).toHaveValue('Real comment')
+    expect(screen.getByRole('checkbox', { name: /member confirms/i })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /manager confirms/i })).toBeChecked()
+    const group = screen.getByRole('radiogroup', { name: /final status/i })
+    expect(within(group).getByRole('radio', { name: /behind/i })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('disables Save while the review is still loading, preventing a null-overwrite race (#B3)', () => {
+    mocks.useQuarterReviewMock.mockReturnValue({
+      review: null,
+      loading: true,
+      error: null,
+      saving: false,
+      save: mocks.save,
+      refetch: vi.fn(),
+    })
+    render(<QuarterReviewModal objectiveId="io-1" onDone={() => {}} />)
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
+  })
+
   it('shows a save error when the save fails', async () => {
     mocks.useQuarterReviewMock.mockReturnValue({
       review: null,

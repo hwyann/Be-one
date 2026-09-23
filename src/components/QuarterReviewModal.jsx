@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { STATUSES } from '../lib/statuses'
 import useQuarterReview from '../hooks/useQuarterReview'
 
@@ -44,12 +44,24 @@ function buttonStyle(primary) {
 }
 
 export default function QuarterReviewModal({ objectiveId, onDone }) {
-  const { review, save, saving, error } = useQuarterReview(objectiveId)
+  const { review, loading, save, saving, error } = useQuarterReview(objectiveId)
   const [finalStatus, setFinalStatus] = useState(review?.final_status ?? null)
   const [memberReflection, setMemberReflection] = useState(review?.member_reflection ?? '')
   const [memberConfirmed, setMemberConfirmed] = useState(!!review?.member_confirmed_at)
   const [managerComment, setManagerComment] = useState(review?.manager_comment ?? '')
   const [managerConfirmed, setManagerConfirmed] = useState(!!review?.manager_confirmed_at)
+
+  // `review` arrives asynchronously from useQuarterReview, after this
+  // component's first render — sync local form state whenever it (re)loads
+  // so an existing, possibly-finalized review isn't shown as blank/unchecked
+  // and later saved over with nulls (#B3).
+  useEffect(() => {
+    setFinalStatus(review?.final_status ?? null)
+    setMemberReflection(review?.member_reflection ?? '')
+    setMemberConfirmed(!!review?.member_confirmed_at)
+    setManagerComment(review?.manager_comment ?? '')
+    setManagerConfirmed(!!review?.manager_confirmed_at)
+  }, [review])
 
   async function handleSave() {
     await save({
@@ -162,7 +174,7 @@ export default function QuarterReviewModal({ objectiveId, onDone }) {
         <button type="button" onClick={() => onDone?.()} style={buttonStyle(false)}>
           Close
         </button>
-        <button type="button" onClick={handleSave} disabled={saving} style={buttonStyle(true)}>
+        <button type="button" onClick={handleSave} disabled={saving || loading} style={buttonStyle(true)}>
           Save
         </button>
       </div>
