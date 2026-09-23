@@ -3,6 +3,7 @@ import useCompanyObjectives from '../hooks/useCompanyObjectives'
 import useIndividualObjectives from '../hooks/useIndividualObjectives'
 import useActiveQuarter from '../hooks/useActiveQuarter'
 import useQuarterIsPast from '../hooks/useQuarterIsPast'
+import useViewMode from '../hooks/useViewMode'
 import ObjectiveCarousel from './ObjectiveCarousel'
 import OkrDialog from './OkrDialog'
 import Toast from './Toast'
@@ -112,6 +113,36 @@ function toggleButtonStyle(active) {
   }
 }
 
+function ViewModeToggle({ viewMode, onChange }) {
+  return (
+    <div style={{
+      display: 'inline-flex',
+      gap: '4px',
+      padding: '4px',
+      borderRadius: '10px',
+      background: 'var(--panel)',
+      border: '1px solid var(--hairline)',
+    }}>
+      <button
+        type="button"
+        aria-pressed={viewMode === 'member'}
+        onClick={() => onChange('member')}
+        style={toggleButtonStyle(viewMode === 'member')}
+      >
+        Member
+      </button>
+      <button
+        type="button"
+        aria-pressed={viewMode === 'manager'}
+        onClick={() => onChange('manager')}
+        style={toggleButtonStyle(viewMode === 'manager')}
+      >
+        Manager
+      </button>
+    </div>
+  )
+}
+
 export default function OkrMapPage() {
   const { quarterId, quarters = [], selectQuarter } = useActiveQuarter()
   const isPastQuarter = useQuarterIsPast(quarters, quarterId)
@@ -120,9 +151,10 @@ export default function OkrMapPage() {
     objectives: individualObjectives,
     refetch: refetchIndividual,
   } = useIndividualObjectives(quarterId)
+  const { viewMode, setViewMode } = useViewMode()
   const [dialogState, setDialogState] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
-  const [view, setView] = useState('map')
+  const [view, setView] = useState(viewMode === 'manager' ? 'map' : 'my-thread')
   const [carouselIndex, setCarouselIndex] = useState(0)
 
   useEffect(() => { setCarouselIndex(0) }, [quarterId])
@@ -183,6 +215,7 @@ export default function OkrMapPage() {
               onChange={selectQuarter}
             />
           )}
+          <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
         {!isPastQuarter && (
           <button
