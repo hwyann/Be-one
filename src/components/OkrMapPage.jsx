@@ -147,7 +147,7 @@ function ViewModeToggle({ viewMode, onChange }) {
 export default function OkrMapPage() {
   const { quarterId, quarters = [], selectQuarter } = useActiveQuarter()
   const isPastQuarter = useQuarterIsPast(quarters, quarterId)
-  const { canCreate } = useCanCreateObjective(quarterId)
+  const { canCreate, refetch: refetchCanCreate } = useCanCreateObjective(quarterId, quarters)
   const { objectives, loading, error, refetch } = useCompanyObjectives(quarterId)
   const {
     objectives: individualObjectives,
@@ -171,8 +171,12 @@ export default function OkrMapPage() {
   function closeDialog() { setDialogState(null) }
 
   function handleSave() {
-    if (dialogState.objective) refetchIndividual()
-    else refetch()
+    if (dialogState.objective) {
+      refetchIndividual()
+    } else {
+      refetch()
+      refetchCanCreate()
+    }
     closeDialog()
   }
 

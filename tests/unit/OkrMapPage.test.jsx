@@ -771,10 +771,53 @@ describe('OkrMapPage', () => {
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
     })
 
-    it('passes the active quarterId to useCanCreateObjective', () => {
+    it('passes the active quarterId and quarters list to useCanCreateObjective', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       render(<OkrMapPage />)
-      expect(mocks.useCanCreateObjective).toHaveBeenCalledWith('q1')
+      expect(mocks.useCanCreateObjective).toHaveBeenCalledWith('q1', [
+        { id: 'q1', label: 'Q1 2026', is_active: true },
+        { id: 'q2', label: 'Q2 2026', is_active: false },
+      ])
+    })
+
+    it('refetches creation eligibility after a new objective is created (#B2)', () => {
+      const refetchCanCreate = vi.fn()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useCanCreateObjective.mockReturnValue({
+        canCreate: true,
+        loading: false,
+        error: null,
+        refetch: refetchCanCreate,
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+      const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+      act(() => { props.onSave({ id: 'new-1', title: 'New objective' }) })
+      expect(refetchCanCreate).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not refetch creation eligibility when saving an edit to an existing objective (#B2)', () => {
+      const refetchCanCreate = vi.fn()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useCanCreateObjective.mockReturnValue({
+        canCreate: true,
+        loading: false,
+        error: null,
+        refetch: refetchCanCreate,
+      })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
+      act(() => { myThreadProps.onEdit(individualObjectives[0]) })
+      const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+      act(() => { props.onSave({ id: 'io-1', title: 'Ship MVP v2' }) })
+      expect(refetchCanCreate).not.toHaveBeenCalled()
     })
   })
 
