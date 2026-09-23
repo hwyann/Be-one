@@ -1,11 +1,31 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-// Gate for the "+ Add objective" action (#8b). A quarter is clear to add a
-// new objective when either it has no individual objectives yet (fresh
-// start — nothing to review), or every individual objective in it already
-// has a finalized quarter_reviews row (see useQuarterReview / #8a).
-export default function useCanCreateObjective(quarterId) {
+// Finds the quarter immediately prior to `quarterId`: the quarter whose
+// end_date is the latest end_date still before the selected quarter's
+// start_date. Returns null when no such quarter exists (e.g. the very
+// first quarter ever).
+function findPriorQuarter(quarters, quarterId) {
+  const list = quarters ?? []
+  const selected = list.find(q => q.id === quarterId)
+  if (!selected?.start_date) return null
+
+  const candidates = list.filter(
+    q => q.id !== quarterId && q.end_date != null && q.end_date < selected.start_date,
+  )
+  if (candidates.length === 0) return null
+
+  return candidates.reduce((latest, q) => (q.end_date > latest.end_date ? q : latest))
+}
+
+// Gate for the "+ Add objective" action (#8b, fixed in #B1). A brand-new
+// quarter always has zero objectives of its own, so gating on the
+// *selected* quarter's objectives is meaningless — it always says "go
+// ahead". The real restart gate is whether the PRIOR quarter's individual
+// objectives were reviewed and finalized (see useQuarterReview / #8a).
+// If there is no chronologically-prior quarter, or the prior quarter has
+// no individual objectives, the gate is vacuously satisfied.
+export default function useCanCreateObjective(quarterId, quarters = []) {
   const [canCreate, setCanCreate] = useState(false)
   const [loading, setLoading] = useState(quarterId != null)
   const [error, setError] = useState(null)
@@ -14,10 +34,18 @@ export default function useCanCreateObjective(quarterId) {
     if (quarterId == null) return
     setLoading(true)
 
+    const prior = findPriorQuarter(quarters, quarterId)
+    if (!prior) {
+      setError(null)
+      setCanCreate(true)
+      setLoading(false)
+      return
+    }
+
     const { data: objectives, error: oError } = await supabase
       .from('individual_objectives')
       .select('id')
-      .eq('quarter_id', quarterId)
+      .eq('quarter_id', prior.id)
 
     if (oError) {
       setError(oError.message)
@@ -52,7 +80,7 @@ export default function useCanCreateObjective(quarterId) {
     setError(null)
     setCanCreate(ids.every(id => finalizedIds.has(id)))
     setLoading(false)
-  }, [quarterId])
+  }, [quarterId, quarters])
 
   useEffect(() => { load() }, [load])
 
