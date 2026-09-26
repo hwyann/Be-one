@@ -121,6 +121,7 @@ describe('OkrMapPage', () => {
 
   it('renders an "Add objective" trigger on My Thread', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
@@ -134,6 +135,7 @@ describe('OkrMapPage', () => {
 
   it('opens the dialog when the trigger is clicked', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -143,6 +145,7 @@ describe('OkrMapPage', () => {
   it('closes the dialog and refetches on save', () => {
     const refetch = vi.fn()
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -161,6 +164,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: refetchIndividual,
     })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -172,6 +176,7 @@ describe('OkrMapPage', () => {
   it('closes the dialog on cancel without refetching', () => {
     const refetch = vi.fn()
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -190,6 +195,7 @@ describe('OkrMapPage', () => {
 
   it('shows "+ Add objective" on My Thread view when current quarter and canCreate (#B8)', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
@@ -197,17 +203,18 @@ describe('OkrMapPage', () => {
 
   it('renders a segmented toggle labeled "OKR map" and "My thread"', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     expect(screen.getByRole('button', { name: /^okr map$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /my thread/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^map$/i })).not.toBeInTheDocument()
   })
 
-  it('defaults to Map view with the OKR map selected and My thread unselected', () => {
+  it('defaults to Map view with the OKR map selected and My thread not rendered in Manager mode (#B11)', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     render(<OkrMapPage />)
     expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: /my thread/i })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('button', { name: /my thread/i })).not.toBeInTheDocument()
   })
 
   it('renders the map carousel and hides MyThreadPage in Map view', () => {
@@ -231,6 +238,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: vi.fn(),
     })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     expect(screen.getByTestId('my-thread')).toBeInTheDocument()
@@ -247,6 +255,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: vi.fn(),
     })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
@@ -257,6 +266,7 @@ describe('OkrMapPage', () => {
   it('preserves the active quarter across view toggles', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q42', error: null })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
@@ -274,6 +284,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: vi.fn(),
     })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     expect(screen.getByTestId('my-thread')).toBeInTheDocument()
@@ -291,6 +302,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: vi.fn(),
     })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
@@ -314,6 +326,7 @@ describe('OkrMapPage', () => {
 
   it('opens the dialog in add mode (no objective prop) when + Add objective is clicked', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -323,6 +336,7 @@ describe('OkrMapPage', () => {
 
   it('passes the company objectives tree to the dialog for the alignment selector', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -333,6 +347,7 @@ describe('OkrMapPage', () => {
   it('passes the active quarterId to the dialog', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q42', error: null })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -349,6 +364,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: refetchIndividual,
     })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
@@ -368,6 +384,7 @@ describe('OkrMapPage', () => {
       error: null,
       refetch: refetchIndividual,
     })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
@@ -409,6 +426,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: vi.fn(),
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.queryByText('Company Objective')).not.toBeInTheDocument()
@@ -476,6 +494,7 @@ describe('OkrMapPage', () => {
         error: null,
         selectQuarter: vi.fn(),
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
@@ -647,6 +666,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: vi.fn(),
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.queryByText('Direct KR link')).not.toBeInTheDocument()
@@ -707,6 +727,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: vi.fn(),
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.queryByText(/Direct KR · /)).not.toBeInTheDocument()
@@ -736,6 +757,7 @@ describe('OkrMapPage', () => {
 
     it('keeps the "+ Add objective" trigger when the selected quarter is the current quarter', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
@@ -765,6 +787,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: vi.fn(),
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
@@ -779,6 +802,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: vi.fn(),
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
@@ -807,6 +831,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: vi.fn(),
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
@@ -830,6 +855,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: refetchCanCreate,
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
@@ -853,6 +879,7 @@ describe('OkrMapPage', () => {
         error: null,
         refetch: refetchCanCreate,
       })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       const myThreadProps = mocks.MyThreadPage.mock.calls.at(-1)[0]
@@ -869,7 +896,9 @@ describe('OkrMapPage', () => {
       mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByRole('button', { name: /my thread/i })).toHaveAttribute('aria-pressed', 'false')
+      // My Thread is not a real manager identity in this demo, so the toggle
+      // isn't rendered at all in Manager mode (#B11) rather than shown unselected.
+      expect(screen.queryByRole('button', { name: /my thread/i })).not.toBeInTheDocument()
     })
 
     it('defaults to the My Thread screen when view mode is Member', () => {
@@ -935,7 +964,10 @@ describe('OkrMapPage', () => {
       expect(screen.queryByTestId('my-thread')).not.toBeInTheDocument()
     })
 
-    it('still allows switching from Map to My Thread in Manager mode (existing toggle keeps working)', () => {
+  })
+
+  describe('My Thread hidden in Manager mode (#B11)', () => {
+    it('does not render the "My thread" toggle button in Manager mode, only "OKR map"', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       mocks.useIndividualObjectives.mockReturnValue({
         objectives: individualObjectives,
@@ -945,9 +977,52 @@ describe('OkrMapPage', () => {
       })
       mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
       render(<OkrMapPage />)
+      expect(screen.getByRole('button', { name: /^okr map$/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /my thread/i })).not.toBeInTheDocument()
+    })
+
+    it('falls back to the OKR map (not a stale My Thread view) when switching to Manager mode while on My Thread', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      const { rerender } = render(<OkrMapPage />)
+      expect(screen.getByTestId('my-thread')).toBeInTheDocument()
+
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      rerender(<OkrMapPage />)
+
+      expect(screen.queryByTestId('my-thread')).not.toBeInTheDocument()
+      expect(screen.getByText('Expand into new markets')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.queryByRole('button', { name: /my thread/i })).not.toBeInTheDocument()
+    })
+
+    it('makes My Thread available again when switching back to Member mode, without forcing the view away from the Map (#7a default-view unaffected)', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives,
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      const { rerender } = render(<OkrMapPage />)
+      expect(screen.queryByRole('button', { name: /my thread/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'true')
+
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      rerender(<OkrMapPage />)
+
+      expect(screen.getByRole('button', { name: /my thread/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'true')
+
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.getByTestId('my-thread')).toBeInTheDocument()
-      expect(screen.queryByText('Expand into new markets')).not.toBeInTheDocument()
     })
   })
 })

@@ -161,6 +161,12 @@ export default function OkrMapPage() {
 
   useEffect(() => { setCarouselIndex(0) }, [quarterId])
 
+  useEffect(() => {
+    if (viewMode === 'manager' && view === 'my-thread') {
+      setView('map')
+    }
+  }, [viewMode, view])
+
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
 
@@ -206,14 +212,16 @@ export default function OkrMapPage() {
             >
               OKR map
             </button>
-            <button
-              type="button"
-              aria-pressed={view === 'my-thread'}
-              onClick={() => setView('my-thread')}
-              style={toggleButtonStyle(view === 'my-thread')}
-            >
-              My thread
-            </button>
+            {viewMode !== 'manager' && (
+              <button
+                type="button"
+                aria-pressed={view === 'my-thread'}
+                onClick={() => setView('my-thread')}
+                style={toggleButtonStyle(view === 'my-thread')}
+              >
+                My thread
+              </button>
+            )}
           </div>
           {quarters.length > 0 && (
             <QuarterSelector
