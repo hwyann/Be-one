@@ -142,6 +142,22 @@ describe('useIndividualObjectives', () => {
     expect(capturedSelect).toContain('key_result_id')
   })
 
+  it('qualifies the key_results embed by its owning FK to avoid PostgREST ambiguity', async () => {
+    let capturedSelect
+    const eqMock = vi.fn().mockResolvedValue({ data: [], error: null })
+    const selectSpy = vi.fn().mockImplementation(sel => {
+      capturedSelect = sel
+      return { eq: eqMock }
+    })
+    mocks.from.mockImplementation(table => {
+      if (table === 'quarters') return makeQuartersMock({ data: { id: 'q1' }, error: null })
+      return { select: selectSpy }
+    })
+    const { result } = renderHook(() => useIndividualObjectives())
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(capturedSelect).toContain('key_results!key_results_individual_objective_id_fkey(id, title, target_note)')
+  })
+
   it('refetch reloads the objectives', async () => {
     const first = [{ id: 'io-1', title: 'A' }]
     const second = [
