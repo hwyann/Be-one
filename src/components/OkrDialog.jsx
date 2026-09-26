@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import ObjectiveCard from './ObjectiveCard'
 import CoachPanel from './CoachPanel'
+import CheckInPanel from './CheckInPanel'
+import CheckInHistory from './CheckInHistory'
 import { KrForm } from './KrListInline'
 import useRationale from '../hooks/useRationale'
 import useKrMutation from '../hooks/useKrMutation'
@@ -90,6 +92,18 @@ const footerRowStyle = {
   marginTop: '4px',
 }
 
+function pillButtonStyle() {
+  return {
+    font: '500 11px var(--font-sans)',
+    padding: '4px 8px',
+    borderRadius: '999px',
+    border: '1px solid var(--hairline)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+  }
+}
+
 export default function OkrDialog({
   quarterId,
   objective = null,
@@ -105,6 +119,7 @@ export default function OkrDialog({
   const [coachAnswers, setCoachAnswers] = useState({})
   const [draftKrs, setDraftKrs] = useState([])
   const [showDraftKrForm, setShowDraftKrForm] = useState(false)
+  const [checkInMode, setCheckInMode] = useState(null)
   const { save: saveRationale } = useRationale(null)
   const { create: createKr } = useKrMutation()
 
@@ -250,11 +265,40 @@ export default function OkrDialog({
         <CoachPanel onSkip={() => setShowCoach(false)} onAnswersChange={setCoachAnswers} />
       )}
       {objective && (
-        <ObjectiveCard
-          objective={objective}
-          individualObjectiveId={objective.id}
-          onKrSaved={onKrSaved}
-        />
+        <>
+          <ObjectiveCard
+            objective={objective}
+            individualObjectiveId={objective.id}
+            onKrSaved={onKrSaved}
+          />
+          <div style={{ display: 'flex', gap: '6px' }}>
+            {checkInMode !== 'checkin' && (
+              <button
+                type="button"
+                onClick={() => setCheckInMode(mode => (mode === 'checkin' ? null : 'checkin'))}
+                style={pillButtonStyle()}
+              >
+                Check in
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setCheckInMode(mode => (mode === 'history' ? null : 'history'))}
+              style={pillButtonStyle()}
+            >
+              History
+            </button>
+          </div>
+          {checkInMode === 'checkin' && (
+            <CheckInPanel
+              individualObjectiveId={objective.id}
+              onDone={() => setCheckInMode(null)}
+            />
+          )}
+          {checkInMode === 'history' && (
+            <CheckInHistory individualObjectiveId={objective.id} />
+          )}
+        </>
       )}
       <div style={footerRowStyle}>
         <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>

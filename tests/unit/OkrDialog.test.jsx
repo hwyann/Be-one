@@ -25,6 +25,8 @@ const mocks = vi.hoisted(() => ({
   single: vi.fn(),
   rationaleSave: vi.fn(),
   krInsert: vi.fn(),
+  checkInSave: vi.fn(),
+  useCheckInHistoryMock: vi.fn(),
 }))
 
 vi.mock('../../src/lib/supabase', () => ({
@@ -38,6 +40,9 @@ vi.mock('../../src/lib/supabase', () => ({
         update: mocks.update,
       }
     },
+    functions: {
+      invoke: vi.fn().mockResolvedValue({ data: { status: 'insufficient_data' }, error: null }),
+    },
   },
 }))
 
@@ -50,6 +55,14 @@ vi.mock('../../src/hooks/useRationale', () => ({
     save: mocks.rationaleSave,
     refetch: vi.fn(),
   }),
+}))
+
+vi.mock('../../src/hooks/useCheckIns', () => ({
+  default: () => ({ save: mocks.checkInSave, saving: false, error: null }),
+}))
+
+vi.mock('../../src/hooks/useCheckInHistory', () => ({
+  default: (...args) => mocks.useCheckInHistoryMock(...args),
 }))
 
 import OkrDialog from '../../src/components/OkrDialog'
@@ -66,6 +79,8 @@ describe('OkrDialog', () => {
     mocks.select.mockResolvedValue({ data: null, error: null })
     mocks.rationaleSave.mockResolvedValue(true)
     mocks.krInsert.mockResolvedValue({ error: null })
+    mocks.checkInSave.mockResolvedValue(true)
+    mocks.useCheckInHistoryMock.mockReturnValue({ checkIns: [], loading: false, error: null })
   })
 
   async function addDraftKr(title = 'Ship v1') {
@@ -461,6 +476,72 @@ describe('OkrDialog', () => {
       const cancelButton = screen.getByRole('button', { name: /cancel/i })
       expect(cancelButton.style.borderRadius).not.toBe('')
       expect(cancelButton.style.padding).not.toBe('')
+    })
+  })
+
+  describe('unified check-in and history drill-down (#B13)', () => {
+    const existingObjective = { id: 'obj-1', title: 'Ship MVP' }
+
+    it('renders a Check-in trigger and a History trigger when editing an existing objective', () => {
+      render(<OkrDialog quarterId="q1" objective={existingObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    })
+
+    it('does not render a Check-in or History trigger when creating a new objective', () => {
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
+    })
+
+    it('opens a Check-in panel scoped to the objective when the Check-in trigger is clicked', () => {
+      render(<OkrDialog quarterId="q1" objective={existingObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByRole('group', { name: /^check-in$/i })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+      expect(screen.getByRole('group', { name: /^check-in$/i })).toBeInTheDocument()
+    })
+
+    it('records the check-in against the objective as a whole via individual_objective_id, not per KR', async () => {
+      render(<OkrDialog quarterId="q1" objective={existingObjective} onSave={onSave} onClose={onClose} />)
+      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+      const group = screen.getByRole('group', { name: /^check-in$/i })
+      fireEvent.click(within(group).getByRole('radio', { name: /on track/i }))
+      fireEvent.click(within(group).getByRole('button', { name: /^save$/i }))
+      await waitFor(() =>
+        expect(mocks.checkInSave).toHaveBeenCalledWith(
+          expect.objectContaining({ individualObjectiveId: 'obj-1' })
+        )
+      )
+    })
+
+    it('opens a History panel scoped to the objective when the History trigger is clicked', () => {
+      render(<OkrDialog quarterId="q1" objective={existingObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+      expect(mocks.useCheckInHistoryMock).toHaveBeenCalledWith('obj-1')
+    })
+
+    it('swaps from the Check-in panel to the History panel when History is clicked', () => {
+      render(<OkrDialog quarterId="q1" objective={existingObjective} onSave={onSave} onClose={onClose} />)
+      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+      expect(screen.getByRole('group', { name: /^check-in$/i })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      expect(screen.queryByRole('group', { name: /^check-in$/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+    })
+
+    it('still renders the embedded ObjectiveCard (with its own Edit-KR and Review affordances) alongside the new triggers', () => {
+      render(<OkrDialog quarterId="q1" objective={existingObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /add key result/i })).toBeInTheDocument()
     })
   })
 })
