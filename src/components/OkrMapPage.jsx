@@ -176,6 +176,7 @@ export default function OkrMapPage() {
     } else {
       refetch()
       refetchCanCreate()
+      refetchIndividual()
     }
     closeDialog()
   }

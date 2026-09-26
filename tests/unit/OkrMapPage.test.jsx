@@ -149,6 +149,22 @@ describe('OkrMapPage', () => {
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
   })
 
+  it('also refetches individual objectives after creating a new objective (#B7)', () => {
+    const refetchIndividual = vi.fn()
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useIndividualObjectives.mockReturnValue({
+      objectives: individualObjectives,
+      loading: false,
+      error: null,
+      refetch: refetchIndividual,
+    })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    act(() => { props.onSave({ id: 'new-1', title: 'New objective' }) })
+    expect(refetchIndividual).toHaveBeenCalledTimes(1)
+  })
+
   it('closes the dialog on cancel without refetching', () => {
     const refetch = vi.fn()
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch })
