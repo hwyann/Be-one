@@ -434,4 +434,33 @@ describe('OkrDialog', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/key result/i)
     expect(onSave).not.toHaveBeenCalled()
   })
+
+  describe('modal card styling (#B9)', () => {
+    it('renders the dialog root as a styled card with surface background, hairline border, radius, padding, and a max width', () => {
+      render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
+      const dialog = screen.getByRole('dialog')
+      expect(dialog.style.background).toBe('var(--surface)')
+      expect(dialog.style.border).toContain('var(--hairline)')
+      expect(dialog.style.borderRadius).not.toBe('')
+      expect(dialog.style.padding).not.toBe('')
+      expect(dialog.style.maxWidth).not.toBe('')
+    })
+
+    it('styles the title input and Save/Cancel buttons to match the app design language', () => {
+      render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
+      const titleInput = screen.getByLabelText(/objective/i)
+      expect(titleInput.style.border).toContain('var(--hairline)')
+      expect(titleInput.style.borderRadius).not.toBe('')
+      expect(titleInput.style.padding).not.toBe('')
+
+      const saveButton = screen.getByRole('button', { name: /^save$/i })
+      expect(saveButton.style.borderRadius).not.toBe('')
+      expect(saveButton.style.padding).not.toBe('')
+      expect(saveButton.style.background).not.toBe('')
+
+      const cancelButton = screen.getByRole('button', { name: /cancel/i })
+      expect(cancelButton.style.borderRadius).not.toBe('')
+      expect(cancelButton.style.padding).not.toBe('')
+    })
+  })
 })

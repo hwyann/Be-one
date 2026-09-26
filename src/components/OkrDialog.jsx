@@ -6,6 +6,90 @@ import { KrForm } from './KrListInline'
 import useRationale from '../hooks/useRationale'
 import useKrMutation from '../hooks/useKrMutation'
 
+const cardStyle = {
+  background: 'var(--surface)',
+  border: '1px solid var(--hairline)',
+  borderRadius: '16px',
+  boxShadow: '0 1px 3px rgba(19,30,40,.06)',
+  padding: '18px',
+  maxWidth: '480px',
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  maxHeight: '85vh',
+  overflowY: 'auto',
+}
+
+const labelStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+  font: '600 11px var(--font-sans)',
+  color: 'var(--text-secondary)',
+}
+
+const inputStyle = {
+  font: '500 13px var(--font-sans)',
+  padding: '7px 10px',
+  border: '1px solid var(--hairline)',
+  borderRadius: '8px',
+  background: 'var(--surface)',
+  color: 'var(--ink-900)',
+}
+
+function primaryButtonStyle() {
+  return {
+    font: '600 12px var(--font-display)',
+    padding: '7px 14px',
+    borderRadius: '8px',
+    border: '1px solid var(--coral-800)',
+    background: 'var(--coral-700)',
+    color: 'var(--surface)',
+    cursor: 'pointer',
+  }
+}
+
+function secondaryButtonStyle() {
+  return {
+    font: '600 12px var(--font-display)',
+    padding: '7px 14px',
+    borderRadius: '8px',
+    border: '1px solid var(--hairline)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+  }
+}
+
+const draftKrListStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  margin: 0,
+  padding: 0,
+  listStyle: 'none',
+}
+
+const draftKrItemStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '8px',
+  padding: '6px 10px',
+  border: '1px solid var(--hairline)',
+  borderRadius: '8px',
+  font: '500 12px var(--font-sans)',
+  color: 'var(--text-secondary)',
+}
+
+const footerRowStyle = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: '8px',
+  marginTop: '4px',
+}
+
 export default function OkrDialog({
   quarterId,
   objective = null,
@@ -75,42 +159,53 @@ export default function OkrDialog({
   }
 
   return (
-    <div role="dialog">
-      {error && <div role="alert">{error}</div>}
-      <label htmlFor="okr-title">Objective</label>
-      <input
-        id="okr-title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
+    <div role="dialog" style={cardStyle}>
+      {error && (
+        <div role="alert" style={{ font: '500 11px var(--font-sans)', color: 'var(--behind)' }}>
+          {error}
+        </div>
+      )}
+      <label htmlFor="okr-title" style={labelStyle}>
+        Objective
+        <input
+          id="okr-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          style={inputStyle}
+        />
+      </label>
       {!objective && (
         <>
-          <label htmlFor="okr-link">Aligns with</label>
-          <select
-            id="okr-link"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-          >
-            <option value="">Select alignment…</option>
-            {companyObjectives.map((obj) => (
-              <optgroup key={obj.id} label={obj.title}>
-                <option value={`objective_level:${obj.id}`}>{obj.title} (objective)</option>
-                {(obj.key_results ?? []).map((kr) => (
-                  <option key={kr.id} value={`direct_kr:${kr.id}:${obj.id}`}>
-                    {kr.title}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          <label htmlFor="okr-link" style={labelStyle}>
+            Aligns with
+            <select
+              id="okr-link"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="">Select alignment…</option>
+              {companyObjectives.map((obj) => (
+                <optgroup key={obj.id} label={obj.title}>
+                  <option value={`objective_level:${obj.id}`}>{obj.title} (objective)</option>
+                  {(obj.key_results ?? []).map((kr) => (
+                    <option key={kr.id} value={`direct_kr:${kr.id}:${obj.id}`}>
+                      {kr.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
           {draftKrs.length > 0 && (
-            <ul>
+            <ul style={draftKrListStyle}>
               {draftKrs.map((kr, i) => (
-                <li key={i}>
-                  {kr.title}
+                <li key={i} style={draftKrItemStyle}>
+                  <span>{kr.title}</span>
                   <button
                     type="button"
                     onClick={() => setDraftKrs(draftKrs.filter((_, idx) => idx !== i))}
+                    style={secondaryButtonStyle()}
                   >
                     Remove
                   </button>
@@ -128,15 +223,27 @@ export default function OkrDialog({
               onCancel={() => setShowDraftKrForm(false)}
             />
           ) : (
-            <button type="button" onClick={() => setShowDraftKrForm(true)}>
+            <button
+              type="button"
+              onClick={() => setShowDraftKrForm(true)}
+              style={{
+                marginTop: '2px',
+                font: '600 12px var(--font-display)',
+                padding: '7px 10px',
+                borderRadius: '8px',
+                border: '1px dashed var(--hairline)',
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                width: '100%',
+              }}
+            >
               + Add key result
             </button>
           )}
         </>
       )}
-      <button onClick={handleSave}>Save</button>
-      <button onClick={onClose}>Cancel</button>
-      <button type="button" onClick={() => setShowCoach(true)}>
+      <button type="button" onClick={() => setShowCoach(true)} style={secondaryButtonStyle()}>
         Coach me
       </button>
       {showCoach && (
@@ -149,6 +256,10 @@ export default function OkrDialog({
           onKrSaved={onKrSaved}
         />
       )}
+      <div style={footerRowStyle}>
+        <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>
+        <button type="button" onClick={handleSave} style={primaryButtonStyle()}>Save</button>
+      </div>
     </div>
   )
 }
