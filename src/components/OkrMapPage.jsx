@@ -224,7 +224,7 @@ export default function OkrMapPage() {
           )}
           <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
-        {!isPastQuarter && canCreate && (
+        {view === 'my-thread' && !isPastQuarter && canCreate && (
           <button
             type="button"
             onClick={() => setDialogState({})}

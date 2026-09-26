@@ -119,9 +119,10 @@ describe('OkrMapPage', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
 
-  it('renders an "Add objective" trigger', () => {
+  it('renders an "Add objective" trigger on My Thread', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
   })
 
@@ -134,6 +135,7 @@ describe('OkrMapPage', () => {
   it('opens the dialog when the trigger is clicked', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
   })
@@ -142,6 +144,7 @@ describe('OkrMapPage', () => {
     const refetch = vi.fn()
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     act(() => { props.onSave({ id: 'new-1', title: 'New objective' }) })
@@ -159,6 +162,7 @@ describe('OkrMapPage', () => {
       refetch: refetchIndividual,
     })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     act(() => { props.onSave({ id: 'new-1', title: 'New objective' }) })
@@ -169,11 +173,26 @@ describe('OkrMapPage', () => {
     const refetch = vi.fn()
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     act(() => { props.onClose() })
     expect(refetch).not.toHaveBeenCalled()
     expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+  })
+
+  it('does not show "+ Add objective" on Map view (#B8)', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    expect(screen.getByRole('button', { name: /^okr map$/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: /add objective/i })).not.toBeInTheDocument()
+  })
+
+  it('shows "+ Add objective" on My Thread view when current quarter and canCreate (#B8)', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+    expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
   })
 
   it('renders a segmented toggle labeled "OKR map" and "My thread"', () => {
@@ -241,6 +260,7 @@ describe('OkrMapPage', () => {
     render(<OkrMapPage />)
     fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     expect(props.quarterId).toBe('q42')
@@ -295,6 +315,7 @@ describe('OkrMapPage', () => {
   it('opens the dialog in add mode (no objective prop) when + Add objective is clicked', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     expect(props.objective).toBeUndefined()
@@ -303,6 +324,7 @@ describe('OkrMapPage', () => {
   it('passes the company objectives tree to the dialog for the alignment selector', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     expect(props.companyObjectives).toBe(objectives)
@@ -312,6 +334,7 @@ describe('OkrMapPage', () => {
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
     mocks.useActiveQuarter.mockReturnValue({ quarterId: 'q42', error: null })
     render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
     fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
     const props = mocks.OkrDialog.mock.calls.at(-1)[0]
     expect(props.quarterId).toBe('q42')
@@ -714,6 +737,7 @@ describe('OkrMapPage', () => {
     it('keeps the "+ Add objective" trigger when the selected quarter is the current quarter', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
     })
 
@@ -784,6 +808,7 @@ describe('OkrMapPage', () => {
         refetch: vi.fn(),
       })
       render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
     })
 
@@ -806,6 +831,7 @@ describe('OkrMapPage', () => {
         refetch: refetchCanCreate,
       })
       render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
       const props = mocks.OkrDialog.mock.calls.at(-1)[0]
       act(() => { props.onSave({ id: 'new-1', title: 'New objective' }) })
