@@ -119,7 +119,7 @@ export function KrForm({ initialTitle = '', initialTargetNote = '', onSubmit, on
   )
 }
 
-function KrRow({ kr, onCheckInSaved, onEdit }) {
+function KrRow({ kr, onCheckInSaved, onEdit, readOnly }) {
   const linked = kr.individual_objectives ?? []
   const owners = linked.filter(o => o.owner_name)
   const overflow = owners.length > MAX_INLINE_OWNERS ? owners.length - COLLAPSED_INLINE_OWNERS : 0
@@ -158,10 +158,10 @@ function KrRow({ kr, onCheckInSaved, onEdit }) {
             )}
           </div>
         )}
-        <RowActionButton label="Edit" onClick={onEdit} />
-        <CheckInTriggers region={region} />
+        {!readOnly && <RowActionButton label="Edit" onClick={onEdit} />}
+        {!readOnly && <CheckInTriggers region={region} />}
       </div>
-      <CheckInPanels region={region} onCheckInSaved={onCheckInSaved} />
+      {!readOnly && <CheckInPanels region={region} onCheckInSaved={onCheckInSaved} />}
     </div>
   )
 }
@@ -172,6 +172,7 @@ export default function KrListInline({
   keyResults,
   onCheckInSaved,
   onKrSaved,
+  readOnly = false,
 }) {
   const [krFormMode, setKrFormMode] = useState(null)
   const { create, update } = useKrMutation()
@@ -199,7 +200,7 @@ export default function KrListInline({
       {keyResults.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {keyResults.map(kr => (
-            krFormMode?.kind === 'edit' && krFormMode.krId === kr.id ? (
+            !readOnly && krFormMode?.kind === 'edit' && krFormMode.krId === kr.id ? (
               <KrForm
                 key={kr.id}
                 initialTitle={kr.title}
@@ -213,31 +214,34 @@ export default function KrListInline({
                 kr={kr}
                 onCheckInSaved={onCheckInSaved}
                 onEdit={() => setKrFormMode({ kind: 'edit', krId: kr.id })}
+                readOnly={readOnly}
               />
             )
           ))}
         </div>
       )}
-      {krFormMode?.kind === 'add' ? (
-        <KrForm onSubmit={handleKrSave} onCancel={() => setKrFormMode(null)} />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setKrFormMode({ kind: 'add' })}
-          style={{
-            marginTop: '6px',
-            font: '600 12px var(--font-display)',
-            padding: '6px 10px',
-            borderRadius: '8px',
-            border: '1px dashed var(--hairline)',
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            width: '100%',
-          }}
-        >
-          + Add key result
-        </button>
+      {!readOnly && (
+        krFormMode?.kind === 'add' ? (
+          <KrForm onSubmit={handleKrSave} onCancel={() => setKrFormMode(null)} />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setKrFormMode({ kind: 'add' })}
+            style={{
+              marginTop: '6px',
+              font: '600 12px var(--font-display)',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              border: '1px dashed var(--hairline)',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              width: '100%',
+            }}
+          >
+            + Add key result
+          </button>
+        )
       )}
     </>
   )

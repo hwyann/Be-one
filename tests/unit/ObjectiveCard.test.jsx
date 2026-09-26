@@ -67,6 +67,7 @@ beforeEach(() => {
 })
 
 describe('ObjectiveCard', () => {
+  // A company objective, as rendered on the Map: no individualObjectiveId.
   const objective = {
     id: '1',
     category: 'Growth',
@@ -82,21 +83,6 @@ describe('ObjectiveCard', () => {
   it('renders the objective title', () => {
     render(<ObjectiveCard objective={objective} />)
     expect(screen.getByText('Expand into new markets')).toBeInTheDocument()
-  })
-
-  it('renders an on_track status dot', () => {
-    render(<ObjectiveCard objective={objective} />)
-    expect(screen.getByRole('button', { name: /on track/i })).toBeInTheDocument()
-  })
-
-  it('renders an at_risk status dot', () => {
-    render(<ObjectiveCard objective={{ ...objective, status: 'at_risk' }} />)
-    expect(screen.getByRole('button', { name: /at risk/i })).toBeInTheDocument()
-  })
-
-  it('renders a behind status dot', () => {
-    render(<ObjectiveCard objective={{ ...objective, status: 'behind' }} />)
-    expect(screen.getByRole('button', { name: /behind/i })).toBeInTheDocument()
   })
 
   it('renders a row for each key result', () => {
@@ -179,179 +165,183 @@ describe('ObjectiveCard', () => {
     }],
   }
 
-  it('renders a check-in trigger on a KR row with a linked individual objective', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument()
-  })
-
-  it('expands the check-in panel when the trigger is clicked', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
-    expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
-  })
-
-  it('closes the panel when Cancel is clicked', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
-    expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
-  })
-
-  it('does not render a check-in trigger when the KR has no linked individual objective', () => {
-    const noLink = {
-      ...objective,
-      key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
-    }
-    render(<ObjectiveCard objective={noLink} />)
-    expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
-  })
-
-  it('renders a History trigger on a KR row with a linked individual objective', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
-  })
-
-  it('does not render a History trigger when the KR has no linked individual objective', () => {
-    const noLink = {
-      ...objective,
-      key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
-    }
-    render(<ObjectiveCard objective={noLink} />)
-    expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
-  })
-
-  it('expands the check-in history panel when the History trigger is clicked', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
-    expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
-  })
-
-  it('closes the history panel when the History trigger is clicked again', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
-    expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
-  })
-
-  it('swaps from the check-in panel to the history panel when History is clicked', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
-    expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
-    expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
-    expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
-  })
-
-  it('swaps from the history panel to the check-in panel when Check in is clicked', () => {
-    render(<ObjectiveCard objective={withLinkedIO} />)
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
-    expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /check in/i }))
-    expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
-    expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
-  })
-
-  it('renders a not_started status dot with the "Not started" label', () => {
-    render(<ObjectiveCard objective={{ ...objective, status: 'not_started' }} />)
-    expect(screen.getByRole('button', { name: /not started/i })).toBeInTheDocument()
-  })
-
-  it('opens the status editor when the status dot is clicked', () => {
-    render(<ObjectiveCard objective={objective} />)
-    expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
-    expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
-  })
-
-  it('renders the three traffic-light options in the status editor', () => {
-    render(<ObjectiveCard objective={objective} />)
-    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
-    const group = screen.getByRole('group', { name: /set status/i })
-    expect(within(group).getByRole('radio', { name: /on track/i })).toBeInTheDocument()
-    expect(within(group).getByRole('radio', { name: /at risk/i })).toBeInTheDocument()
-    expect(within(group).getByRole('radio', { name: /behind/i })).toBeInTheDocument()
-  })
-
-  it('saves the picked status via useCompanyObjectiveStatus.update and closes the editor', async () => {
-    render(<ObjectiveCard objective={objective} />)
-    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
-    const group = screen.getByRole('group', { name: /set status/i })
-    fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
-    fireEvent.click(within(group).getByRole('button', { name: /save/i }))
-
-    await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ id: '1', status: 'at_risk' }))
-    await waitFor(() =>
-      expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
-    )
-  })
-
-  it('calls onStatusSaved after a successful save', async () => {
-    const onStatusSaved = vi.fn()
-    render(<ObjectiveCard objective={objective} onStatusSaved={onStatusSaved} />)
-    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
-    const group = screen.getByRole('group', { name: /set status/i })
-    fireEvent.click(within(group).getByRole('radio', { name: /behind/i }))
-    fireEvent.click(within(group).getByRole('button', { name: /save/i }))
-    await waitFor(() => expect(onStatusSaved).toHaveBeenCalledTimes(1))
-  })
-
-  it('does not call onStatusSaved or close when the save fails', async () => {
-    mocks.update.mockResolvedValueOnce(false)
-    const onStatusSaved = vi.fn()
-    render(<ObjectiveCard objective={objective} onStatusSaved={onStatusSaved} />)
-    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
-    const group = screen.getByRole('group', { name: /set status/i })
-    fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
-    fireEvent.click(within(group).getByRole('button', { name: /save/i }))
-    await waitFor(() => expect(mocks.update).toHaveBeenCalled())
-    expect(onStatusSaved).not.toHaveBeenCalled()
-    expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
-  })
-
-  it('closes the editor when Cancel is clicked and does not call update', () => {
-    render(<ObjectiveCard objective={objective} />)
-    fireEvent.click(screen.getByRole('button', { name: /on track/i }))
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
-    expect(mocks.update).not.toHaveBeenCalled()
-    expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
-  })
-
-  describe('key result management', () => {
-    it('renders an Add KR affordance', () => {
+  describe('read-only Map surface (#B12)', () => {
+    it('does not render a clickable status dot for a company objective', () => {
       render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+    })
+
+    it('does not render a clickable status dot for any status value', () => {
+      for (const status of ['at_risk', 'behind', 'not_started']) {
+        render(<ObjectiveCard objective={{ ...objective, status }} />)
+      }
+      expect(screen.queryAllByRole('button', { name: /at risk|behind|not started/i })).toHaveLength(0)
+    })
+
+    it('never opens a status editor for a company objective (no status editor in the document)', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+    })
+
+    it('does not render an Edit button on a company KR row', () => {
+      const withKrs = {
+        ...objective,
+        key_results: [
+          { id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] },
+        ],
+      }
+      render(<ObjectiveCard objective={withKrs} />)
+      expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument()
+    })
+
+    it('does not render a "+ Add key result" button for a company objective', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByRole('button', { name: /add key result/i })).not.toBeInTheDocument()
+    })
+
+    it('still renders the avatar cluster for a company KR row with a directly-linked individual objective', () => {
+      render(<ObjectiveCard objective={withLinkedIO} />)
+      expect(screen.getByText('SK')).toBeInTheDocument()
+    })
+
+    it('does not render a Check-in trigger on the Map even when a company KR has a directly-linked individual objective', () => {
+      render(<ObjectiveCard objective={withLinkedIO} />)
+      expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
+    })
+
+    it('does not render a History trigger on the Map even when a company KR has a directly-linked individual objective', () => {
+      render(<ObjectiveCard objective={withLinkedIO} />)
+      expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
+    })
+
+    it('displays a KR target note beneath the KR text even in read-only mode', () => {
+      const withKrs = {
+        ...objective,
+        key_results: [
+          { id: 'k1', title: 'Reach 100 accounts', target_note: 'stretch: 200', individual_objectives: [] },
+        ],
+      }
+      render(<ObjectiveCard objective={withKrs} />)
+      expect(screen.getByText(/stretch: 200/)).toBeInTheDocument()
+    })
+  })
+
+  describe('individual-objective status editor (unchanged by #B12)', () => {
+    const individualObjective = { id: 'io-9', title: 'Ship MVP', status: 'on_track' }
+
+    it('renders a clickable on_track status dot when the card represents an individual objective', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      expect(screen.getByRole('button', { name: /on track/i })).toBeInTheDocument()
+    })
+
+    it('opens the status editor when the status dot is clicked', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
+    })
+
+    it('renders the three traffic-light options in the status editor', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      const group = screen.getByRole('group', { name: /set status/i })
+      expect(within(group).getByRole('radio', { name: /on track/i })).toBeInTheDocument()
+      expect(within(group).getByRole('radio', { name: /at risk/i })).toBeInTheDocument()
+      expect(within(group).getByRole('radio', { name: /behind/i })).toBeInTheDocument()
+    })
+
+    it('saves the picked status via useCompanyObjectiveStatus.update and closes the editor', async () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      const group = screen.getByRole('group', { name: /set status/i })
+      fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
+      fireEvent.click(within(group).getByRole('button', { name: /save/i }))
+
+      await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ id: 'io-9', status: 'at_risk' }))
+      await waitFor(() =>
+        expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+      )
+    })
+
+    it('calls onStatusSaved after a successful save', async () => {
+      const onStatusSaved = vi.fn()
+      render(
+        <ObjectiveCard
+          objective={individualObjective}
+          individualObjectiveId="io-9"
+          onStatusSaved={onStatusSaved}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      const group = screen.getByRole('group', { name: /set status/i })
+      fireEvent.click(within(group).getByRole('radio', { name: /behind/i }))
+      fireEvent.click(within(group).getByRole('button', { name: /save/i }))
+      await waitFor(() => expect(onStatusSaved).toHaveBeenCalledTimes(1))
+    })
+
+    it('does not call onStatusSaved or close when the save fails', async () => {
+      mocks.update.mockResolvedValueOnce(false)
+      const onStatusSaved = vi.fn()
+      render(
+        <ObjectiveCard
+          objective={individualObjective}
+          individualObjectiveId="io-9"
+          onStatusSaved={onStatusSaved}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      const group = screen.getByRole('group', { name: /set status/i })
+      fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
+      fireEvent.click(within(group).getByRole('button', { name: /save/i }))
+      await waitFor(() => expect(mocks.update).toHaveBeenCalled())
+      expect(onStatusSaved).not.toHaveBeenCalled()
+      expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
+    })
+
+    it('closes the editor when Cancel is clicked and does not call update', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+      expect(mocks.update).not.toHaveBeenCalled()
+      expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('key result management on a company objective (read-only, #B12)', () => {
+    it('does not render an Add KR affordance', () => {
+      render(<ObjectiveCard objective={objective} />)
+      expect(screen.queryByRole('button', { name: /add key result/i })).not.toBeInTheDocument()
+    })
+
+    it('does not render an Edit trigger on an existing KR row', () => {
+      const withKrs = {
+        ...objective,
+        key_results: [
+          { id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] },
+        ],
+      }
+      render(<ObjectiveCard objective={withKrs} />)
+      expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('key result management on an individual objective (unchanged by #B12)', () => {
+    it('renders an Add KR affordance', () => {
+      const individualObjective = { id: 'io-9', title: 'Ship MVP' }
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
       expect(screen.getByRole('button', { name: /add key result/i })).toBeInTheDocument()
     })
 
     it('opens an Add KR form when the affordance is clicked', () => {
-      render(<ObjectiveCard objective={objective} />)
+      const individualObjective = { id: 'io-9', title: 'Ship MVP' }
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
       expect(screen.queryByLabelText(/key result/i)).not.toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
       expect(screen.getByLabelText(/^key result$/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/target note/i)).toBeInTheDocument()
     })
 
-    it('creates a KR against the company objective when saved', async () => {
-      const onKrSaved = vi.fn()
-      render(<ObjectiveCard objective={objective} onKrSaved={onKrSaved} />)
-      fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
-      fireEvent.change(screen.getByLabelText(/^key result$/i), { target: { value: 'Reach 100 accounts' } })
-      fireEvent.change(screen.getByLabelText(/target note/i), { target: { value: 'by Q3' } })
-      fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
-      await waitFor(() =>
-        expect(mocks.krCreate).toHaveBeenCalledWith({
-          objectiveId: '1',
-          individualObjectiveId: undefined,
-          title: 'Reach 100 accounts',
-          targetNote: 'by Q3',
-        })
-      )
-      await waitFor(() => expect(onKrSaved).toHaveBeenCalledTimes(1))
-      await waitFor(() => expect(screen.queryByLabelText(/^key result$/i)).not.toBeInTheDocument())
-    })
-
-    it('creates a KR against the individual objective when individualObjectiveId is passed', async () => {
+    it('creates a KR against the individual objective when saved', async () => {
       const individualObjective = { id: 'io-9', title: 'Ship MVP' }
       const onKrSaved = vi.fn()
       render(
@@ -372,17 +362,20 @@ describe('ObjectiveCard', () => {
           targetNote: '',
         })
       )
+      await waitFor(() => expect(onKrSaved).toHaveBeenCalledTimes(1))
     })
 
     it('does not save an empty KR title', () => {
-      render(<ObjectiveCard objective={objective} />)
+      const individualObjective = { id: 'io-9', title: 'Ship MVP' }
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
       fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
       fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
       expect(mocks.krCreate).not.toHaveBeenCalled()
     })
 
     it('closes the Add KR form when Cancel is clicked', () => {
-      render(<ObjectiveCard objective={objective} />)
+      const individualObjective = { id: 'io-9', title: 'Ship MVP' }
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
       fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
       fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
       expect(screen.queryByLabelText(/^key result$/i)).not.toBeInTheDocument()
@@ -390,38 +383,47 @@ describe('ObjectiveCard', () => {
     })
 
     it('renders an Edit trigger on each existing KR row', () => {
-      const withKrs = {
-        ...objective,
+      const individualObjective = {
+        id: 'io-9',
+        title: 'Ship MVP',
         key_results: [
           { id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] },
         ],
       }
-      render(<ObjectiveCard objective={withKrs} />)
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
       expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument()
     })
 
     it('opens an Edit form pre-filled with the KR text and target note', () => {
-      const withKrs = {
-        ...objective,
+      const individualObjective = {
+        id: 'io-9',
+        title: 'Ship MVP',
         key_results: [
           { id: 'k1', title: 'Reach 100 accounts', target_note: 'stretch: 200', individual_objectives: [] },
         ],
       }
-      render(<ObjectiveCard objective={withKrs} />)
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
       fireEvent.click(screen.getByRole('button', { name: /edit/i }))
       expect(screen.getByLabelText(/^key result$/i)).toHaveValue('Reach 100 accounts')
       expect(screen.getByLabelText(/target note/i)).toHaveValue('stretch: 200')
     })
 
     it('updates the KR text via useKrMutation.update and calls onKrSaved', async () => {
-      const withKrs = {
-        ...objective,
+      const individualObjective = {
+        id: 'io-9',
+        title: 'Ship MVP',
         key_results: [
           { id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] },
         ],
       }
       const onKrSaved = vi.fn()
-      render(<ObjectiveCard objective={withKrs} onKrSaved={onKrSaved} />)
+      render(
+        <ObjectiveCard
+          objective={individualObjective}
+          individualObjectiveId="io-9"
+          onKrSaved={onKrSaved}
+        />
+      )
       fireEvent.click(screen.getByRole('button', { name: /edit/i }))
       const input = screen.getByLabelText(/^key result$/i)
       fireEvent.change(input, { target: { value: 'Reach 150 accounts' } })
@@ -435,16 +437,95 @@ describe('ObjectiveCard', () => {
       )
       await waitFor(() => expect(onKrSaved).toHaveBeenCalledTimes(1))
     })
+  })
 
-    it('displays a KR target note beneath the KR text when present', () => {
-      const withKrs = {
-        ...objective,
-        key_results: [
-          { id: 'k1', title: 'Reach 100 accounts', target_note: 'stretch: 200', individual_objectives: [] },
+  describe('check-in mechanism on an individual objective card (unchanged by #B12)', () => {
+    const individualWithLinkedIO = {
+      id: 'io-9',
+      title: 'Ship MVP',
+      key_results: [{
+        id: 'k1',
+        title: 'Reach 100 accounts',
+        individual_objectives: [
+          { id: 'io-1', owner_name: 'Satoshi Kimura' },
         ],
+      }],
+    }
+
+    it('renders a check-in trigger on a KR row with a linked individual objective', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument()
+    })
+
+    it('expands the check-in panel when the trigger is clicked', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+      expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
+    })
+
+    it('closes the panel when Cancel is clicked', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+      fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+      expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
+    })
+
+    it('does not render a check-in trigger when the KR has no linked individual objective', () => {
+      const noLink = {
+        id: 'io-9',
+        title: 'Ship MVP',
+        key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
       }
-      render(<ObjectiveCard objective={withKrs} />)
-      expect(screen.getByText(/stretch: 200/)).toBeInTheDocument()
+      render(<ObjectiveCard objective={noLink} individualObjectiveId="io-9" />)
+      expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
+    })
+
+    it('renders a History trigger on a KR row with a linked individual objective', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+    })
+
+    it('does not render a History trigger when the KR has no linked individual objective', () => {
+      const noLink = {
+        id: 'io-9',
+        title: 'Ship MVP',
+        key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
+      }
+      render(<ObjectiveCard objective={noLink} individualObjectiveId="io-9" />)
+      expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
+    })
+
+    it('expands the check-in history panel when the History trigger is clicked', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+    })
+
+    it('closes the history panel when the History trigger is clicked again', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+    })
+
+    it('swaps from the check-in panel to the history panel when History is clicked', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+      expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+    })
+
+    it('swaps from the history panel to the check-in panel when Check in is clicked', () => {
+      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+      expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+      expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
     })
   })
 

@@ -763,19 +763,19 @@ describe('OkrMapPage', () => {
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
     })
 
-    it('prevents opening the status editor from the map carousel when the quarter is past', () => {
+    it('never exposes a status editor from the map carousel when the quarter is past (#B12: map is read-only)', () => {
       mockPastQuarter()
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       render(<OkrMapPage />)
-      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
     })
 
-    it('still allows opening the status editor from the map carousel for the current quarter', () => {
+    it('never exposes a status editor from the map carousel for the current quarter either (#B12: map is read-only)', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       render(<OkrMapPage />)
-      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
-      expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
     })
 
     it('passes readOnly to MyThreadPage when the selected quarter is past', () => {

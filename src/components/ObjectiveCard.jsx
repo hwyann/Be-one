@@ -14,6 +14,7 @@ export default function ObjectiveCard({
   onKrSaved,
 }) {
   const { id, category, title, status } = objective
+  const isCompany = !individualObjectiveId
   const statusMeta = status
     ? (STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' })
     : null
@@ -54,35 +55,58 @@ export default function ObjectiveCard({
           {title}
         </span>
         {statusMeta && (
-          <button
-            type="button"
-            aria-label={statusMeta.label}
-            onClick={() => setEditingStatus(true)}
-            style={{
-              width: '14px',
-              height: '14px',
-              padding: 0,
-              border: 'none',
-              background: 'transparent',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              marginTop: '1px',
-              cursor: 'pointer',
-            }}
-          >
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: statusMeta.color,
-              display: 'inline-block',
-            }} />
-          </button>
+          isCompany ? (
+            <span
+              title={statusMeta.label}
+              style={{
+                width: '14px',
+                height: '14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                marginTop: '1px',
+              }}
+            >
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: statusMeta.color,
+                display: 'inline-block',
+              }} />
+            </span>
+          ) : (
+            <button
+              type="button"
+              aria-label={statusMeta.label}
+              onClick={() => setEditingStatus(true)}
+              style={{
+                width: '14px',
+                height: '14px',
+                padding: 0,
+                border: 'none',
+                background: 'transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                marginTop: '1px',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: statusMeta.color,
+                display: 'inline-block',
+              }} />
+            </button>
+          )
         )}
       </div>
-      {editingStatus && (
+      {!isCompany && editingStatus && (
         <StatusEditor
           objectiveId={id}
           currentStatus={status}
@@ -96,6 +120,7 @@ export default function ObjectiveCard({
         keyResults={keyResults}
         onCheckInSaved={onCheckInSaved}
         onKrSaved={onKrSaved}
+        readOnly={isCompany}
       />
       <RationaleSection rationale={rationale} />
       {individualObjectiveId && (
