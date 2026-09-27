@@ -214,7 +214,19 @@ export default function KrListInline({
   // CheckInHistory's props for why (Codex review finding, per-kr-checkin).
   // Safe to call unconditionally: useKrSummary no-ops when its id is null
   // (the company/Map case, where individualObjectiveId is never set).
-  const { summary, status: summaryStatus } = useKrSummary(individualObjectiveId)
+  const { summary, status: summaryStatus, refetch: refetchSummary } = useKrSummary(individualObjectiveId)
+
+  // Codex review finding (per-kr-checkin, round 2): the per-KR history
+  // block already remounts on its own save (see historyVersion in KrRow),
+  // but the summary lives up here — one save changing an objective from
+  // e.g. 2 to 3 check-ins (crossing the "enough data" threshold) needs the
+  // summary itself refetched too, not just the history list. Every KrRow's
+  // onCheckInSaved routes through here so any KR's save refreshes the one
+  // shared, objective-level summary.
+  function handleAnyCheckInSaved() {
+    onCheckInSaved?.()
+    refetchSummary()
+  }
 
   async function handleKrSave({ title, targetNote }) {
     let ok
@@ -256,7 +268,7 @@ export default function KrListInline({
                 allowCheckIn={allowCheckIn}
                 summary={summary}
                 summaryStatus={summaryStatus}
-                onCheckInSaved={onCheckInSaved}
+                onCheckInSaved={handleAnyCheckInSaved}
                 onEdit={() => setKrFormMode({ kind: 'edit', krId: kr.id })}
                 readOnly={readOnly}
               />

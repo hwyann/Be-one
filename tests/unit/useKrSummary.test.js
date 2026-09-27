@@ -100,4 +100,23 @@ describe('useKrSummary', () => {
       body: { individual_objective_id: 'io-2' },
     })
   })
+
+  it('exposes a refetch that re-invokes the edge function without the id changing', async () => {
+    mocks.invoke.mockResolvedValue({
+      data: { status: 'insufficient_data', message: 'Need at least 3 check-ins to summarize.' },
+      error: null,
+    })
+    const { result } = renderHook(() => useKrSummary('io-1'))
+    await waitFor(() => expect(result.current.status).toBe('insufficient_data'))
+    expect(mocks.invoke).toHaveBeenCalledTimes(1)
+
+    mocks.invoke.mockResolvedValue({
+      data: { summary_text: 'Now on track.', based_on_check_in_count: 3, cached: false },
+      error: null,
+    })
+    await result.current.refetch()
+    await waitFor(() => expect(result.current.status).toBe('ready'))
+    expect(mocks.invoke).toHaveBeenCalledTimes(2)
+    expect(result.current.summary).toBe('Now on track.')
+  })
 })

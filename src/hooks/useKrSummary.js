@@ -36,5 +36,5 @@ export default function useKrSummary(individualObjectiveId) {
 
   useEffect(() => { load() }, [load])
 
-  return { summary, loading: status === 'loading', error, status }
+  return { summary, loading: status === 'loading', error, status, refetch: load }
 }

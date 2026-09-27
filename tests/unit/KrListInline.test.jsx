@@ -51,7 +51,7 @@ const kr = { id: 'kr-1', title: 'Reach 100 accounts', individual_objectives: [] 
 describe('KrListInline', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.useKrSummaryMock.mockReturnValue({ summary: null, status: null })
+    mocks.useKrSummaryMock.mockReturnValue({ summary: null, status: null, refetch: vi.fn() })
   })
 
   describe('allowCheckIn (distinct from readOnly)', () => {
@@ -241,6 +241,19 @@ describe('KrListInline', () => {
         />
       )
       expect(mocks.useKrSummaryMock).toHaveBeenCalledWith(undefined)
+    })
+
+    it('refetches the shared summary when any KR\'s check-in is saved (Codex review round 2) — a save can cross the "enough data" threshold, so the summary itself needs refreshing, not just the per-KR history', () => {
+      const refetchSummary = vi.fn()
+      mocks.useKrSummaryMock.mockReturnValue({ summary: null, status: 'insufficient_data', refetch: refetchSummary })
+      render(<KrListInline individualObjectiveId="io-9" keyResults={[kr, kr2]} allowCheckIn />)
+
+      const checkInButtons = screen.getAllByRole('button', { name: /^check-in$/i })
+      fireEvent.click(checkInButtons[1])
+      const { onSaved } = mocks.checkInPanelProps.mock.calls.at(-1)[0]
+      act(() => { onSaved() })
+
+      expect(refetchSummary).toHaveBeenCalledTimes(1)
     })
   })
 
