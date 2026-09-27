@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import useCompanyObjectives from '../hooks/useCompanyObjectives'
 import useIndividualObjectives from '../hooks/useIndividualObjectives'
 import useActiveQuarter from '../hooks/useActiveQuarter'
 import useQuarterIsPast from '../hooks/useQuarterIsPast'
 import useCanCreateObjective from '../hooks/useCanCreateObjective'
+import useCreateQuarter from '../hooks/useCreateQuarter'
 import useViewMode from '../hooks/useViewMode'
 import ObjectiveCarousel from './ObjectiveCarousel'
 import OkrDialog from './OkrDialog'
@@ -101,6 +102,18 @@ function QuarterSelector({ quarters, quarterId, onChange }) {
   )
 }
 
+function newQuarterButtonStyle() {
+  return {
+    font: '600 13px var(--font-display)',
+    padding: '6px 12px',
+    borderRadius: '8px',
+    border: '1px dashed var(--hairline)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+  }
+}
+
 function toggleButtonStyle(active) {
   return {
     font: '600 13px var(--font-display)',
@@ -145,19 +158,22 @@ function ViewModeToggle({ viewMode, onChange }) {
 }
 
 export default function OkrMapPage() {
-  const { quarterId, quarters = [], selectQuarter } = useActiveQuarter()
+  const { quarterId, quarters = [], selectQuarter, refetch: refetchQuarters } = useActiveQuarter()
   const isPastQuarter = useQuarterIsPast(quarters, quarterId)
   const { canCreate, refetch: refetchCanCreate } = useCanCreateObjective(quarterId, quarters)
   const { objectives, loading, error, refetch } = useCompanyObjectives(quarterId)
   const {
     objectives: individualObjectives,
+    loading: individualLoading,
     refetch: refetchIndividual,
   } = useIndividualObjectives(quarterId)
   const { viewMode, setViewMode } = useViewMode()
+  const { createQuarter, creating: creatingQuarter } = useCreateQuarter()
   const [dialogState, setDialogState] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
   const [view, setView] = useState(viewMode === 'manager' ? 'map' : 'my-thread')
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const autoOpenedQuarterRef = useRef(null)
 
   useEffect(() => { setCarouselIndex(0) }, [quarterId])
 
@@ -166,6 +182,29 @@ export default function OkrMapPage() {
       setView('map')
     }
   }, [viewMode, view])
+
+  // Empty-state nudge: Company OKR is set for this quarter but the viewer
+  // has no individual OKR of their own yet — open the Add Objective modal
+  // by default so they have to set one to proceed, instead of landing on a
+  // blank My Thread screen. Fires once per quarter (ref-gated) so an
+  // explicit Cancel on that first prompt still works like any other close.
+  useEffect(() => {
+    if (viewMode !== 'member' || view !== 'my-thread') return
+    if (loading || individualLoading) return
+    if (isPastQuarter || !canCreate) return
+    if (objectives.length === 0) return
+    if (dialogState !== null) return
+    if (autoOpenedQuarterRef.current === quarterId) return
+
+    const mine = individualObjectives.filter(o => o.owner_name === VIEWER_OWNER_NAME)
+    if (mine.length > 0) return
+
+    autoOpenedQuarterRef.current = quarterId
+    setDialogState({ mandatory: true })
+  }, [
+    viewMode, view, loading, individualLoading, isPastQuarter, canCreate,
+    objectives, individualObjectives, dialogState, quarterId,
+  ])
 
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
@@ -185,6 +224,14 @@ export default function OkrMapPage() {
       refetchIndividual()
     }
     closeDialog()
+  }
+
+  async function handleCreateQuarter() {
+    const newQuarter = await createQuarter(quarters)
+    if (!newQuarter) return
+    await refetchQuarters()
+    selectQuarter(newQuarter.id)
+    setToastMessage(`New quarter "${newQuarter.name}" created.`)
   }
 
   return (
@@ -230,6 +277,14 @@ export default function OkrMapPage() {
               onChange={selectQuarter}
             />
           )}
+          <button
+            type="button"
+            onClick={handleCreateQuarter}
+            disabled={creatingQuarter}
+            style={newQuarterButtonStyle()}
+          >
+            + New quarter
+          </button>
           <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
         {view === 'my-thread' && !isPastQuarter && canCreate && (
@@ -297,8 +352,10 @@ export default function OkrMapPage() {
         >
           <OkrDialog
             quarterId={quarterId}
+            quarterName={quarters.find(q => q.id === quarterId)?.name}
             objective={liveDialogObjective}
             companyObjectives={objectives}
+            mandatory={!!dialogState?.mandatory}
             onSave={handleSave}
             onClose={closeDialog}
             onKrSaved={refetchIndividual}

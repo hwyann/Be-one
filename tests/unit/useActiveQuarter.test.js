@@ -68,4 +68,16 @@ describe('useActiveQuarter', () => {
     act(() => { result.current.selectQuarter('q1') })
     expect(result.current.quarterId).toBe('q1')
   })
+
+  it('refetch re-queries the quarters table and updates the list (#new-quarter)', async () => {
+    mocks.from.mockReturnValue(makeQuartersMock({ data: quarters, error: null }))
+    const { result } = renderHook(() => useActiveQuarter())
+    await waitFor(() => expect(result.current.quarterId).toBe('q2'))
+
+    const updated = [...quarters, { id: 'q3', label: 'Q3 2026', is_active: false }]
+    mocks.from.mockReturnValue(makeQuartersMock({ data: updated, error: null }))
+    await act(async () => { await result.current.refetch() })
+
+    expect(result.current.quarters).toEqual(updated)
+  })
 })

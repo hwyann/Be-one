@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 export default function useActiveQuarter() {
@@ -6,23 +6,21 @@ export default function useActiveQuarter() {
   const [selectedQuarterId, setSelectedQuarterId] = useState(null)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    supabase
-      .from('quarters')
-      .select('*')
-      .then(({ data, error: err }) => {
-        if (err) { setError(err.message); return }
-        setQuarters(data)
-        const active = data.find(q => q.is_active)
-        if (active) {
-          setSelectedQuarterId(current => current ?? active.id)
-        }
-      })
+  const load = useCallback(async () => {
+    const { data, error: err } = await supabase.from('quarters').select('*')
+    if (err) { setError(err.message); return }
+    setQuarters(data)
+    const active = data.find(q => q.is_active)
+    if (active) {
+      setSelectedQuarterId(current => current ?? active.id)
+    }
   }, [])
+
+  useEffect(() => { load() }, [load])
 
   function selectQuarter(id) {
     setSelectedQuarterId(id)
   }
 
-  return { quarterId: selectedQuarterId, quarters, error, selectQuarter }
+  return { quarterId: selectedQuarterId, quarters, error, selectQuarter, refetch: load }
 }

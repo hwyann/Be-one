@@ -106,8 +106,10 @@ function pillButtonStyle() {
 
 export default function OkrDialog({
   quarterId,
+  quarterName,
   objective = null,
   companyObjectives = [],
+  mandatory = false,
   onSave,
   onClose,
   onKrSaved,
@@ -175,6 +177,11 @@ export default function OkrDialog({
 
   return (
     <div role="dialog" style={cardStyle}>
+      {mandatory && !objective && (
+        <div style={{ font: '500 12px var(--font-sans)', color: 'var(--text-secondary)' }}>
+          Set your OKR{quarterName ? ` for ${quarterName}` : ''} to continue.
+        </div>
+      )}
       {error && (
         <div role="alert" style={{ font: '500 11px var(--font-sans)', color: 'var(--behind)' }}>
           {error}
@@ -301,7 +308,9 @@ export default function OkrDialog({
         </>
       )}
       <div style={footerRowStyle}>
-        <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>
+        {!mandatory && (
+          <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>
+        )}
         <button type="button" onClick={handleSave} style={primaryButtonStyle()}>Save</button>
       </div>
     </div>

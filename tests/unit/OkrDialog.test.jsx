@@ -450,6 +450,30 @@ describe('OkrDialog', () => {
     expect(onSave).not.toHaveBeenCalled()
   })
 
+  describe('mandatory empty-state prompt', () => {
+    it('hides the Cancel button when mandatory is true', () => {
+      render(<OkrDialog quarterId="q1" mandatory onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument()
+    })
+
+    it('shows Cancel by default (mandatory not set)', () => {
+      render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+    })
+
+    it('shows a note naming the quarter when mandatory and creating a new objective', () => {
+      render(<OkrDialog quarterId="q1" quarterName="Q4 2026" mandatory onSave={onSave} onClose={onClose} />)
+      expect(screen.getByText(/set your okr for q4 2026 to continue/i)).toBeInTheDocument()
+    })
+
+    it('does not show the mandatory note when editing an existing objective', () => {
+      const objective = { id: 'obj-1', title: 'Ship MVP' }
+      render(<OkrDialog quarterId="q1" objective={objective} mandatory onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByText(/to continue/i)).not.toBeInTheDocument()
+    })
+  })
+
   describe('modal card styling (#B9)', () => {
     it('renders the dialog root as a styled card with surface background, hairline border, radius, padding, and a max width', () => {
       render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)

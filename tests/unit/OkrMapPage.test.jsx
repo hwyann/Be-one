@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   useActiveQuarter: vi.fn(),
   useViewMode: vi.fn(),
   useCanCreateObjective: vi.fn(),
+  useCreateQuarter: vi.fn(),
   OkrDialog: vi.fn(),
   MyThreadPage: vi.fn(),
 }))
@@ -29,6 +30,10 @@ vi.mock('../../src/hooks/useViewMode', () => ({
 
 vi.mock('../../src/hooks/useCanCreateObjective', () => ({
   default: mocks.useCanCreateObjective,
+}))
+
+vi.mock('../../src/hooks/useCreateQuarter', () => ({
+  default: mocks.useCreateQuarter,
 }))
 
 vi.mock('../../src/components/OkrDialog', () => ({
@@ -76,6 +81,7 @@ describe('OkrMapPage', () => {
       ],
       error: null,
       selectQuarter: vi.fn(),
+      refetch: vi.fn(),
     })
     mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
     mocks.useCanCreateObjective.mockReturnValue({
@@ -83,6 +89,11 @@ describe('OkrMapPage', () => {
       loading: false,
       error: null,
       refetch: vi.fn(),
+    })
+    mocks.useCreateQuarter.mockReturnValue({
+      createQuarter: vi.fn(),
+      creating: false,
+      error: null,
     })
   })
 
@@ -1023,6 +1034,147 @@ describe('OkrMapPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
       expect(screen.getByTestId('my-thread')).toBeInTheDocument()
+    })
+  })
+
+  describe('"+ New quarter" button (demo)', () => {
+    it('renders a "+ New quarter" button in the header', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByRole('button', { name: /new quarter/i })).toBeInTheDocument()
+    })
+
+    it('creates the next quarter from the current list, then refetches and selects it', async () => {
+      const createQuarter = vi.fn().mockResolvedValue({ id: 'q3', name: 'Q3 2026' })
+      const refetchQuarters = vi.fn().mockResolvedValue()
+      const selectQuarter = vi.fn()
+      const quarters = [
+        { id: 'q1', label: 'Q1 2026', is_active: false },
+        { id: 'q2', label: 'Q2 2026', is_active: true },
+      ]
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q2', quarters, error: null, selectQuarter, refetch: refetchQuarters,
+      })
+      mocks.useCreateQuarter.mockReturnValue({ createQuarter, creating: false, error: null })
+
+      render(<OkrMapPage />)
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /new quarter/i })) })
+
+      expect(createQuarter).toHaveBeenCalledWith(quarters)
+      expect(refetchQuarters).toHaveBeenCalled()
+      expect(selectQuarter).toHaveBeenCalledWith('q3')
+    })
+
+    it('shows a confirmation toast naming the newly created quarter', async () => {
+      const createQuarter = vi.fn().mockResolvedValue({ id: 'q3', name: 'Q4 2026' })
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1',
+        quarters: [{ id: 'q1', label: 'Q1 2026', is_active: true }],
+        error: null,
+        selectQuarter: vi.fn(),
+        refetch: vi.fn().mockResolvedValue(),
+      })
+      mocks.useCreateQuarter.mockReturnValue({ createQuarter, creating: false, error: null })
+
+      render(<OkrMapPage />)
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /new quarter/i })) })
+
+      expect(screen.getByText(/Q4 2026/)).toBeInTheDocument()
+    })
+
+    it('does not select a quarter or refetch when quarter creation fails (createQuarter resolves null)', async () => {
+      const createQuarter = vi.fn().mockResolvedValue(null)
+      const refetchQuarters = vi.fn()
+      const selectQuarter = vi.fn()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1',
+        quarters: [{ id: 'q1', label: 'Q1 2026', is_active: true }],
+        error: null,
+        selectQuarter,
+        refetch: refetchQuarters,
+      })
+      mocks.useCreateQuarter.mockReturnValue({ createQuarter, creating: false, error: null })
+
+      render(<OkrMapPage />)
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /new quarter/i })) })
+
+      expect(refetchQuarters).not.toHaveBeenCalled()
+      expect(selectQuarter).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('empty-state auto-open of Add Objective modal', () => {
+    function setEmptyMemberState({ companyObjectivesList = objectives, canCreate = true, isPast = false } = {}) {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: companyObjectivesList, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({ objectives: [], loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      mocks.useCanCreateObjective.mockReturnValue({ canCreate, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1',
+        quarters: [{ id: 'q1', label: 'Q1 2026', is_active: !isPast }],
+        error: null,
+        selectQuarter: vi.fn(),
+        refetch: vi.fn(),
+      })
+    }
+
+    it('opens the Add Objective dialog by default when Company OKR is set but the viewer has no individual OKR yet', () => {
+      setEmptyMemberState()
+      render(<OkrMapPage />)
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+      const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+      expect(props.mandatory).toBe(true)
+      expect(props.objective).toBeUndefined()
+    })
+
+    it('does not auto-open when the viewer already has an individual OKR', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: [{ id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura' }],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('does not auto-open when there is no Company OKR set yet for the quarter', () => {
+      setEmptyMemberState({ companyObjectivesList: [] })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('does not auto-open in Manager mode', () => {
+      setEmptyMemberState()
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('does not auto-open on a past (read-only) quarter', () => {
+      setEmptyMemberState({ isPast: true })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('does not auto-open when the quarter restart gate says canCreate: false', () => {
+      setEmptyMemberState({ canCreate: false })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('stays closed after the viewer cancels the auto-opened prompt (fires once, not on every render)', () => {
+      setEmptyMemberState()
+      render(<OkrMapPage />)
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+      const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+      act(() => { props.onClose() })
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
     })
   })
 })
