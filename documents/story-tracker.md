@@ -419,6 +419,7 @@ Feature: Unified drill-down modal for individual objectives
 | B20 | "+ Add objective" disappeared on a brand-new quarter with only an unconfirmed draft, with no way back into the modal to finish it | Bug | **Accepted** (merged direct to `main` `f3ef981`, no PR/review — demo-build process, 2026-09-27). Found by Jess live-testing a real "+ New quarter" → draft → stuck flow. | none | PM (direct) |
 | B21 | A reloaded draft's already-saved key result had no way to fix a typo — no Remove (by design) and no Edit either | Bug | **Accepted** (merged direct to `main` `dadaa81`, no PR/review — demo-build process, 2026-09-27). Found by Jess live-testing the B20 fix on Q2 2027. | none | PM (direct) |
 | B22 | "My thread" view/heading framing, drill-down as a centered modal, cards missing own KRs and an explicit company-OKR label | Feature | **Accepted** (merged direct to `main` `eecc5b2`, no PR/review — demo-build process, 2026-09-27). Built by a background sub-agent in an isolated worktree; Codex-reviewed before merge (see note below). | none | PM (background sub-agent + Codex review) |
+| B23 | Drill-down was still a covering panel, not a real split view; KR list sat outside the card; no way to review all OKRs at once | Feature | **Accepted** (merged direct to `main` `908ce32`, no PR/review — demo-build process, 2026-09-27). Background sub-agent + 3 rounds of Codex review before merge (2 real findings caught, see note below). | none | PM (background sub-agent + Codex review) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -621,6 +622,34 @@ Feature: My OKR view rename, drawer drill-down, and richer cards
 `e2e: none`. Implementation: `OkrMapPage.jsx` (view-toggle label only — the internal `'my-thread'` view id is untouched), `MyThreadPage.jsx` (heading text/size, "Linked to Company OKR: " label, own-KR list rendered as a sibling of the card's `<button>` — not a descendant, see the Codex finding below), `OkrDialog.jsx` (`cardStyle` converted from a centered card to a `position:fixed; top:0; right:0; height:100vh; width:30%; minWidth:360px` drawer; header × button with `aria-label="Close"`, hidden when `mandatory`; the old footer Cancel and confirmed-view Close buttons removed since the × is now the only close affordance).
 
 **Process note — first use of background sub-agent + Codex review this project**: Jess asked for this batch to be built by a background sub-agent and reviewed by Codex before merge, rather than the PM session editing directly (the pattern for B14–B21). Sequence: PM created an isolated git worktree (`~/Documents/Claude/Worktrees/be-one-ux-refactor`, branch `ux-my-okr-refactor`, off `main`) since the Agent tool's built-in worktree isolation requires the PM shell to already be inside the repo, which it isn't (Vault-rooted session); launched a `claude`-type background sub-agent scoped to that worktree with the full spec + this project's testing/commit conventions; sub-agent implemented all four changes, updated the ~40 existing tests referencing the old "My thread" label, added new coverage, and committed once `npm test`/`lint`/`build` were clean (439/439). PM then ran `codex review --base main` (Codex CLI, ChatGPT auth, already configured on this machine) against the sub-agent's commit — one finding: **[P2] a `<ul>` of key results was nested inside a `<button>` in `MyThreadPage.jsx`, which violates the button content model** (buttons may only contain phrasing content) and could expose the list inconsistently to assistive tech. PM fixed it directly (moved the KR list to a sibling of the button within the same `<li>` — same visual result, valid structure), re-verified 439/439 green, then fast-forward-merged the worktree branch into `main` and pushed. Worktree and branch removed after merge.
+
+**B23 — Real split view, KRs genuinely inside the card, review-all-OKRs screen**
+As Satoshi, I want the OKR detail area to sit next to my list (not cover it), my key results to actually read as part of the card, and a way to review every OKR I've confirmed this quarter in one sitting.
+
+```gherkin
+Feature: Split-view detail area, in-card KRs, and a review-all screen
+
+  Scenario: Detail area is a real split, not an overlay
+    Given the member clicks an OKR card on My Thread
+    Then the list narrows to make room and the detail area appears as a sibling column on the right — no backdrop dims the list, and it's still fully visible/usable
+
+  Scenario: Switching cards updates the detail area directly
+    Given the detail area is already open for one objective
+    When the member clicks a different card
+    Then the detail area immediately shows the new objective's data — never the previous one's stale state
+
+  Scenario: Key results are inside the card
+    Given an OKR card is rendered
+    Then its own key results are visually and structurally part of the same bordered card as the title and company-OKR link, and the card is highlighted while its detail is the one showing on the right
+
+  Scenario: Review all OKRs in one sitting
+    Given the member has one or more confirmed OKRs this quarter
+    When they click "Review" next to "My Current OKR"
+    Then a screen lists every confirmed OKR with its own full review fields (status, reflection, comment, confirm), independently saveable — still available even on a read-only past quarter
+```
+`e2e: none`. Implementation: `OkrMapPage.jsx`'s My Thread branch is now a flex row (list column `flex:1`, detail column `width:30%` rendered inline, `position:sticky`) instead of a `position:fixed` backdrop overlay; `OkrDialog` gets `key={liveDialogObjective?.id ?? 'create'}` so switching objectives forces a clean remount instead of stale internal state persisting across a prop change. `MyThreadPage.jsx`'s cards became a `<div role="button" tabIndex/aria-disabled/onKeyDown>` (not a `<button>`) so the KR `<ul>` can be a genuine child — a `<button>` can only hold phrasing content, which is exactly what B22 hit with the sibling workaround; a `selectedObjectiveId` prop drives the highlight. New `AllOkrsReview.jsx` + `QuarterReviewModal.jsx` refactored to export reusable `QuarterReviewFields({ objectiveId })` (each objective still has its own `quarter_reviews` row — this presents them together, doesn't merge them).
+
+**Process note — 3 rounds of Codex review, 2 real findings caught before merge**: same background-sub-agent-in-a-worktree pattern as B22 (`~/Documents/Claude/Worktrees/be-one-split-view`, branch `split-view-review-all`). Sub-agent landed all four pieces green (457/457) in one commit. `codex review --base main` round 1 found two real regressions the backdrop's removal had silently introduced: **[P1]** the quarter selector stayed clickable with no backdrop covering it, and switching quarters mid-draft would save an in-progress objective into the *newly selected* quarter (the panel wasn't re-keyed by quarter) — fixed by closing any open panel on quarter change; **[P2]** "OKR map" and "Manager" were also still clickable while the mandatory empty-state prompt (#B15) was open, and both unmount the split view entirely, letting the viewer skip a prompt that says they can't proceed — fixed by disabling both while `dialogState.mandatory`. Fixing the quarter-change effect surfaced a *third* hole that round 1 hadn't been asked about yet: closing the panel on quarter change also closed the *mandatory* one, and the quarter selector/`+ New quarter` were never disabled, so switching quarters was itself an escape route (worse: the once-per-quarter auto-open ref means returning to the original quarter later wouldn't re-prompt). Round 2 of `codex review` caught exactly this **[P1]**; fixed by disabling the quarter selector and `+ New quarter` too while mandatory. Round 3 came back clean ("No discrete regressions introduced by this diff were identified"). PM fixed all three directly between rounds (not sent back to the sub-agent) since each was a small, precisely-scoped edit; 8 regression tests added across the three fix commits, final suite 464/464, lint clean, build clean, fast-forward-merged and pushed.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
