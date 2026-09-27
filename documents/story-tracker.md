@@ -416,6 +416,7 @@ Feature: Unified drill-down modal for individual objectives
 | B17 | No way to save an OKR as a draft vs. confirming it as final for the quarter | Feature | **Accepted** (merged direct to `main` `e86a45b`, no PR/review — demo-build process, 2026-09-27). Same commit as B16. Migration `0010_individual_objectives_status.sql` applied live by Jess via the Supabase SQL editor 2026-09-27 (existing rows backfilled to `confirmed`, verified via REST read). | none | PM (direct) |
 | B18 | Reopening "+ Add objective" always started blank — a saved draft wasn't resumable, and drafts showed as My Thread cards before they were final | Feature | **Accepted** (merged direct to `main` `c1cf87a`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 | B19 | After confirming an OKR, the viewer could still reopen it and edit title/KRs/Coach-me — no real "locked" state for the quarter | Feature | **Accepted** (merged direct to `main` `c1cf87a`, no PR/review — demo-build process, 2026-09-27). Same commit as B18. No schema change — reuses the `status` column from migration 0010. | none | PM (direct) |
+| B20 | "+ Add objective" disappeared on a brand-new quarter with only an unconfirmed draft, with no way back into the modal to finish it | Bug | **Accepted** (merged direct to `main` `f3ef981`, no PR/review — demo-build process, 2026-09-27). Found by Jess live-testing a real "+ New quarter" → draft → stuck flow. | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -554,6 +555,22 @@ Feature: Confirmed OKR locks out further add/edit
     Then Check-in, History, and Review are still fully functional, and the footer shows a single Close button instead of Save/Cancel
 ```
 `e2e: none`. Implementation: `OkrDialog.jsx` computes `isConfirmedObjective = objective?.status === 'confirmed'` and branches the title field, the "Coach me" button, the footer, and a new `readOnly` prop passed to `ObjectiveCard`. `ObjectiveCard.jsx` combines its existing `isCompany` read-only path with the new `readOnly` prop into a single `noEdit` flag governing the status dot and `KrListInline`'s `readOnly` — Review and check-in stay keyed off `individualObjectiveId` alone, unaffected. `OkrMapPage.jsx`'s "+ Add objective" gate gained `!hasConfirmedThisQuarter` (drafts alone don't trip it).
+
+**B20 — "+ Add objective" stranded by an unrelated stricter gate**
+As Satoshi, I want "+ Add objective" to stay available for as long as I haven't confirmed my OKR this quarter, so an in-progress draft is never stuck with no way back into the modal.
+
+```gherkin
+Feature: "+ Add objective" visibility depends only on confirmation
+
+  Scenario: Button stays visible with only a draft, even if the #8b restart gate says no
+    Given the viewer has a status:'draft' individual objective this quarter and useCanCreateObjective (#8b) reports canCreate: false
+    Then "+ Add objective" is still shown
+
+  Scenario: Button still hides once confirmed
+    Given the viewer has a status:'confirmed' individual objective this quarter
+    Then "+ Add objective" is not shown, regardless of canCreate
+```
+`e2e: none`. Found live: Jess used "+ New quarter" and "Save as draft," then "+ Add objective" vanished with no way to resume or confirm the draft — My Thread hides drafts by design (B18), so the quarter looked empty. Root cause: `useCanCreateObjective`'s prior-quarter-review gate (#8b) was still `&&`-ed into the button's visibility condition. Every quarter in this demo follows one whose objectives were confirmed without ever going through the Quarter Review flow (`quarter_reviews` is empty live), so `canCreate` was false for every quarter after the first — silently blocking the button regardless of draft/confirm status. Fix: dropped `canCreate` from `OkrMapPage.jsx`'s "+ Add objective" condition entirely; it's now `!isPastQuarter && !hasConfirmedThisQuarter`. `useCanCreateObjective` itself is untouched and still called (its `refetch` still runs after save) but no longer gates anything visible — worth a follow-up PM decision on whether #8b's restart-by-review concept still belongs anywhere now that per-quarter confirm status is the more direct signal.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
