@@ -1214,6 +1214,17 @@ describe('OkrMapPage', () => {
         expect(screen.getByRole('button', { name: /^manager$/i })).not.toBeDisabled()
       })
 
+      it('disables the quarter selector and "+ New quarter" while the mandatory prompt is open (Codex review round 2)', () => {
+        // Otherwise switching quarters closes the mandatory panel (via the
+        // quarter-change effect above) without ever creating an OKR for the
+        // original quarter, and the auto-open ref means returning to it
+        // later won't re-prompt -- a real bypass of "must set one to continue".
+        setEmptyMemberState()
+        render(<OkrMapPage />)
+        expect(screen.getByRole('combobox', { name: /quarter/i })).toBeDisabled()
+        expect(screen.getByRole('button', { name: /new quarter/i })).toBeDisabled()
+      })
+
       it('does not disable "OKR map"/"Manager" for a normal (non-mandatory) open panel', () => {
         mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
         mocks.useIndividualObjectives.mockReturnValue({
@@ -1226,6 +1237,8 @@ describe('OkrMapPage', () => {
         expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /^okr map$/i })).not.toBeDisabled()
         expect(screen.getByRole('button', { name: /^manager$/i })).not.toBeDisabled()
+        expect(screen.getByRole('combobox', { name: /quarter/i })).not.toBeDisabled()
+        expect(screen.getByRole('button', { name: /new quarter/i })).not.toBeDisabled()
       })
     })
   })

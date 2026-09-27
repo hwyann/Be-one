@@ -78,12 +78,13 @@ function SummaryCard({ label, count, borderStyle }) {
   )
 }
 
-function QuarterSelector({ quarters, quarterId, onChange }) {
+function QuarterSelector({ quarters, quarterId, onChange, disabled = false }) {
   return (
     <select
       aria-label="Quarter"
       value={quarterId ?? ''}
       onChange={e => onChange(e.target.value)}
+      disabled={disabled}
       style={{
         font: '600 13px var(--font-display)',
         padding: '6px 10px',
@@ -91,6 +92,7 @@ function QuarterSelector({ quarters, quarterId, onChange }) {
         border: '1px solid var(--hairline)',
         background: 'var(--surface)',
         color: 'var(--ink-900)',
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       {quarters.map(q => (
@@ -313,13 +315,14 @@ export default function OkrMapPage() {
               quarters={quarters}
               quarterId={quarterId}
               onChange={selectQuarter}
+              disabled={mandatoryOpen}
             />
           )}
           <button
             type="button"
             onClick={handleCreateQuarter}
-            disabled={creatingQuarter}
-            style={newQuarterButtonStyle()}
+            disabled={creatingQuarter || mandatoryOpen}
+            style={{ ...newQuarterButtonStyle(), opacity: mandatoryOpen ? 0.5 : 1 }}
           >
             + New quarter
           </button>
