@@ -63,31 +63,33 @@ export default function MyThreadPage({
                     Linked to Company OKR: {coTitle}{krTitle ? ` · ${krTitle}` : ''}
                   </span>
                 )}
-                {keyResults.length > 0 && (
-                  <ul data-testid={`objective-krs-${objective.id}`} style={{
-                    listStyle: 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
-                    margin: 0,
-                    padding: 0,
-                    marginTop: '4px',
-                  }}>
-                    {keyResults.map(kr => (
-                      <li key={kr.id} style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ font: '500 11px var(--font-sans)', color: 'var(--text-secondary)' }}>
-                          {kr.title}
-                        </span>
-                        {kr.target_note && (
-                          <span style={{ font: '400 11px var(--font-sans)', color: 'var(--text-muted)' }}>
-                            {kr.target_note}
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </button>
+              {keyResults.length > 0 && (
+                // Rendered as a sibling of the card button, not a descendant —
+                // a <button> may only contain phrasing content, and a <ul> of
+                // key results is flow content (Codex review finding, #B22).
+                <ul data-testid={`objective-krs-${objective.id}`} style={{
+                  listStyle: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
+                  margin: 0,
+                  padding: '4px 14px 0',
+                }}>
+                  {keyResults.map(kr => (
+                    <li key={kr.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ font: '500 11px var(--font-sans)', color: 'var(--text-secondary)' }}>
+                        {kr.title}
+                      </span>
+                      {kr.target_note && (
+                        <span style={{ font: '400 11px var(--font-sans)', color: 'var(--text-muted)' }}>
+                          {kr.target_note}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           )
         })}
