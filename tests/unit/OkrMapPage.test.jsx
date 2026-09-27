@@ -1207,6 +1207,26 @@ describe('OkrMapPage', () => {
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
     })
 
+    it('shows "+ Add objective" for an unconfirmed draft even when the #8b restart gate (canCreate) is false', () => {
+      // Regression: a stricter, unrelated gate (prior-quarter reviews not
+      // finalized) was swallowing an in-progress draft on a brand-new
+      // quarter, leaving no way back into the modal to finish or confirm
+      // it. Confirmation status is now the only thing that hides this
+      // button; canCreate no longer factors in.
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: [{ id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'draft' }],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useCanCreateObjective.mockReturnValue({ canCreate: false, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
+    })
+
     it('does not hide "+ Add objective" for a confirmed objective belonging to someone else', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       mocks.useIndividualObjectives.mockReturnValue({
