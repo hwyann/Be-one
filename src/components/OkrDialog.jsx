@@ -104,6 +104,130 @@ function pillButtonStyle() {
   }
 }
 
+function dashedButtonStyle() {
+  return {
+    marginTop: '2px',
+    font: '600 12px var(--font-display)',
+    padding: '7px 10px',
+    borderRadius: '8px',
+    border: '1px dashed var(--hairline)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    width: '100%',
+  }
+}
+
+function addObjectiveButtonStyle() {
+  return {
+    font: '600 12px var(--font-display)',
+    padding: '9px 10px',
+    borderRadius: '8px',
+    border: '1px dashed var(--coral-700)',
+    background: 'transparent',
+    color: 'var(--coral-700)',
+    cursor: 'pointer',
+    width: '100%',
+  }
+}
+
+const draftSectionStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  paddingBottom: '10px',
+  borderBottom: '1px solid var(--hairline)',
+}
+
+const draftHeaderRowStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+}
+
+const draftHeadingStyle = {
+  font: '700 10px var(--font-display)',
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  color: 'var(--text-secondary)',
+}
+
+function emptyDraft() {
+  return { title: '', link: '', draftKrs: [], showKrForm: false }
+}
+
+function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRemove }) {
+  return (
+    <div style={draftSectionStyle}>
+      {onRemove && (
+        <div style={draftHeaderRowStyle}>
+          <span style={draftHeadingStyle}>Objective {index + 1}</span>
+          <button type="button" onClick={onRemove} style={secondaryButtonStyle()}>Remove</button>
+        </div>
+      )}
+      <label htmlFor={`okr-title-${index}`} style={labelStyle}>
+        Objective
+        <input
+          id={`okr-title-${index}`}
+          value={draft.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          style={inputStyle}
+        />
+      </label>
+      <label htmlFor={`okr-link-${index}`} style={labelStyle}>
+        Aligns with
+        <select
+          id={`okr-link-${index}`}
+          value={draft.link}
+          onChange={(e) => onChange({ link: e.target.value })}
+          style={inputStyle}
+        >
+          <option value="">Select alignment…</option>
+          {companyObjectives.map((obj) => (
+            <optgroup key={obj.id} label={obj.title}>
+              <option value={`objective_level:${obj.id}`}>{obj.title} (objective)</option>
+              {(obj.key_results ?? []).map((kr) => (
+                <option key={kr.id} value={`direct_kr:${kr.id}:${obj.id}`}>
+                  {kr.title}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </label>
+      {draft.draftKrs.length > 0 && (
+        <ul style={draftKrListStyle}>
+          {draft.draftKrs.map((kr, i) => (
+            <li key={i} style={draftKrItemStyle}>
+              <span>{kr.title}</span>
+              <button
+                type="button"
+                onClick={() => onChange({ draftKrs: draft.draftKrs.filter((_, idx) => idx !== i) })}
+                style={secondaryButtonStyle()}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {draft.showKrForm ? (
+        <KrForm
+          submitLabel="Add"
+          onSubmit={({ title: krTitle, targetNote }) => {
+            onChange({ draftKrs: [...draft.draftKrs, { title: krTitle, targetNote }], showKrForm: false })
+          }}
+          onCancel={() => onChange({ showKrForm: false })}
+        />
+      ) : (
+        <button type="button" onClick={() => onChange({ showKrForm: true })} style={dashedButtonStyle()}>
+          + Add key result
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function OkrDialog({
   quarterId,
   quarterName,
@@ -115,47 +239,72 @@ export default function OkrDialog({
   onKrSaved,
 }) {
   const [title, setTitle] = useState(objective?.title ?? '')
-  const [link, setLink] = useState('')
   const [error, setError] = useState(null)
   const [showCoach, setShowCoach] = useState(false)
   const [coachAnswers, setCoachAnswers] = useState({})
-  const [draftKrs, setDraftKrs] = useState([])
-  const [showDraftKrForm, setShowDraftKrForm] = useState(false)
+  const [objectiveDrafts, setObjectiveDrafts] = useState([emptyDraft()])
   const [checkInMode, setCheckInMode] = useState(null)
   const { save: saveRationale } = useRationale(null)
   const { create: createKr } = useKrMutation()
 
-  async function handleSave() {
+  function updateDraft(index, patch) {
+    setObjectiveDrafts(drafts => drafts.map((d, i) => (i === index ? { ...d, ...patch } : d)))
+  }
+
+  function addDraft() {
+    setObjectiveDrafts(drafts => [...drafts, emptyDraft()])
+  }
+
+  function removeDraft(index) {
+    setObjectiveDrafts(drafts => drafts.filter((_, i) => i !== index))
+  }
+
+  async function handleEditSave() {
     if (!title.trim()) return
-
-    let query
-    if (objective) {
-      query = supabase.from('individual_objectives').update({ title }).eq('id', objective.id).select()
-    } else {
-      if (!quarterId) return
-      const linkFields = parseLink(link)
-      if (!linkFields) {
-        setError('A company objective link is required')
-        return
-      }
-      if (draftKrs.length === 0) {
-        setError('At least one key result is required')
-        return
-      }
-      query = supabase
-        .from('individual_objectives')
-        .insert([{ title, quarter_id: quarterId, owner_name: 'Satoshi Kimura', ...linkFields }])
-        .select()
-    }
-
-    const { data, error: err } = await query
+    const { data, error: err } = await supabase
+      .from('individual_objectives')
+      .update({ title })
+      .eq('id', objective.id)
+      .select()
     if (err) {
       setError(err.message)
       return
     }
-    const savedObjective = data[0]
-    if (!objective) {
-      for (const kr of draftKrs) {
+    onSave(data[0])
+  }
+
+  async function handleCreateSave(status) {
+    if (objectiveDrafts.some(d => !d.title.trim())) return
+    if (!quarterId) return
+
+    const parsedDrafts = []
+    for (const draft of objectiveDrafts) {
+      const linkFields = parseLink(draft.link)
+      if (!linkFields) {
+        setError('A company objective link is required')
+        return
+      }
+      if (draft.draftKrs.length === 0) {
+        setError('At least one key result is required')
+        return
+      }
+      parsedDrafts.push({ draft, linkFields })
+    }
+
+    const savedObjectives = []
+    for (const { draft, linkFields } of parsedDrafts) {
+      const { data, error: err } = await supabase
+        .from('individual_objectives')
+        .insert([{ title: draft.title, quarter_id: quarterId, owner_name: 'Satoshi Kimura', status, ...linkFields }])
+        .select()
+      if (err) {
+        setError(err.message)
+        return
+      }
+      const savedObjective = data[0]
+      savedObjectives.push(savedObjective)
+
+      for (const kr of draft.draftKrs) {
         const ok = await createKr({
           individualObjectiveId: savedObjective.id,
           title: kr.title,
@@ -169,11 +318,18 @@ export default function OkrDialog({
         }
       }
     }
+
     if (Object.keys(coachAnswers).length > 0) {
-      await saveRationale({ targetId: savedObjective.id, answers: coachAnswers })
+      await saveRationale({ targetId: savedObjectives[0].id, answers: coachAnswers })
     }
-    onSave(savedObjective)
+    onSave(savedObjectives.length === 1 ? savedObjectives[0] : savedObjectives)
   }
+
+  function handleSave(status) {
+    return objective ? handleEditSave() : handleCreateSave(status)
+  }
+
+  const confirmLabel = quarterName ? `Confirm OKR for ${quarterName}` : 'Confirm OKR'
 
   return (
     <div role="dialog" style={cardStyle}>
@@ -187,82 +343,31 @@ export default function OkrDialog({
           {error}
         </div>
       )}
-      <label htmlFor="okr-title" style={labelStyle}>
-        Objective
-        <input
-          id="okr-title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={inputStyle}
-        />
-      </label>
-      {!objective && (
+      {objective ? (
+        <label htmlFor="okr-title" style={labelStyle}>
+          Objective
+          <input
+            id="okr-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+      ) : (
         <>
-          <label htmlFor="okr-link" style={labelStyle}>
-            Aligns with
-            <select
-              id="okr-link"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              style={inputStyle}
-            >
-              <option value="">Select alignment…</option>
-              {companyObjectives.map((obj) => (
-                <optgroup key={obj.id} label={obj.title}>
-                  <option value={`objective_level:${obj.id}`}>{obj.title} (objective)</option>
-                  {(obj.key_results ?? []).map((kr) => (
-                    <option key={kr.id} value={`direct_kr:${kr.id}:${obj.id}`}>
-                      {kr.title}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </label>
-          {draftKrs.length > 0 && (
-            <ul style={draftKrListStyle}>
-              {draftKrs.map((kr, i) => (
-                <li key={i} style={draftKrItemStyle}>
-                  <span>{kr.title}</span>
-                  <button
-                    type="button"
-                    onClick={() => setDraftKrs(draftKrs.filter((_, idx) => idx !== i))}
-                    style={secondaryButtonStyle()}
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {showDraftKrForm ? (
-            <KrForm
-              submitLabel="Add"
-              onSubmit={({ title: krTitle, targetNote }) => {
-                setDraftKrs([...draftKrs, { title: krTitle, targetNote }])
-                setShowDraftKrForm(false)
-              }}
-              onCancel={() => setShowDraftKrForm(false)}
+          {objectiveDrafts.map((draft, index) => (
+            <ObjectiveDraftFields
+              key={index}
+              draft={draft}
+              index={index}
+              companyObjectives={companyObjectives}
+              onChange={(patch) => updateDraft(index, patch)}
+              onRemove={index > 0 ? () => removeDraft(index) : null}
             />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowDraftKrForm(true)}
-              style={{
-                marginTop: '2px',
-                font: '600 12px var(--font-display)',
-                padding: '7px 10px',
-                borderRadius: '8px',
-                border: '1px dashed var(--hairline)',
-                background: 'transparent',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-                width: '100%',
-              }}
-            >
-              + Add key result
-            </button>
-          )}
+          ))}
+          <button type="button" onClick={addDraft} style={addObjectiveButtonStyle()}>
+            + Add another objective
+          </button>
         </>
       )}
       <button type="button" onClick={() => setShowCoach(true)} style={secondaryButtonStyle()}>
@@ -311,7 +416,18 @@ export default function OkrDialog({
         {!mandatory && (
           <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>
         )}
-        <button type="button" onClick={handleSave} style={primaryButtonStyle()}>Save</button>
+        {objective ? (
+          <button type="button" onClick={() => handleSave()} style={primaryButtonStyle()}>Save</button>
+        ) : (
+          <>
+            <button type="button" onClick={() => handleSave('draft')} style={secondaryButtonStyle()}>
+              Save as draft
+            </button>
+            <button type="button" onClick={() => handleSave('confirmed')} style={primaryButtonStyle()}>
+              {confirmLabel}
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

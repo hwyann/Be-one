@@ -152,6 +152,30 @@ describe('MyThreadPage', () => {
     expect(screen.getByText(/my thread/i)).toBeInTheDocument()
   })
 
+  describe('draft status badge', () => {
+    it('shows a "Draft" badge on an objective with status "draft"', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[{ ...objectives[0], status: 'draft' }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByText(/^draft$/i)).toBeInTheDocument()
+    })
+
+    it('does not show a "Draft" badge on a confirmed objective', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[{ ...objectives[0], status: 'confirmed' }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.queryByText(/^draft$/i)).not.toBeInTheDocument()
+    })
+  })
+
   describe('read-only past quarter (#5a-2)', () => {
     it('disables the edit trigger when readOnly is true', () => {
       const onEdit = vi.fn()

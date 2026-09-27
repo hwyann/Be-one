@@ -236,6 +236,7 @@ describe('OkrDialog', () => {
           title: 'Grow revenue',
           quarter_id: 'q1',
           owner_name: 'Satoshi Kimura',
+          status: 'draft',
           link_type: 'direct_kr',
           linked_company_objective_id: 'co-1',
           key_result_id: 'kr-2',
@@ -266,6 +267,7 @@ describe('OkrDialog', () => {
           title: 'Grow revenue',
           quarter_id: 'q1',
           owner_name: 'Satoshi Kimura',
+          status: 'draft',
           link_type: 'objective_level',
           linked_company_objective_id: 'co-2',
         },
@@ -326,7 +328,7 @@ describe('OkrDialog', () => {
       target: { value: 'objective_level:co-1' },
     })
     await addDraftKr()
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
   })
 
@@ -353,7 +355,7 @@ describe('OkrDialog', () => {
       target: { value: 'objective_level:co-1' },
     })
     await addDraftKr()
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
     await waitFor(() =>
       expect(mocks.rationaleSave).toHaveBeenCalledWith({
         targetId: 'new-1',
@@ -381,7 +383,7 @@ describe('OkrDialog', () => {
       target: { value: 'objective_level:co-1' },
     })
     await addDraftKr()
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
     expect(mocks.rationaleSave).not.toHaveBeenCalled()
   })
@@ -399,7 +401,7 @@ describe('OkrDialog', () => {
     fireEvent.change(screen.getByLabelText(/aligns with/i), {
       target: { value: 'objective_level:co-1' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/at least one key result is required/i)
     await waitFor(() => expect(mocks.insert).not.toHaveBeenCalled())
     expect(onSave).not.toHaveBeenCalled()
@@ -421,7 +423,7 @@ describe('OkrDialog', () => {
       target: { value: 'objective_level:co-1' },
     })
     await addDraftKr('Ship v1')
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(saved))
     expect(mocks.krInsert).toHaveBeenCalledWith(
       expect.objectContaining({ individual_objective_id: 'new-1', title: 'Ship v1' })
@@ -445,7 +447,7 @@ describe('OkrDialog', () => {
       target: { value: 'objective_level:co-1' },
     })
     await addDraftKr('Ship v1')
-    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/key result/i)
     expect(onSave).not.toHaveBeenCalled()
   })
@@ -454,7 +456,7 @@ describe('OkrDialog', () => {
     it('hides the Cancel button when mandatory is true', () => {
       render(<OkrDialog quarterId="q1" mandatory onSave={onSave} onClose={onClose} />)
       expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /confirm okr/i })).toBeInTheDocument()
     })
 
     it('shows Cancel by default (mandatory not set)', () => {
@@ -492,7 +494,7 @@ describe('OkrDialog', () => {
       expect(titleInput.style.borderRadius).not.toBe('')
       expect(titleInput.style.padding).not.toBe('')
 
-      const saveButton = screen.getByRole('button', { name: /^save$/i })
+      const saveButton = screen.getByRole('button', { name: /confirm okr/i })
       expect(saveButton.style.borderRadius).not.toBe('')
       expect(saveButton.style.padding).not.toBe('')
       expect(saveButton.style.background).not.toBe('')
@@ -566,6 +568,148 @@ describe('OkrDialog', () => {
       render(<OkrDialog quarterId="q1" objective={existingObjective} onSave={onSave} onClose={onClose} />)
       expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /add key result/i })).toBeInTheDocument()
+    })
+  })
+
+  describe('multi-objective creation (full-width "+ Add another objective")', () => {
+    function fillDraft(index, { title, link, krTitle }) {
+      fireEvent.change(screen.getAllByLabelText(/objective/i)[index], { target: { value: title } })
+      fireEvent.change(screen.getAllByLabelText(/aligns with/i)[index], { target: { value: link } })
+      fireEvent.click(screen.getAllByRole('button', { name: /add key result/i })[index])
+      fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: krTitle } })
+      fireEvent.click(screen.getByRole('button', { name: /^add$/i }))
+    }
+
+    it('renders a full-width "+ Add another objective" button when creating', () => {
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+      const addObjective = screen.getByRole('button', { name: /add another objective/i })
+      expect(addObjective).toBeInTheDocument()
+      expect(addObjective.style.width).toBe('100%')
+    })
+
+    it('does not render "+ Add another objective" when editing an existing objective', () => {
+      render(<OkrDialog quarterId="q1" objective={{ id: 'obj-1', title: 'Ship MVP' }} onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByRole('button', { name: /add another objective/i })).not.toBeInTheDocument()
+    })
+
+    it('adds a second objective section with its own Objective and Aligns-with fields', () => {
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+      fireEvent.click(screen.getByRole('button', { name: /add another objective/i }))
+      expect(screen.getAllByLabelText(/objective/i)).toHaveLength(2)
+      expect(screen.getAllByLabelText(/aligns with/i)).toHaveLength(2)
+    })
+
+    it('shows a Remove button only on additional objective sections, not the first', () => {
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+      fireEvent.click(screen.getByRole('button', { name: /add another objective/i }))
+      expect(screen.getAllByRole('button', { name: /^remove$/i })).toHaveLength(1)
+    })
+
+    it('removes the second objective section when its Remove button is clicked', () => {
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+      fireEvent.click(screen.getByRole('button', { name: /add another objective/i }))
+      fireEvent.click(screen.getByRole('button', { name: /^remove$/i }))
+      expect(screen.getAllByLabelText(/objective/i)).toHaveLength(1)
+      expect(screen.queryByRole('button', { name: /^remove$/i })).not.toBeInTheDocument()
+    })
+
+    it('creates one individual_objectives row per objective section, each with its own key result', async () => {
+      mocks.select
+        .mockResolvedValueOnce({ data: [{ id: 'new-1', title: 'Objective A' }], error: null })
+        .mockResolvedValueOnce({ data: [{ id: 'new-2', title: 'Objective B' }], error: null })
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+
+      fillDraft(0, { title: 'Objective A', link: 'objective_level:co-1', krTitle: 'KR A' })
+      fireEvent.click(screen.getByRole('button', { name: /add another objective/i }))
+      fillDraft(1, { title: 'Objective B', link: 'objective_level:co-2', krTitle: 'KR B' })
+
+      fireEvent.click(screen.getByRole('button', { name: /confirm okr/i }))
+
+      await waitFor(() => expect(onSave).toHaveBeenCalledWith([
+        { id: 'new-1', title: 'Objective A' },
+        { id: 'new-2', title: 'Objective B' },
+      ]))
+      expect(mocks.insert).toHaveBeenNthCalledWith(1, [{
+        title: 'Objective A',
+        quarter_id: 'q1',
+        owner_name: 'Satoshi Kimura',
+        status: 'confirmed',
+        link_type: 'objective_level',
+        linked_company_objective_id: 'co-1',
+      }])
+      expect(mocks.insert).toHaveBeenNthCalledWith(2, [{
+        title: 'Objective B',
+        quarter_id: 'q1',
+        owner_name: 'Satoshi Kimura',
+        status: 'confirmed',
+        link_type: 'objective_level',
+        linked_company_objective_id: 'co-2',
+      }])
+      expect(mocks.krInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ individual_objective_id: 'new-1', title: 'KR A' })
+      )
+      expect(mocks.krInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ individual_objective_id: 'new-2', title: 'KR B' })
+      )
+    })
+
+    it('blocks the whole save (no inserts at all) when any objective section is missing a key result', async () => {
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+
+      fillDraft(0, { title: 'Objective A', link: 'objective_level:co-1', krTitle: 'KR A' })
+      fireEvent.click(screen.getByRole('button', { name: /add another objective/i }))
+      fireEvent.change(screen.getAllByLabelText(/objective/i)[1], { target: { value: 'Objective B' } })
+      fireEvent.change(screen.getAllByLabelText(/aligns with/i)[1], { target: { value: 'objective_level:co-2' } })
+      // Objective B intentionally has no key result added.
+
+      fireEvent.click(screen.getByRole('button', { name: /confirm okr/i }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/at least one key result is required/i)
+      expect(mocks.insert).not.toHaveBeenCalled()
+      expect(onSave).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('draft vs confirm status', () => {
+    it('inserts with status: "draft" when "Save as draft" is clicked', async () => {
+      mocks.select.mockResolvedValue({ data: [{ id: 'new-1', title: 'Grow revenue' }], error: null })
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+      fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+      fireEvent.change(screen.getByLabelText(/aligns with/i), { target: { value: 'objective_level:co-1' } })
+      await addDraftKr()
+      fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
+      await waitFor(() => expect(mocks.insert).toHaveBeenCalledWith([
+        expect.objectContaining({ status: 'draft' }),
+      ]))
+    })
+
+    it('inserts with status: "confirmed" when "Confirm OKR" is clicked', async () => {
+      mocks.select.mockResolvedValue({ data: [{ id: 'new-1', title: 'Grow revenue' }], error: null })
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+      fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
+      fireEvent.change(screen.getByLabelText(/aligns with/i), { target: { value: 'objective_level:co-1' } })
+      await addDraftKr()
+      fireEvent.click(screen.getByRole('button', { name: /confirm okr/i }))
+      await waitFor(() => expect(mocks.insert).toHaveBeenCalledWith([
+        expect.objectContaining({ status: 'confirmed' }),
+      ]))
+    })
+
+    it('labels the confirm button "Confirm OKR for <quarterName>" when quarterName is provided', () => {
+      render(<OkrDialog quarterId="q1" quarterName="Q4 2026" onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /confirm okr for q4 2026/i })).toBeInTheDocument()
+    })
+
+    it('falls back to a plain "Confirm OKR" label when quarterName is not provided', () => {
+      render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /^confirm okr$/i })).toBeInTheDocument()
+    })
+
+    it('does not render draft/confirm buttons when editing an existing objective (keeps the single Save button)', () => {
+      render(<OkrDialog quarterId="q1" objective={{ id: 'obj-1', title: 'Ship MVP' }} onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByRole('button', { name: /save as draft/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /confirm okr/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument()
     })
   })
 })
