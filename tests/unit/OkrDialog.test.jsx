@@ -480,20 +480,26 @@ describe('OkrDialog', () => {
     })
   })
 
-  describe('right-side drawer styling (objective drill-down)', () => {
-    it('renders the dialog root as a fixed, right-anchored drawer at ~30% width filling the viewport height', () => {
+  describe('in-flow panel styling (split view, split-view-review-all)', () => {
+    // OkrDialog no longer positions itself as a fixed, full-viewport-height
+    // drawer — the parent column in OkrMapPage.jsx's my-thread split view now
+    // owns width/position, rendering this inline as a sibling of the My
+    // Thread list. This fills whatever container it's placed in and scrolls
+    // its own contents instead of growing the whole page.
+    it('renders the dialog root as a normal in-flow block that fills its container and scrolls internally', () => {
       render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
       const dialog = screen.getByRole('dialog')
-      expect(dialog.style.position).toBe('fixed')
-      expect(dialog.style.top).toBe('0px')
-      expect(dialog.style.right).toBe('0px')
-      expect(dialog.style.height).toBe('100vh')
-      expect(dialog.style.width).toBe('30%')
-      expect(dialog.style.minWidth).toBe('360px')
+      expect(dialog.style.position).toBe('')
+      expect(dialog.style.top).toBe('')
+      expect(dialog.style.right).toBe('')
+      expect(dialog.style.height).toBe('')
+      expect(dialog.style.width).toBe('100%')
+      expect(dialog.style.minWidth).toBe('')
       expect(dialog.style.background).toBe('var(--surface)')
       expect(dialog.style.border).toContain('var(--hairline)')
       expect(dialog.style.padding).not.toBe('')
       expect(dialog.style.overflowY).toBe('auto')
+      expect(dialog.style.maxHeight).not.toBe('')
     })
 
     it('styles the title input and Save button to match the app design language', () => {

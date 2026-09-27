@@ -8,13 +8,12 @@ import { KrForm } from './KrListInline'
 import useRationale from '../hooks/useRationale'
 import useKrMutation from '../hooks/useKrMutation'
 
+// The parent column (see OkrMapPage.jsx's my-thread split view) now owns
+// this panel's width/position — it's rendered inline as a sibling of the
+// My Thread list, not a fixed full-viewport drawer (split-view-review-all).
 const cardStyle = {
-  position: 'fixed',
-  top: 0,
-  right: 0,
-  height: '100vh',
-  width: '30%',
-  minWidth: '360px',
+  width: '100%',
+  maxHeight: 'calc(100vh - 48px)',
   background: 'var(--surface)',
   border: '1px solid var(--hairline)',
   boxShadow: '0 1px 3px rgba(19,30,40,.06)',

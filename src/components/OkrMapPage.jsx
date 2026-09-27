@@ -333,13 +333,34 @@ export default function OkrMapPage() {
           <AlignmentSummaryStrip objectives={individualObjectives} />
         </>
       ) : (
-        <MyThreadPage
-          ownerName={VIEWER_OWNER_NAME}
-          objectives={individualObjectives}
-          companyObjectives={objectives}
-          onEdit={objective => setDialogState({ objective })}
-          readOnly={isPastQuarter}
-        />
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <MyThreadPage
+              ownerName={VIEWER_OWNER_NAME}
+              objectives={individualObjectives}
+              companyObjectives={objectives}
+              onEdit={objective => setDialogState({ objective })}
+              readOnly={isPastQuarter}
+              selectedObjectiveId={liveDialogObjective?.id}
+            />
+          </div>
+          {dialogState && (
+            <div style={{ width: '30%', minWidth: '360px', flexShrink: 0, position: 'sticky', top: 0 }}>
+              <OkrDialog
+                key={liveDialogObjective?.id ?? 'create'}
+                quarterId={quarterId}
+                quarterName={quarters.find(q => q.id === quarterId)?.name}
+                objective={liveDialogObjective}
+                companyObjectives={objectives}
+                mandatory={!!dialogState?.mandatory}
+                existingDrafts={myDrafts}
+                onSave={handleSave}
+                onClose={closeDialog}
+                onKrSaved={refetchIndividual}
+              />
+            </div>
+          )}
+        </div>
       )}
       {toastMessage && (
         <Toast
@@ -347,28 +368,6 @@ export default function OkrMapPage() {
           visibleMs={5000}
           onDismiss={() => setToastMessage(null)}
         />
-      )}
-      {dialogState && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(19,30,40,.4)',
-            zIndex: 10,
-          }}
-        >
-          <OkrDialog
-            quarterId={quarterId}
-            quarterName={quarters.find(q => q.id === quarterId)?.name}
-            objective={liveDialogObjective}
-            companyObjectives={objectives}
-            mandatory={!!dialogState?.mandatory}
-            existingDrafts={myDrafts}
-            onSave={handleSave}
-            onClose={closeDialog}
-            onKrSaved={refetchIndividual}
-          />
-        </div>
       )}
     </div>
   )

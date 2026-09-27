@@ -43,7 +43,14 @@ function buttonStyle(primary) {
   }
 }
 
-export default function QuarterReviewModal({ objectiveId, onDone }) {
+// The actual review fields for a single objective — disclaimer, status
+// radiogroup, reflection/comment + confirm checkboxes, finalized indicator,
+// and its own Save button. Split out from QuarterReviewModal (which adds
+// only the dialog chrome + Close button) so it can also be reused, one
+// section per objective, inside AllOkrsReview's "review all at once" screen
+// (split-view-review-all). Each instance owns its own useQuarterReview call
+// and saves to that objective's own quarter_reviews row independently.
+export function QuarterReviewFields({ objectiveId }) {
   const { review, loading, save, saving, error } = useQuarterReview(objectiveId)
   const [finalStatus, setFinalStatus] = useState(review?.final_status ?? null)
   const [memberReflection, setMemberReflection] = useState(review?.member_reflection ?? '')
@@ -74,7 +81,7 @@ export default function QuarterReviewModal({ objectiveId, onDone }) {
   }
 
   return (
-    <div role="dialog" aria-label="Quarter review" style={panelStyle}>
+    <>
       <div style={{
         padding: '8px 10px',
         borderRadius: '8px',
@@ -122,10 +129,10 @@ export default function QuarterReviewModal({ objectiveId, onDone }) {
         })}
       </div>
 
-      <label htmlFor="member-reflection" style={labelStyle}>
+      <label htmlFor={`member-reflection-${objectiveId}`} style={labelStyle}>
         Member's reflection
         <textarea
-          id="member-reflection"
+          id={`member-reflection-${objectiveId}`}
           value={memberReflection}
           onChange={e => setMemberReflection(e.target.value)}
           style={textareaStyle}
@@ -140,10 +147,10 @@ export default function QuarterReviewModal({ objectiveId, onDone }) {
         Member confirms
       </label>
 
-      <label htmlFor="manager-comment" style={labelStyle}>
+      <label htmlFor={`manager-comment-${objectiveId}`} style={labelStyle}>
         Manager's comment
         <textarea
-          id="manager-comment"
+          id={`manager-comment-${objectiveId}`}
           value={managerComment}
           onChange={e => setManagerComment(e.target.value)}
           style={textareaStyle}
@@ -171,11 +178,21 @@ export default function QuarterReviewModal({ objectiveId, onDone }) {
       {error && <div role="alert" style={{ font: '500 11px var(--font-sans)', color: 'var(--behind)' }}>{error}</div>}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
-        <button type="button" onClick={() => onDone?.()} style={buttonStyle(false)}>
-          Close
-        </button>
         <button type="button" onClick={handleSave} disabled={saving || loading} style={buttonStyle(true)}>
           Save
+        </button>
+      </div>
+    </>
+  )
+}
+
+export default function QuarterReviewModal({ objectiveId, onDone }) {
+  return (
+    <div role="dialog" aria-label="Quarter review" style={panelStyle}>
+      <QuarterReviewFields objectiveId={objectiveId} />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+        <button type="button" onClick={() => onDone?.()} style={buttonStyle(false)}>
+          Close
         </button>
       </div>
     </div>

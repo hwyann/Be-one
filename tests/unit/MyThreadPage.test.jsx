@@ -1,5 +1,14 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent, within, act } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+  AllOkrsReview: vi.fn(),
+}))
+
+vi.mock('../../src/components/AllOkrsReview', () => ({
+  default: (props) => mocks.AllOkrsReview(props),
+}))
+
 import MyThreadPage from '../../src/components/MyThreadPage'
 
 const companyObjectives = [
@@ -49,6 +58,11 @@ const objectives = [
 ]
 
 describe('MyThreadPage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mocks.AllOkrsReview.mockReturnValue(<div data-testid="all-okrs-review" />)
+  })
+
   it('renders each of the viewer\'s objectives', () => {
     render(
       <MyThreadPage
@@ -290,7 +304,7 @@ describe('MyThreadPage', () => {
   })
 
   describe('read-only past quarter (#5a-2)', () => {
-    it('disables the edit trigger when readOnly is true', () => {
+    it('marks the card as aria-disabled and keyboard-unreachable when readOnly is true', () => {
       const onEdit = vi.fn()
       render(
         <MyThreadPage
@@ -301,8 +315,30 @@ describe('MyThreadPage', () => {
           readOnly
         />
       )
-      expect(screen.getByRole('button', { name: /Ship MVP/ })).toBeDisabled()
-      fireEvent.click(screen.getByRole('button', { name: /Ship MVP/ }))
+      // The card is a <div role="button"> now (Change 2, split-view-review-all)
+      // so it can contain the KR list as a genuine descendant instead of a
+      // sibling — a real <button> can't contain flow content. Plain divs have
+      // no native `disabled` attribute, so jest-dom's toBeDisabled() no longer
+      // applies; assert the manual aria/tabIndex semantics instead.
+      const card = screen.getByRole('button', { name: /Ship MVP/ })
+      expect(card).toHaveAttribute('aria-disabled', 'true')
+      expect(card).toHaveAttribute('tabIndex', '-1')
+      fireEvent.click(card)
+      expect(onEdit).not.toHaveBeenCalled()
+    })
+
+    it('does not call onEdit when Enter is pressed on a readOnly card', () => {
+      const onEdit = vi.fn()
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          onEdit={onEdit}
+          readOnly
+        />
+      )
+      fireEvent.keyDown(screen.getByRole('button', { name: /Ship MVP/ }), { key: 'Enter' })
       expect(onEdit).not.toHaveBeenCalled()
     })
 
@@ -317,9 +353,134 @@ describe('MyThreadPage', () => {
           readOnly={false}
         />
       )
-      expect(screen.getByRole('button', { name: /Ship MVP/ })).not.toBeDisabled()
-      fireEvent.click(screen.getByRole('button', { name: /Ship MVP/ }))
+      const card = screen.getByRole('button', { name: /Ship MVP/ })
+      expect(card).toHaveAttribute('aria-disabled', 'false')
+      expect(card).toHaveAttribute('tabIndex', '0')
+      fireEvent.click(card)
       expect(onEdit).toHaveBeenCalledWith(objectives[0])
+    })
+
+    it('calls onEdit when Enter or Space is pressed on an editable card', () => {
+      const onEdit = vi.fn()
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          onEdit={onEdit}
+          readOnly={false}
+        />
+      )
+      fireEvent.keyDown(screen.getByRole('button', { name: /Ship MVP/ }), { key: 'Enter' })
+      expect(onEdit).toHaveBeenCalledWith(objectives[0])
+      onEdit.mockClear()
+      fireEvent.keyDown(screen.getByRole('button', { name: /Ship MVP/ }), { key: ' ' })
+      expect(onEdit).toHaveBeenCalledWith(objectives[0])
+    })
+  })
+
+  describe('selected-card highlight', () => {
+    it('applies the coral selected border to the card matching selectedObjectiveId', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          selectedObjectiveId="io-1"
+        />
+      )
+      const selectedCard = screen.getByRole('button', { name: /Ship MVP/ })
+      const otherCard = screen.getByRole('button', { name: /Interview 10 users/ })
+      expect(selectedCard.style.border).toContain('var(--coral-700)')
+      expect(otherCard.style.border).not.toContain('var(--coral-700)')
+    })
+
+    it('highlights no card when selectedObjectiveId is not provided', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+        />
+      )
+      const card = screen.getByRole('button', { name: /Ship MVP/ })
+      expect(card.style.border).not.toContain('var(--coral-700)')
+    })
+  })
+
+  describe('key results rendered inside the card (#B22 follow-up)', () => {
+    it("renders the objective's key results as a descendant of the same clickable card, not a sibling", () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[{
+            ...objectives[0],
+            key_results: [{ id: 'own-kr-1', title: 'Ship v1 to prod' }],
+          }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      const card = screen.getByRole('button', { name: /Ship MVP/ })
+      expect(within(card).getByText('Ship v1 to prod')).toBeInTheDocument()
+    })
+  })
+
+  describe('"Review" all-OKRs entry point (#B22 follow-up)', () => {
+    it('renders a Review button on the same row as the "My Current OKR" heading', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
+    })
+
+    it('opens AllOkrsReview with the viewer\'s confirmed objectives when Review is clicked', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.queryByTestId('all-okrs-review')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
+      expect(screen.getByTestId('all-okrs-review')).toBeInTheDocument()
+      const props = mocks.AllOkrsReview.mock.calls.at(-1)[0]
+      expect(props.objectives).toEqual([objectives[0], objectives[1]])
+    })
+
+    it('closes the all-review screen when its onClose is called', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
+      expect(screen.getByTestId('all-okrs-review')).toBeInTheDocument()
+      const props = mocks.AllOkrsReview.mock.calls.at(-1)[0]
+      act(() => { props.onClose() })
+      expect(screen.queryByTestId('all-okrs-review')).not.toBeInTheDocument()
+    })
+
+    it('still renders the Review button, enabled, when readOnly is true', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          readOnly
+        />
+      )
+      const reviewButton = screen.getByRole('button', { name: /^review$/i })
+      expect(reviewButton).toBeInTheDocument()
+      expect(reviewButton).not.toBeDisabled()
+      fireEvent.click(reviewButton)
+      expect(screen.getByTestId('all-okrs-review')).toBeInTheDocument()
     })
   })
 })
