@@ -417,6 +417,7 @@ Feature: Unified drill-down modal for individual objectives
 | B18 | Reopening "+ Add objective" always started blank — a saved draft wasn't resumable, and drafts showed as My Thread cards before they were final | Feature | **Accepted** (merged direct to `main` `c1cf87a`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 | B19 | After confirming an OKR, the viewer could still reopen it and edit title/KRs/Coach-me — no real "locked" state for the quarter | Feature | **Accepted** (merged direct to `main` `c1cf87a`, no PR/review — demo-build process, 2026-09-27). Same commit as B18. No schema change — reuses the `status` column from migration 0010. | none | PM (direct) |
 | B20 | "+ Add objective" disappeared on a brand-new quarter with only an unconfirmed draft, with no way back into the modal to finish it | Bug | **Accepted** (merged direct to `main` `f3ef981`, no PR/review — demo-build process, 2026-09-27). Found by Jess live-testing a real "+ New quarter" → draft → stuck flow. | none | PM (direct) |
+| B21 | A reloaded draft's already-saved key result had no way to fix a typo — no Remove (by design) and no Edit either | Bug | **Accepted** (merged direct to `main` `dadaa81`, no PR/review — demo-build process, 2026-09-27). Found by Jess live-testing the B20 fix on Q2 2027. | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -571,6 +572,26 @@ Feature: "+ Add objective" visibility depends only on confirmation
     Then "+ Add objective" is not shown, regardless of canCreate
 ```
 `e2e: none`. Found live: Jess used "+ New quarter" and "Save as draft," then "+ Add objective" vanished with no way to resume or confirm the draft — My Thread hides drafts by design (B18), so the quarter looked empty. Root cause: `useCanCreateObjective`'s prior-quarter-review gate (#8b) was still `&&`-ed into the button's visibility condition. Every quarter in this demo follows one whose objectives were confirmed without ever going through the Quarter Review flow (`quarter_reviews` is empty live), so `canCreate` was false for every quarter after the first — silently blocking the button regardless of draft/confirm status. Fix: dropped `canCreate` from `OkrMapPage.jsx`'s "+ Add objective" condition entirely; it's now `!isPastQuarter && !hasConfirmedThisQuarter`. `useCanCreateObjective` itself is untouched and still called (its `refetch` still runs after save) but no longer gates anything visible — worth a follow-up PM decision on whether #8b's restart-by-review concept still belongs anywhere now that per-quarter confirm status is the more direct signal.
+
+**B21 — Edit an already-persisted key result on a reloaded draft**
+As Satoshi, when I reopen a draft and see a key result I already saved (maybe with a typo), I want to fix it in place, not just delete-and-retype the whole thing.
+
+```gherkin
+Feature: Edit an existing key result on a reloaded draft
+
+  Scenario: Existing key results show Edit, not Remove
+    Given a reloaded draft (#B18) has a key result that was already saved in an earlier session
+    Then it shows an Edit button, not a Remove button
+
+  Scenario: Editing persists immediately
+    Given Edit is clicked and the title/target note are changed, then Save
+    Then the key result is updated via useKrMutation (it's a real row already), and the list reflects the new text
+
+  Scenario: A newly-added key result in this session is unaffected
+    Given a key result was just added via "+ Add key result" in the current session (not yet persisted)
+    Then it still shows Remove as before — Edit only applies to already-persisted ones
+```
+`e2e: none`. Found live: after B20 shipped, Jess could see her reloaded draft's key result again but it rendered as flat text with nothing to click — the title/alignment fields were already editable, but the KR row itself never had an edit path in the original B18 implementation. Implementation: `ObjectiveDraftFields` (`OkrDialog.jsx`) gained local `editingKrIndex` state and an `onEditExistingKr` callback; `OkrDialog`'s `handleEditExistingKr` calls `useKrMutation().update` and reflects the result back into `objectiveDrafts`.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
