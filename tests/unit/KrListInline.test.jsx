@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   krUpdate: vi.fn(),
   checkInHistoryProps: vi.fn(),
   checkInHistoryMounts: vi.fn(),
+  summaryBlockProps: vi.fn(),
   checkInPanelProps: vi.fn(),
   useKrSummaryMock: vi.fn(),
 }))
@@ -20,8 +21,9 @@ vi.mock('../../src/hooks/useKrSummary', () => ({
 }))
 
 // KrListInline's own responsibility is prop-threading (individualObjectiveId,
-// keyResultId, viewMode -> canAskQuestion, allowCheckIn vs readOnly) — the
-// actual rendering of the summary/history and the entry form is already
+// keyResultId, viewMode -> canAskQuestion, allowCheckIn vs readOnly) and
+// layout order (summary, then Check-in trigger/form, then history — #B25) —
+// the actual rendering of the summary/history and the entry form is already
 // covered by CheckInHistory.test.jsx and CheckInPanel.test.jsx, so those are
 // mocked here to keep this file focused on what KrListInline itself is
 // responsible for wiring correctly.
@@ -30,6 +32,10 @@ vi.mock('../../src/components/CheckInHistory', () => ({
     mocks.checkInHistoryProps(props)
     useEffect(() => { mocks.checkInHistoryMounts() }, [])
     return <div role="group" aria-label="Check-in history" data-testid="check-in-history" />
+  },
+  SummaryBlock: (props) => {
+    mocks.summaryBlockProps(props)
+    return <div data-testid="summary-block" />
   },
 }))
 
@@ -154,6 +160,27 @@ describe('KrListInline', () => {
     })
   })
 
+  describe('layout order: summary, then Check-in trigger, then history (#B25)', () => {
+    it('renders the summary block before the Check-in trigger, and the trigger before the history block', () => {
+      render(<KrListInline individualObjectiveId="io-9" keyResults={[kr]} allowCheckIn />)
+      const summary = screen.getByTestId('summary-block')
+      const trigger = screen.getByRole('button', { name: /^check-in$/i })
+      const history = screen.getByTestId('check-in-history')
+      expect(summary.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(trigger.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('keeps the summary block above the entry form while it is open, with history still last', () => {
+      render(<KrListInline individualObjectiveId="io-9" keyResults={[kr]} allowCheckIn />)
+      fireEvent.click(screen.getByRole('button', { name: /^check-in$/i }))
+      const summary = screen.getByTestId('summary-block')
+      const form = screen.getByRole('group', { name: /^check-in$/i })
+      const history = screen.getByTestId('check-in-history')
+      expect(summary.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(form.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+  })
+
   describe('Check-in trigger toggles the entry form (hides itself while open, like the old single-control pattern)', () => {
     it('shows the entry form and hides the trigger once clicked', () => {
       render(<KrListInline individualObjectiveId="io-9" keyResults={[kr]} allowCheckIn />)
@@ -214,7 +241,7 @@ describe('KrListInline', () => {
       expect(mocks.useKrSummaryMock).toHaveBeenCalledWith('io-9')
     })
 
-    it('passes the same summary/summaryStatus down to every KR\'s CheckInHistory', () => {
+    it('passes the same summary/status down to every KR\'s SummaryBlock', () => {
       mocks.useKrSummaryMock.mockReturnValue({ summary: 'Trending up.', status: 'ready' })
       render(
         <KrListInline
@@ -223,11 +250,11 @@ describe('KrListInline', () => {
           allowCheckIn
         />
       )
-      const calls = mocks.checkInHistoryProps.mock.calls.map(([props]) => props)
+      const calls = mocks.summaryBlockProps.mock.calls.map(([props]) => props)
       expect(calls).toHaveLength(2)
       for (const props of calls) {
         expect(props.summary).toBe('Trending up.')
-        expect(props.summaryStatus).toBe('ready')
+        expect(props.status).toBe('ready')
       }
     })
 

@@ -23,7 +23,7 @@ export default function useCheckInHistory(individualObjectiveId, keyResultId) {
       .select('id, status, note, plan_next, created_at')
       .eq('individual_objective_id', individualObjectiveId)
       .or(`key_result_id.eq.${keyResultId},key_result_id.is.null`)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
 
     if (err) { setError(err.message); setCheckIns([]) }
     else { setCheckIns(data); setError(null) }

@@ -9,7 +9,11 @@ function formatDate(iso) {
   return DATE_FORMAT.format(new Date(iso))
 }
 
-function SummaryBlock({ status, summary }) {
+// Exported separately so KrRow (KrListInline.jsx) can render it above the
+// Check-in button, ahead of the history list below — the AI summary always
+// leads, then the action to add a new entry, then the chronological list
+// (see #B25 in the tracker for why this moved out of CheckInHistory itself).
+export function SummaryBlock({ status, summary }) {
   if (status === 'ready') {
     return (
       <div
@@ -52,14 +56,10 @@ function SummaryBlock({ status, summary }) {
   return null
 }
 
-// summary/summaryStatus are computed once per objective by the caller
-// (useKrSummary is objective-scoped, not per-KR) and passed down, rather
-// than called again in every KR's history block — calling it here too,
-// once per KR, would fire duplicate Edge Function requests for the same
-// objective in parallel (Codex review finding).
-export default function CheckInHistory({
-  individualObjectiveId, keyResultId, summary, summaryStatus, canAskQuestion,
-}) {
+// Renders only the chronological check-in list (+ per-entry question) now —
+// the AI summary is rendered separately by the caller, above the Check-in
+// button, via the SummaryBlock export above (#B25).
+export default function CheckInHistory({ individualObjectiveId, keyResultId, canAskQuestion }) {
   const { checkIns, error } = useCheckInHistory(individualObjectiveId, keyResultId)
   const checkInIds = checkIns.map(ci => ci.id)
   const { questionsByCheckInId, askQuestion, replyToQuestion } = useCheckInQuestions(checkInIds)
@@ -79,7 +79,6 @@ export default function CheckInHistory({
         gap: '10px',
       }}
     >
-      <SummaryBlock status={summaryStatus} summary={summary} />
       {error && (
         <div role="alert" style={{ font: '500 11px var(--font-sans)', color: 'var(--behind)' }}>{error}</div>
       )}

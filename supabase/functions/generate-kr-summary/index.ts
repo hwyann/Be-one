@@ -26,86 +26,101 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'Method Not Allowed' }, 405)
   }
 
-  let body: { individual_objective_id?: string }
+  // Wrap the whole handler: an uncaught exception anywhere below (e.g. the
+  // Anthropic call rejecting) previously fell through to Deno's default
+  // handler, which returns a bare "Internal Server Error" with no JSON
+  // body and no CORS headers -- the frontend only ever saw a generic 500
+  // and rendered "Summary unavailable" with the real cause invisible.
   try {
-    body = await req.json()
-  } catch {
-    return json({ error: 'Invalid JSON body' }, 400)
-  }
+    let body: { individual_objective_id?: string }
+    try {
+      body = await req.json()
+    } catch {
+      return json({ error: 'Invalid JSON body' }, 400)
+    }
 
-  const objectiveId = body.individual_objective_id
-  if (!objectiveId) {
-    return json({ error: 'individual_objective_id required' }, 400)
-  }
+    const objectiveId = body.individual_objective_id
+    if (!objectiveId) {
+      return json({ error: 'individual_objective_id required' }, 400)
+    }
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  )
-
-  const { data: objective, error: objErr } = await supabase
-    .from('individual_objectives')
-    .select('title')
-    .eq('id', objectiveId)
-    .single()
-  if (objErr || !objective) {
-    return json({ error: 'Objective not found' }, 404)
-  }
-
-  const { data: checkIns, error: ciErr } = await supabase
-    .from('check_ins')
-    .select('status, note, plan_next, created_at')
-    .eq('individual_objective_id', objectiveId)
-    .order('created_at', { ascending: true })
-  if (ciErr) {
-    return json({ error: ciErr.message }, 500)
-  }
-
-  const count = checkIns?.length ?? 0
-  if (!hasSufficientData(count)) {
-    return json({ status: 'insufficient_data', message: 'Need at least 3 check-ins to summarize.' })
-  }
-
-  const { data: cached } = await supabase
-    .from('kr_summaries')
-    .select('summary_text, based_on_check_in_count, generated_at')
-    .eq('individual_objective_id', objectiveId)
-    .maybeSingle()
-
-  if (cached && isCacheFresh(cached, count, Date.now())) {
-    return json({
-      summary_text: cached.summary_text,
-      based_on_check_in_count: count,
-      cached: true,
-    })
-  }
-
-  const prompt = buildPrompt(objective.title, formatCheckInLines(checkIns as any[]))
-  const summaryText = await callAnthropic(prompt)
-  if (!summaryText) {
-    return json({ error: 'Empty response from Anthropic' }, 502)
-  }
-
-  const { error: upsertErr } = await supabase
-    .from('kr_summaries')
-    .upsert(
-      {
-        individual_objective_id: objectiveId,
-        summary_text: summaryText,
-        based_on_check_in_count: count,
-        generated_at: new Date().toISOString(),
-      },
-      { onConflict: 'individual_objective_id' },
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
-  if (upsertErr) {
-    return json({ error: upsertErr.message }, 500)
-  }
 
-  return json({
-    summary_text: summaryText,
-    based_on_check_in_count: count,
-    cached: false,
-  })
+    const { data: objective, error: objErr } = await supabase
+      .from('individual_objectives')
+      .select('title')
+      .eq('id', objectiveId)
+      .single()
+    if (objErr || !objective) {
+      return json({ error: 'Objective not found' }, 404)
+    }
+
+    const { data: checkIns, error: ciErr } = await supabase
+      .from('check_ins')
+      .select('status, note, plan_next, created_at')
+      .eq('individual_objective_id', objectiveId)
+      .order('created_at', { ascending: true })
+    if (ciErr) {
+      return json({ error: ciErr.message }, 500)
+    }
+
+    const count = checkIns?.length ?? 0
+    if (!hasSufficientData(count)) {
+      return json({ status: 'insufficient_data', message: 'Need at least 3 check-ins to summarize.' })
+    }
+
+    const { data: cached } = await supabase
+      .from('kr_summaries')
+      .select('summary_text, based_on_check_in_count, generated_at')
+      .eq('individual_objective_id', objectiveId)
+      .maybeSingle()
+
+    if (cached && isCacheFresh(cached, count, Date.now())) {
+      return json({
+        summary_text: cached.summary_text,
+        based_on_check_in_count: count,
+        cached: true,
+      })
+    }
+
+    const prompt = buildPrompt(objective.title, formatCheckInLines(checkIns as any[]))
+
+    let summaryText: string | null
+    try {
+      summaryText = await callAnthropic(prompt)
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : 'Anthropic call failed' }, 502)
+    }
+    if (!summaryText) {
+      return json({ error: 'Empty response from Anthropic' }, 502)
+    }
+
+    const { error: upsertErr } = await supabase
+      .from('kr_summaries')
+      .upsert(
+        {
+          individual_objective_id: objectiveId,
+          summary_text: summaryText,
+          based_on_check_in_count: count,
+          generated_at: new Date().toISOString(),
+        },
+        { onConflict: 'individual_objective_id' },
+      )
+    if (upsertErr) {
+      return json({ error: upsertErr.message }, 500)
+    }
+
+    return json({
+      summary_text: summaryText,
+      based_on_check_in_count: count,
+      cached: false,
+    })
+  } catch (err) {
+    return json({ error: err instanceof Error ? err.message : 'Unexpected server error' }, 500)
+  }
 })
 
 async function callAnthropic(prompt: string): Promise<string | null> {

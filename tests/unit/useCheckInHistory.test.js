@@ -53,7 +53,7 @@ describe('useCheckInHistory', () => {
     expect(mocks.from).toHaveBeenCalledWith('check_ins')
     expect(checkInsMock.__eq).toHaveBeenCalledWith('individual_objective_id', 'io-1')
     expect(checkInsMock.__or).toHaveBeenCalledWith('key_result_id.eq.kr-1,key_result_id.is.null')
-    expect(checkInsMock.__order).toHaveBeenCalledWith('created_at', { ascending: true })
+    expect(checkInsMock.__order).toHaveBeenCalledWith('created_at', { ascending: false })
   })
 
   it('selects status, note, plan_next, and created_at', async () => {

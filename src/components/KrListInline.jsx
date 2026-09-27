@@ -2,7 +2,7 @@ import { useState } from 'react'
 import useKrMutation from '../hooks/useKrMutation'
 import useKrSummary from '../hooks/useKrSummary'
 import CheckInPanel from './CheckInPanel'
-import CheckInHistory from './CheckInHistory'
+import CheckInHistory, { SummaryBlock } from './CheckInHistory'
 
 const MAX_INLINE_OWNERS = 3
 const COLLAPSED_INLINE_OWNERS = 2
@@ -170,14 +170,7 @@ function KrRow({
       </div>
       {allowCheckIn && (
         <>
-          <CheckInHistory
-            key={historyVersion}
-            individualObjectiveId={individualObjectiveId}
-            keyResultId={kr.id}
-            summary={summary}
-            summaryStatus={summaryStatus}
-            canAskQuestion={viewMode === 'manager'}
-          />
+          <SummaryBlock status={summaryStatus} summary={summary} />
           {!checkingIn && (
             <RowActionButton label="Check-in" onClick={() => setCheckingIn(true)} />
           )}
@@ -192,6 +185,12 @@ function KrRow({
               onDone={() => setCheckingIn(false)}
             />
           )}
+          <CheckInHistory
+            key={historyVersion}
+            individualObjectiveId={individualObjectiveId}
+            keyResultId={kr.id}
+            canAskQuestion={viewMode === 'manager'}
+          />
         </>
       )}
     </div>

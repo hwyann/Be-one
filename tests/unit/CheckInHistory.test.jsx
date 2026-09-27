@@ -13,7 +13,7 @@ vi.mock('../../src/hooks/useCheckInQuestions', () => ({
   default: mocks.useCheckInQuestions,
 }))
 
-import CheckInHistory from '../../src/components/CheckInHistory'
+import CheckInHistory, { SummaryBlock } from '../../src/components/CheckInHistory'
 
 const emptyQuestions = {
   questionsByCheckInId: {},
@@ -90,65 +90,6 @@ describe('CheckInHistory', () => {
     mocks.useCheckInHistory.mockReturnValue({ checkIns: [], loading: false, error: null })
     render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-42" />)
     expect(mocks.useCheckInHistory).toHaveBeenCalledWith('io-1', 'kr-42')
-  })
-
-  // The AI summary is deliberately objective-level, not per-KR (the
-  // generate-kr-summary Edge Function and kr_summaries table are keyed by
-  // individual_objective_id, unchanged). Since an objective can have
-  // several KRs, computing it once per objective and passing it down
-  // avoids firing one Edge Function request per KR row for the same
-  // summary (Codex review finding, per-kr-checkin round 1) — so
-  // CheckInHistory no longer calls useKrSummary itself; its caller
-  // (KrListInline) does, once, and passes summary/summaryStatus as props.
-  describe('summary block (passed in as props, computed once per objective by the caller)', () => {
-    beforeEach(() => {
-      mocks.useCheckInHistory.mockReturnValue({
-        checkIns: [
-          { id: 'c1', status: 'on_track', note: 'first', plan_next: '', created_at: '2026-07-01T09:00:00Z' },
-        ],
-        loading: false,
-        error: null,
-      })
-    })
-
-    it('renders the summary text above the list when summaryStatus is ready', () => {
-      render(
-        <CheckInHistory
-          individualObjectiveId="io-1"
-          keyResultId="kr-1"
-          summary="Improving trajectory; shipping steadily."
-          summaryStatus="ready"
-        />
-      )
-      const summary = screen.getByRole('note', { name: /summary/i })
-      expect(summary).toHaveTextContent('Improving trajectory; shipping steadily.')
-      const list = screen.getByRole('list')
-      expect(summary.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    })
-
-    it('renders "Not enough check-ins yet." when summaryStatus is insufficient_data', () => {
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" summaryStatus="insufficient_data" />)
-      expect(screen.getByText(/not enough check-ins yet/i)).toBeInTheDocument()
-    })
-
-    it('renders "Generating summary…" placeholder when summaryStatus is loading', () => {
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" summaryStatus="loading" />)
-      expect(screen.getByText(/generating summary/i)).toBeInTheDocument()
-    })
-
-    it('renders "Summary unavailable" when summaryStatus is error, but still shows the list', () => {
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" summaryStatus="error" />)
-      expect(screen.getByText(/summary unavailable/i)).toBeInTheDocument()
-      expect(screen.getByRole('list')).toBeInTheDocument()
-    })
-
-    it('does not render a summary block when summaryStatus is not provided (null)', () => {
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
-      expect(screen.queryByText(/not enough check-ins yet/i)).not.toBeInTheDocument()
-      expect(screen.queryByText(/generating summary/i)).not.toBeInTheDocument()
-      expect(screen.queryByText(/summary unavailable/i)).not.toBeInTheDocument()
-      expect(screen.queryByRole('note', { name: /summary/i })).not.toBeInTheDocument()
-    })
   })
 
   describe('per check-in question', () => {
@@ -245,5 +186,40 @@ describe('CheckInHistory', () => {
       expect(screen.getByText('What blocked this?')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /reply/i })).toBeInTheDocument()
     })
+  })
+})
+
+// SummaryBlock is rendered separately from CheckInHistory now — KrListInline
+// (KrRow) puts it above the Check-in button, ahead of the history list
+// below (#B25) — so it's tested directly here rather than through
+// CheckInHistory's own props.
+describe('SummaryBlock', () => {
+  it('renders the summary text when status is ready', () => {
+    render(<SummaryBlock status="ready" summary="Improving trajectory; shipping steadily." />)
+    const summary = screen.getByRole('note', { name: /summary/i })
+    expect(summary).toHaveTextContent('Improving trajectory; shipping steadily.')
+  })
+
+  it('renders "Not enough check-ins yet." when status is insufficient_data', () => {
+    render(<SummaryBlock status="insufficient_data" />)
+    expect(screen.getByText(/not enough check-ins yet/i)).toBeInTheDocument()
+  })
+
+  it('renders "Generating summary…" placeholder when status is loading', () => {
+    render(<SummaryBlock status="loading" />)
+    expect(screen.getByText(/generating summary/i)).toBeInTheDocument()
+  })
+
+  it('renders "Summary unavailable" when status is error', () => {
+    render(<SummaryBlock status="error" />)
+    expect(screen.getByText(/summary unavailable/i)).toBeInTheDocument()
+  })
+
+  it('renders nothing when status is not provided (null)', () => {
+    render(<SummaryBlock status={null} />)
+    expect(screen.queryByText(/not enough check-ins yet/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/generating summary/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/summary unavailable/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('note', { name: /summary/i })).not.toBeInTheDocument()
   })
 })
