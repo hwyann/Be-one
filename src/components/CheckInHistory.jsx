@@ -53,8 +53,8 @@ function SummaryBlock({ status, summary }) {
   return null
 }
 
-export default function CheckInHistory({ individualObjectiveId }) {
-  const { checkIns, error } = useCheckInHistory(individualObjectiveId)
+export default function CheckInHistory({ individualObjectiveId, keyResultId, canAskQuestion }) {
+  const { checkIns, error } = useCheckInHistory(keyResultId)
   const { summary, status: summaryStatus } = useKrSummary(individualObjectiveId)
   const checkInIds = checkIns.map(ci => ci.id)
   const { questionsByCheckInId, askQuestion, replyToQuestion } = useCheckInQuestions(checkInIds)
@@ -106,6 +106,7 @@ export default function CheckInHistory({ individualObjectiveId }) {
                   question={questionsByCheckInId[ci.id] ?? null}
                   onAsk={questionText => askQuestion(ci.id, questionText)}
                   onReply={(questionId, replyText) => replyToQuestion(questionId, replyText)}
+                  canAsk={canAskQuestion}
                 />
               </li>
             )

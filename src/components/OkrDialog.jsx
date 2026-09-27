@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import ObjectiveCard from './ObjectiveCard'
 import CoachPanel from './CoachPanel'
-import CheckInPanel from './CheckInPanel'
-import CheckInHistory from './CheckInHistory'
 import { KrForm } from './KrListInline'
 import useRationale from '../hooks/useRationale'
 import useKrMutation from '../hooks/useKrMutation'
@@ -105,18 +103,6 @@ const footerRowStyle = {
   justifyContent: 'flex-end',
   gap: '8px',
   marginTop: '4px',
-}
-
-function pillButtonStyle() {
-  return {
-    font: '500 11px var(--font-sans)',
-    padding: '4px 8px',
-    borderRadius: '999px',
-    border: '1px solid var(--hairline)',
-    background: 'transparent',
-    color: 'var(--text-secondary)',
-    cursor: 'pointer',
-  }
 }
 
 function dashedButtonStyle() {
@@ -313,6 +299,7 @@ export default function OkrDialog({
   companyObjectives = [],
   mandatory = false,
   existingDrafts = [],
+  viewMode,
   onSave,
   onClose,
   onKrSaved,
@@ -322,7 +309,6 @@ export default function OkrDialog({
   const [showCoach, setShowCoach] = useState(false)
   const [coachAnswers, setCoachAnswers] = useState({})
   const [objectiveDrafts, setObjectiveDrafts] = useState(() => draftsFromExisting(existingDrafts))
-  const [checkInMode, setCheckInMode] = useState(null)
   const { save: saveRationale } = useRationale(null)
   const { create: createKr, update: updateKr } = useKrMutation()
   const isConfirmedObjective = !!objective && objective.status === 'confirmed'
@@ -498,41 +484,13 @@ export default function OkrDialog({
         <CoachPanel onSkip={() => setShowCoach(false)} onAnswersChange={setCoachAnswers} />
       )}
       {objective && (
-        <>
-          <ObjectiveCard
-            objective={objective}
-            individualObjectiveId={objective.id}
-            onKrSaved={onKrSaved}
-            readOnly={isConfirmedObjective}
-          />
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {checkInMode !== 'checkin' && (
-              <button
-                type="button"
-                onClick={() => setCheckInMode(mode => (mode === 'checkin' ? null : 'checkin'))}
-                style={pillButtonStyle()}
-              >
-                Check in
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setCheckInMode(mode => (mode === 'history' ? null : 'history'))}
-              style={pillButtonStyle()}
-            >
-              History
-            </button>
-          </div>
-          {checkInMode === 'checkin' && (
-            <CheckInPanel
-              individualObjectiveId={objective.id}
-              onDone={() => setCheckInMode(null)}
-            />
-          )}
-          {checkInMode === 'history' && (
-            <CheckInHistory individualObjectiveId={objective.id} />
-          )}
-        </>
+        <ObjectiveCard
+          objective={objective}
+          individualObjectiveId={objective.id}
+          onKrSaved={onKrSaved}
+          readOnly={isConfirmedObjective}
+          viewMode={viewMode}
+        />
       )}
       {!isConfirmedObjective && (
         <div style={footerRowStyle}>

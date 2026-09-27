@@ -1,11 +1,12 @@
 import { useState } from 'react'
 
-export default function CheckInQuestion({ question, onAsk, onReply }) {
+export default function CheckInQuestion({ question, onAsk, onReply, canAsk = true }) {
   const [asking, setAsking] = useState(false)
   const [draft, setDraft] = useState('')
   const [replyDraft, setReplyDraft] = useState('')
 
   if (!question) {
+    if (!canAsk) return null
     if (!asking) {
       return (
         <button

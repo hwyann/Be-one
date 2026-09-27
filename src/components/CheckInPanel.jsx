@@ -22,14 +22,14 @@ function TextField({ label, value, onChange }) {
   )
 }
 
-export default function CheckInPanel({ individualObjectiveId, onDone, onSaved }) {
+export default function CheckInPanel({ individualObjectiveId, keyResultId, onDone, onSaved }) {
   const [status, setStatus] = useState(null)
   const [note, setNote] = useState('')
   const [planNext, setPlanNext] = useState('')
   const { save, saving, error } = useCheckIns()
 
   async function handleSave() {
-    const ok = await save({ individualObjectiveId, status, note, planNext })
+    const ok = await save({ individualObjectiveId, keyResultId, status, note, planNext })
     if (ok) {
       onSaved?.()
       onDone?.()

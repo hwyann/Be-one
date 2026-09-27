@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import useKrMutation from '../hooks/useKrMutation'
-import {
-  useCheckInPanelRegion,
-  CheckInTriggers,
-  CheckInPanels,
-} from './CheckInPanelRegion'
+import CheckInPanel from './CheckInPanel'
+import CheckInHistory from './CheckInHistory'
 
 const MAX_INLINE_OWNERS = 3
 const COLLAPSED_INLINE_OWNERS = 2
@@ -119,12 +116,12 @@ export function KrForm({ initialTitle = '', initialTargetNote = '', onSubmit, on
   )
 }
 
-function KrRow({ kr, onCheckInSaved, onEdit, readOnly }) {
+function KrRow({ kr, individualObjectiveId, viewMode, allowCheckIn, onCheckInSaved, onEdit, readOnly }) {
   const linked = kr.individual_objectives ?? []
   const owners = linked.filter(o => o.owner_name)
   const overflow = owners.length > MAX_INLINE_OWNERS ? owners.length - COLLAPSED_INLINE_OWNERS : 0
   const shown = overflow > 0 ? owners.slice(0, COLLAPSED_INLINE_OWNERS) : owners
-  const region = useCheckInPanelRegion(kr)
+  const [checkingIn, setCheckingIn] = useState(false)
 
   return (
     <div>
@@ -159,9 +156,27 @@ function KrRow({ kr, onCheckInSaved, onEdit, readOnly }) {
           </div>
         )}
         {!readOnly && <RowActionButton label="Edit" onClick={onEdit} />}
-        {!readOnly && <CheckInTriggers region={region} />}
       </div>
-      {!readOnly && <CheckInPanels region={region} onCheckInSaved={onCheckInSaved} />}
+      {allowCheckIn && (
+        <>
+          <CheckInHistory
+            individualObjectiveId={individualObjectiveId}
+            keyResultId={kr.id}
+            canAskQuestion={viewMode === 'manager'}
+          />
+          {!checkingIn && (
+            <RowActionButton label="Check-in" onClick={() => setCheckingIn(true)} />
+          )}
+          {checkingIn && (
+            <CheckInPanel
+              individualObjectiveId={individualObjectiveId}
+              keyResultId={kr.id}
+              onSaved={onCheckInSaved}
+              onDone={() => setCheckingIn(false)}
+            />
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -173,6 +188,8 @@ export default function KrListInline({
   onCheckInSaved,
   onKrSaved,
   readOnly = false,
+  allowCheckIn = false,
+  viewMode,
 }) {
   const [krFormMode, setKrFormMode] = useState(null)
   const { create, update } = useKrMutation()
@@ -212,6 +229,9 @@ export default function KrListInline({
               <KrRow
                 key={kr.id}
                 kr={kr}
+                individualObjectiveId={individualObjectiveId}
+                viewMode={viewMode}
+                allowCheckIn={allowCheckIn}
                 onCheckInSaved={onCheckInSaved}
                 onEdit={() => setKrFormMode({ kind: 'edit', krId: kr.id })}
                 readOnly={readOnly}

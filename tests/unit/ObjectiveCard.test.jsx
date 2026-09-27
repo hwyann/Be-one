@@ -7,8 +7,6 @@ const mocks = vi.hoisted(() => ({
   krUpdate: vi.fn(),
   rationaleRefetch: vi.fn(),
   useRationaleMock: vi.fn(),
-  useQuarterReviewMock: vi.fn(),
-  quarterReviewSave: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCheckIns', () => ({
@@ -17,6 +15,21 @@ vi.mock('../../src/hooks/useCheckIns', () => ({
 
 vi.mock('../../src/hooks/useCheckInHistory', () => ({
   default: () => ({ checkIns: [], loading: false, error: null }),
+}))
+
+vi.mock('../../src/hooks/useKrSummary', () => ({
+  default: () => ({ summary: null, loading: false, error: null, status: null }),
+}))
+
+vi.mock('../../src/hooks/useCheckInQuestions', () => ({
+  default: () => ({
+    questionsByCheckInId: {},
+    loading: false,
+    error: null,
+    saving: false,
+    askQuestion: vi.fn(),
+    replyToQuestion: vi.fn(),
+  }),
 }))
 
 vi.mock('../../src/hooks/useCompanyObjectiveStatus', () => ({
@@ -36,10 +49,6 @@ vi.mock('../../src/hooks/useRationale', () => ({
   default: (...args) => mocks.useRationaleMock(...args),
 }))
 
-vi.mock('../../src/hooks/useQuarterReview', () => ({
-  default: (...args) => mocks.useQuarterReviewMock(...args),
-}))
-
 import ObjectiveCard from '../../src/components/ObjectiveCard'
 
 beforeEach(() => {
@@ -54,15 +63,6 @@ beforeEach(() => {
     saving: false,
     save: vi.fn(),
     refetch: mocks.rationaleRefetch,
-  })
-  mocks.quarterReviewSave.mockResolvedValue(true)
-  mocks.useQuarterReviewMock.mockReturnValue({
-    review: null,
-    loading: false,
-    error: null,
-    saving: false,
-    save: mocks.quarterReviewSave,
-    refetch: vi.fn(),
   })
 })
 
@@ -439,93 +439,66 @@ describe('ObjectiveCard', () => {
     })
   })
 
-  describe('check-in mechanism on an individual objective card (unchanged by #B12)', () => {
-    const individualWithLinkedIO = {
+  describe('per-KR check-in (allowCheckIn is distinct from readOnly, #B24)', () => {
+    // Check-ins moved from the whole objective down to each individual key
+    // result card: the AI summary + full history is always visible under
+    // each KR, with a "Check-in" button underneath that toggles the entry
+    // form. This replaces the old objective-level check-in mechanism
+    // (which used to key off a KR's `individual_objectives` link on the
+    // company Map — that mechanism is now fully dead, see CheckInPanelRegion
+    // deletion) and the old toggleable History trigger.
+    const individualWithKr = {
       id: 'io-9',
       title: 'Ship MVP',
-      key_results: [{
-        id: 'k1',
-        title: 'Reach 100 accounts',
-        individual_objectives: [
-          { id: 'io-1', owner_name: 'Satoshi Kimura' },
-        ],
-      }],
+      key_results: [
+        { id: 'kr-1', title: 'Reach 100 accounts', individual_objectives: [] },
+      ],
     }
 
-    it('renders a check-in trigger on a KR row with a linked individual objective', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
-      expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument()
+    it('always renders the check-in summary/history block for each KR on an individual objective', () => {
+      render(<ObjectiveCard objective={individualWithKr} individualObjectiveId="io-9" />)
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
     })
 
-    it('expands the check-in panel when the trigger is clicked', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
-      expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
-      expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
+    it('renders a "Check-in" trigger beneath the history block', () => {
+      render(<ObjectiveCard objective={individualWithKr} individualObjectiveId="io-9" />)
+      expect(screen.getByRole('button', { name: /^check-in$/i })).toBeInTheDocument()
     })
 
-    it('closes the panel when Cancel is clicked', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
-      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
+    it('opens the check-in entry form and hides the trigger when "Check-in" is clicked', () => {
+      render(<ObjectiveCard objective={individualWithKr} individualObjectiveId="io-9" />)
+      expect(screen.queryByRole('group', { name: /^check-in$/i })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /^check-in$/i }))
+      expect(screen.getByRole('group', { name: /^check-in$/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^check-in$/i })).not.toBeInTheDocument()
+    })
+
+    it('closes the entry form and re-shows the trigger when Cancel is clicked', () => {
+      render(<ObjectiveCard objective={individualWithKr} individualObjectiveId="io-9" />)
+      fireEvent.click(screen.getByRole('button', { name: /^check-in$/i }))
       fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
-      expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: /^check-in$/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^check-in$/i })).toBeInTheDocument()
+      // The always-visible summary/history block is unaffected by the form toggle.
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
     })
 
-    it('does not render a check-in trigger when the KR has no linked individual objective', () => {
-      const noLink = {
-        id: 'io-9',
-        title: 'Ship MVP',
-        key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
+    it('keeps check-in available when the objective is readOnly (confirmed), even though Edit and +Add key result are hidden — the crux of the allowCheckIn/readOnly split (#B19: confirming only locks editing, not checking in)', () => {
+      render(<ObjectiveCard objective={individualWithKr} individualObjectiveId="io-9" readOnly />)
+      expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /add key result/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^check-in$/i })).toBeInTheDocument()
+    })
+
+    it('is fully absent for a company objective (no individualObjectiveId), matching #B12 read-only-Map expectations', () => {
+      const companyWithKr = {
+        ...objective,
+        key_results: [{ id: 'kr-1', title: 'Reach 100 accounts', individual_objectives: [] }],
       }
-      render(<ObjectiveCard objective={noLink} individualObjectiveId="io-9" />)
-      expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
-    })
-
-    it('renders a History trigger on a KR row with a linked individual objective', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
-      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
-    })
-
-    it('does not render a History trigger when the KR has no linked individual objective', () => {
-      const noLink = {
-        id: 'io-9',
-        title: 'Ship MVP',
-        key_results: [{ id: 'k1', title: 'Reach 100 accounts', individual_objectives: [] }],
-      }
-      render(<ObjectiveCard objective={noLink} individualObjectiveId="io-9" />)
-      expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
-    })
-
-    it('expands the check-in history panel when the History trigger is clicked', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
+      render(<ObjectiveCard objective={companyWithKr} />)
       expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /history/i }))
-      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
-    })
-
-    it('closes the history panel when the History trigger is clicked again', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
-      fireEvent.click(screen.getByRole('button', { name: /history/i }))
-      fireEvent.click(screen.getByRole('button', { name: /history/i }))
-      expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
-    })
-
-    it('swaps from the check-in panel to the history panel when History is clicked', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
-      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
-      expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /history/i }))
-      expect(screen.queryByLabelText(/what changed/i)).not.toBeInTheDocument()
-      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
-    })
-
-    it('swaps from the history panel to the check-in panel when Check in is clicked', () => {
-      render(<ObjectiveCard objective={individualWithLinkedIO} individualObjectiveId="io-9" />)
-      fireEvent.click(screen.getByRole('button', { name: /history/i }))
-      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /check in/i }))
-      expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
-      expect(screen.getByLabelText(/what changed/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^check-in$/i })).not.toBeInTheDocument()
     })
   })
 
@@ -604,40 +577,6 @@ describe('ObjectiveCard', () => {
     })
   })
 
-  describe('quarter review', () => {
-    const individualObjective = { id: 'io-9', title: 'Ship MVP' }
-
-    it('does not render a Review trigger on a company-objective card', () => {
-      render(<ObjectiveCard objective={objective} />)
-      expect(screen.queryByRole('button', { name: /^review$/i })).not.toBeInTheDocument()
-    })
-
-    it('renders a Review trigger when the card represents an individual objective', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
-      expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
-    })
-
-    it('opens the QuarterReviewModal when Review is clicked', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
-      expect(screen.queryByRole('dialog', { name: /quarter review/i })).not.toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
-      expect(screen.getByRole('dialog', { name: /quarter review/i })).toBeInTheDocument()
-    })
-
-    it('scopes the review to the individual objective id', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
-      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
-      expect(mocks.useQuarterReviewMock).toHaveBeenCalledWith('io-9')
-    })
-
-    it('closes the modal when its Close button is clicked', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
-      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
-      fireEvent.click(screen.getByRole('button', { name: /close/i }))
-      expect(screen.queryByRole('dialog', { name: /quarter review/i })).not.toBeInTheDocument()
-    })
-  })
-
   describe('readOnly prop (confirmed OKR drill-down)', () => {
     const individualObjective = { id: 'io-9', title: 'Ship MVP', status: 'on_track' }
 
@@ -655,11 +594,6 @@ describe('ObjectiveCard', () => {
       const withKrs = { ...individualObjective, key_results: [{ id: 'k1', title: 'Ship v1' }] }
       render(<ObjectiveCard objective={withKrs} individualObjectiveId="io-9" readOnly />)
       expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
-    })
-
-    it('still renders the Review trigger when readOnly', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" readOnly />)
-      expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
     })
 
     it('is fully editable by default (readOnly not set)', () => {

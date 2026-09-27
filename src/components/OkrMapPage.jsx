@@ -385,6 +385,7 @@ export default function OkrMapPage() {
                 companyObjectives={objectives}
                 mandatory={!!dialogState?.mandatory}
                 existingDrafts={myDrafts}
+                viewMode={viewMode}
                 onSave={handleSave}
                 onClose={closeDialog}
                 onKrSaved={refetchIndividual}

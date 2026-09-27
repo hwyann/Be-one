@@ -2,7 +2,6 @@ import { useState } from 'react'
 import StatusEditor from './StatusEditor'
 import KrListInline from './KrListInline'
 import RationaleSection from './RationaleSection'
-import QuarterReviewModal from './QuarterReviewModal'
 import { STATUS_BY_VALUE } from '../lib/statuses'
 import useRationale from '../hooks/useRationale'
 
@@ -13,16 +12,22 @@ export default function ObjectiveCard({
   onStatusSaved,
   onKrSaved,
   readOnly = false,
+  viewMode,
 }) {
   const { id, category, title, status } = objective
   const isCompany = !individualObjectiveId
   const noEdit = isCompany || readOnly
+  // Check-in stays available on a confirmed individual objective — that's
+  // the entire point of confirming (#B19: "only can check in on progress")
+  // — even though noEdit/readOnly is true for a confirmed objective. It
+  // must still be fully absent for a company objective (Map context)
+  // regardless of anything else, so this tracks !isCompany, not !readOnly.
+  const allowCheckIn = !isCompany
   const statusMeta = status
     ? (STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' })
     : null
   const keyResults = objective.key_results ?? []
   const [editingStatus, setEditingStatus] = useState(false)
-  const [reviewing, setReviewing] = useState(false)
   const { rationale } = useRationale(id)
 
   return (
@@ -123,34 +128,10 @@ export default function ObjectiveCard({
         onCheckInSaved={onCheckInSaved}
         onKrSaved={onKrSaved}
         readOnly={noEdit}
+        allowCheckIn={allowCheckIn}
+        viewMode={viewMode}
       />
       <RationaleSection rationale={rationale} />
-      {individualObjectiveId && (
-        <>
-          <button
-            type="button"
-            onClick={() => setReviewing(true)}
-            style={{
-              marginTop: '6px',
-              font: '500 11px var(--font-sans)',
-              padding: '4px 8px',
-              borderRadius: '999px',
-              border: '1px solid var(--hairline)',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-            }}
-          >
-            Review
-          </button>
-          {reviewing && (
-            <QuarterReviewModal
-              objectiveId={individualObjectiveId}
-              onDone={() => setReviewing(false)}
-            />
-          )}
-        </>
-      )}
     </div>
   )
 }

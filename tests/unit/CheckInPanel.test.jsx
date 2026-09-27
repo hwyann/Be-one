@@ -18,7 +18,7 @@ describe('CheckInPanel', () => {
   })
 
   it('renders the three traffic-light status options', () => {
-    render(<CheckInPanel individualObjectiveId="io-1" onDone={() => {}} />)
+    render(<CheckInPanel individualObjectiveId="io-1" keyResultId="kr-1" onDone={() => {}} />)
     expect(screen.getByRole('radio', { name: /on track/i })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /at risk/i })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /behind/i })).toBeInTheDocument()
@@ -45,7 +45,7 @@ describe('CheckInPanel', () => {
 
   it('saves the check-in with the selected status, note, and plan-next, then calls onDone', async () => {
     const onDone = vi.fn()
-    render(<CheckInPanel individualObjectiveId="io-1" onDone={onDone} />)
+    render(<CheckInPanel individualObjectiveId="io-1" keyResultId="kr-1" onDone={onDone} />)
 
     fireEvent.click(screen.getByRole('radio', { name: /at risk/i }))
     fireEvent.change(screen.getByLabelText(/what changed/i), {
@@ -59,11 +59,21 @@ describe('CheckInPanel', () => {
     await waitFor(() => expect(mocks.save).toHaveBeenCalled())
     expect(mocks.save).toHaveBeenCalledWith({
       individualObjectiveId: 'io-1',
+      keyResultId: 'kr-1',
       status: 'at_risk',
       note: 'stuck on review',
       planNext: 'unblock with pairing session',
     })
     await waitFor(() => expect(onDone).toHaveBeenCalled())
+  })
+
+  it('passes the key result id through to save (check-ins are now scoped per KR, not per objective)', async () => {
+    render(<CheckInPanel individualObjectiveId="io-1" keyResultId="kr-42" onDone={() => {}} />)
+    fireEvent.click(screen.getByRole('radio', { name: /on track/i }))
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() =>
+      expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ keyResultId: 'kr-42' }))
+    )
   })
 
   it('calls onSaved after a successful save', async () => {

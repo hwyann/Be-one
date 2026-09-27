@@ -100,4 +100,52 @@ describe('CheckInQuestion', () => {
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
+
+  describe('canAsk gating (Manager-only "ask a question", #B24)', () => {
+    it('shows the "Ask a question" button by default when canAsk is not passed (backward-compatible default)', () => {
+      render(<CheckInQuestion question={null} onAsk={vi.fn()} onReply={vi.fn()} />)
+      expect(screen.getByRole('button', { name: /ask a question/i })).toBeInTheDocument()
+    })
+
+    it('shows the "Ask a question" button when canAsk is explicitly true', () => {
+      render(<CheckInQuestion question={null} onAsk={vi.fn()} onReply={vi.fn()} canAsk />)
+      expect(screen.getByRole('button', { name: /ask a question/i })).toBeInTheDocument()
+    })
+
+    it('renders nothing when there is no question yet and canAsk is false', () => {
+      const { container } = render(
+        <CheckInQuestion question={null} onAsk={vi.fn()} onReply={vi.fn()} canAsk={false} />
+      )
+      expect(screen.queryByRole('button', { name: /ask a question/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+      expect(container).toBeEmptyDOMElement()
+    })
+
+    it('still renders an existing question and reply-input when canAsk is false — only asking is gated, not replying', () => {
+      render(
+        <CheckInQuestion
+          question={{ id: 'q1', question_text: 'What blocked this?', reply_text: null }}
+          onAsk={vi.fn()}
+          onReply={vi.fn()}
+          canAsk={false}
+        />
+      )
+      expect(screen.getByText('What blocked this?')).toBeInTheDocument()
+      expect(screen.getByRole('textbox')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /reply/i })).toBeInTheDocument()
+    })
+
+    it('still renders an already-answered question and reply when canAsk is false', () => {
+      render(
+        <CheckInQuestion
+          question={{ id: 'q1', question_text: 'What blocked this?', reply_text: 'Waiting on design.' }}
+          onAsk={vi.fn()}
+          onReply={vi.fn()}
+          canAsk={false}
+        />
+      )
+      expect(screen.getByText('What blocked this?')).toBeInTheDocument()
+      expect(screen.getByText('Waiting on design.')).toBeInTheDocument()
+    })
+  })
 })

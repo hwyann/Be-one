@@ -30,34 +30,34 @@ describe('useCheckInHistory', () => {
 
   it('returns loading: true initially', () => {
     mocks.from.mockReturnValue(makeCheckInsMock(new Promise(() => {})))
-    const { result } = renderHook(() => useCheckInHistory('io-1'))
+    const { result } = renderHook(() => useCheckInHistory('kr-1'))
     expect(result.current.loading).toBe(true)
     expect(result.current.checkIns).toEqual([])
     expect(result.current.error).toBeNull()
   })
 
-  it('returns check-ins for the given individual objective', async () => {
+  it('returns check-ins for the given key result', async () => {
     mocks.from.mockReturnValue(makeCheckInsMock({ data: fakeCheckIns, error: null }))
-    const { result } = renderHook(() => useCheckInHistory('io-1'))
+    const { result } = renderHook(() => useCheckInHistory('kr-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.checkIns).toEqual(fakeCheckIns)
     expect(result.current.error).toBeNull()
   })
 
-  it('queries check_ins filtered by individual_objective_id and ordered by created_at ascending', async () => {
+  it('queries check_ins filtered by key_result_id and ordered by created_at ascending', async () => {
     const checkInsMock = makeCheckInsMock({ data: fakeCheckIns, error: null })
     mocks.from.mockReturnValue(checkInsMock)
-    const { result } = renderHook(() => useCheckInHistory('io-1'))
+    const { result } = renderHook(() => useCheckInHistory('kr-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(mocks.from).toHaveBeenCalledWith('check_ins')
-    expect(checkInsMock.__eq).toHaveBeenCalledWith('individual_objective_id', 'io-1')
+    expect(checkInsMock.__eq).toHaveBeenCalledWith('key_result_id', 'kr-1')
     expect(checkInsMock.__order).toHaveBeenCalledWith('created_at', { ascending: true })
   })
 
   it('selects status, note, plan_next, and created_at', async () => {
     const checkInsMock = makeCheckInsMock({ data: fakeCheckIns, error: null })
     mocks.from.mockReturnValue(checkInsMock)
-    const { result } = renderHook(() => useCheckInHistory('io-1'))
+    const { result } = renderHook(() => useCheckInHistory('kr-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     const selectArg = checkInsMock.__select.mock.calls[0][0]
     expect(selectArg).toContain('status')
@@ -68,7 +68,7 @@ describe('useCheckInHistory', () => {
 
   it('returns an error when the fetch fails', async () => {
     mocks.from.mockReturnValue(makeCheckInsMock({ data: null, error: { message: 'DB down' } }))
-    const { result } = renderHook(() => useCheckInHistory('io-1'))
+    const { result } = renderHook(() => useCheckInHistory('kr-1'))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.error).toBe('DB down')
     expect(result.current.checkIns).toEqual([])
@@ -81,21 +81,21 @@ describe('useCheckInHistory', () => {
       call += 1
       return makeCheckInsMock({ data: call === 1 ? first : fakeCheckIns, error: null })
     })
-    const { result } = renderHook(() => useCheckInHistory('io-1'))
+    const { result } = renderHook(() => useCheckInHistory('kr-1'))
     await waitFor(() => expect(result.current.checkIns).toEqual(first))
     await act(async () => { await result.current.refetch() })
     expect(result.current.checkIns).toEqual(fakeCheckIns)
   })
 
-  it('refetches when the individual objective id changes', async () => {
+  it('refetches when the key result id changes', async () => {
     mocks.from.mockReturnValue(makeCheckInsMock({ data: fakeCheckIns, error: null }))
-    const { rerender } = renderHook(({ id }) => useCheckInHistory(id), { initialProps: { id: 'io-1' } })
+    const { rerender } = renderHook(({ id }) => useCheckInHistory(id), { initialProps: { id: 'kr-1' } })
     await waitFor(() => expect(mocks.from).toHaveBeenCalledTimes(1))
-    rerender({ id: 'io-2' })
+    rerender({ id: 'kr-2' })
     await waitFor(() => expect(mocks.from).toHaveBeenCalledTimes(2))
   })
 
-  it('does not fetch when the individual objective id is null', () => {
+  it('does not fetch when the key result id is null', () => {
     mocks.from.mockReturnValue(makeCheckInsMock({ data: [], error: null }))
     const { result } = renderHook(() => useCheckInHistory(null))
     expect(mocks.from).not.toHaveBeenCalled()

@@ -5,10 +5,11 @@ export default function useCheckIns() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
-  const save = useCallback(async ({ individualObjectiveId, status, note, planNext }) => {
+  const save = useCallback(async ({ individualObjectiveId, keyResultId, status, note, planNext }) => {
     setSaving(true)
     const { error: err } = await supabase.from('check_ins').insert({
       individual_objective_id: individualObjectiveId,
+      key_result_id: keyResultId,
       status,
       note,
       plan_next: planNext,

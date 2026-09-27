@@ -366,6 +366,16 @@ describe('OkrMapPage', () => {
     expect(props.quarterId).toBe('q42')
   })
 
+  it('passes viewMode through to OkrDialog (so it can gate the Manager-only "Ask a question" affordance, #B24)', () => {
+    mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+    const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+    expect(props.viewMode).toBe('member')
+  })
+
   it('refetches individual objectives after an edit save', () => {
     const refetchIndividual = vi.fn()
     mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
