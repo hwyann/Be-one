@@ -414,6 +414,8 @@ Feature: Unified drill-down modal for individual objectives
 | B15 | Empty individual-OKR state (Company OKR set, no personal OKR yet) never prompted the viewer to set one | Feature | **Accepted** (merged direct to `main` `caf5332`, no PR/review — demo-build process, 2026-09-27). Same commit as B14. | none | PM (direct) |
 | B16 | Add Objective modal only ever creates one OKR per session, no way to add a second in the same pass | Feature | **Accepted** (merged direct to `main` `e86a45b`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 | B17 | No way to save an OKR as a draft vs. confirming it as final for the quarter | Feature | **Accepted** (merged direct to `main` `e86a45b`, no PR/review — demo-build process, 2026-09-27). Same commit as B16. Migration `0010_individual_objectives_status.sql` applied live by Jess via the Supabase SQL editor 2026-09-27 (existing rows backfilled to `confirmed`, verified via REST read). | none | PM (direct) |
+| B18 | Reopening "+ Add objective" always started blank — a saved draft wasn't resumable, and drafts showed as My Thread cards before they were final | Feature | **Accepted** (merged direct to `main` `c1cf87a`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
+| B19 | After confirming an OKR, the viewer could still reopen it and edit title/KRs/Coach-me — no real "locked" state for the quarter | Feature | **Accepted** (merged direct to `main` `c1cf87a`, no PR/review — demo-build process, 2026-09-27). Same commit as B18. No schema change — reuses the `status` column from migration 0010. | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -505,6 +507,53 @@ Feature: Draft vs. confirmed OKR status
 `e2e: none`. Implementation: migration `0010_individual_objectives_status.sql` adds `individual_objectives.status` (`draft`/`confirmed`, existing rows backfilled to `confirmed`, new-row default `draft`). `useIndividualObjectives.js` now selects `status`; `MyThreadPage.jsx` renders the badge. Edit mode (existing objective) keeps the single "Save" button unchanged — status is a create-time choice only for now, not editable after the fact.
 
 **Resolved — migration applied, B16/B17 deployed (2026-09-27)**: migration 0010 was blocked on live-DB access from the PM sandbox (no `SUPABASE_ACCESS_TOKEN` for `supabase db push`'s temporary elevated role). Jess doesn't use the Supabase CLI (browser-only), so resolved by pasting the migration's SQL directly into the Supabase SQL editor instead of via CLI. Verified column exists + backfill correct via direct REST read, then pushed commit `e86a45b` to `main` (= production, per the still-unfixed `netlify.toml` misconfig) and confirmed all three new UI strings ("Add another objective", "Save as draft", "Confirm OKR") present in the live built JS at `https://striketrio-beone.netlify.app`.
+
+> **B17's "Draft" badge on My Thread cards (line above) was superseded same-day by B18** — drafts don't render as My Thread cards at all anymore, so there was nothing left to badge. See B18.
+
+**B18 — Resume a draft instead of starting blank; drafts hidden from My Thread until confirmed**
+As Satoshi, when I've already saved a draft OKR and click "+ Add objective" again, I want to pick up where I left off, so I don't have to retype it — and I don't want an unfinished draft showing up as a card on My Thread before I've actually committed to it.
+
+```gherkin
+Feature: Resume drafts, keep them off My Thread until confirmed
+
+  Scenario: Reopening the modal reloads existing drafts
+    Given Satoshi has one or more status:'draft' individual objectives this quarter
+    When he clicks "+ Add objective"
+    Then the modal opens pre-filled with each draft's title, alignment, and already-saved key results, instead of a blank form
+
+  Scenario: Saving a reloaded draft updates it, not a duplicate
+    Given a reloaded draft is edited and then saved (as draft or confirmed)
+    Then its existing individual_objectives row is updated in place — no second row is inserted
+
+  Scenario: Already-saved key results aren't re-created or removable in this pass
+    Given a reloaded draft has key results that were saved in an earlier session
+    Then they display without a Remove control, and saving does not re-insert them — only newly-added key results in the current session are created
+
+  Scenario: Drafts are invisible on My Thread
+    Given the viewer has one or more status:'draft' objectives and zero confirmed ones
+    Then My Thread shows nothing for them (no card, no "My thread" heading) — the objective only becomes visible there once confirmed
+```
+`e2e: none`. Implementation: `OkrMapPage.jsx` computes the viewer's `status:'draft'` rows from the already-loaded `individualObjectives` and passes them to `OkrDialog` as `existingDrafts`; `OkrDialog.jsx` seeds `objectiveDrafts` from them via a new `draftsFromExisting`/`formatLink` pair (inverse of `parseLink`), and `handleCreateSave` branches insert vs. update per draft based on whether it carries a persisted `id`. `MyThreadPage.jsx`'s `mine` filter now requires `status === 'confirmed'`.
+
+**B19 — Confirmed OKR becomes read-only for the rest of the quarter**
+As Satoshi, once I've confirmed my OKR for the quarter, I don't want to be able to keep editing it — I should only be able to check in on progress, view history, and do the end-of-quarter review.
+
+```gherkin
+Feature: Confirmed OKR locks out further add/edit
+
+  Scenario: "+ Add objective" disappears once an OKR is confirmed
+    Given the viewer has at least one status:'confirmed' individual objective this quarter
+    Then "+ Add objective" is no longer shown, even though drafts alone would not have hidden it
+
+  Scenario: Drill-down on a confirmed objective is read-only
+    Given the viewer clicks into a confirmed objective from My Thread
+    Then the title renders as plain text (not an input), there is no "Coach me" button, and the embedded objective card has no Add/Edit Key Result affordance and no clickable status dot
+
+  Scenario: Check-in, History, and Review remain available
+    Given the same confirmed-objective drill-down
+    Then Check-in, History, and Review are still fully functional, and the footer shows a single Close button instead of Save/Cancel
+```
+`e2e: none`. Implementation: `OkrDialog.jsx` computes `isConfirmedObjective = objective?.status === 'confirmed'` and branches the title field, the "Coach me" button, the footer, and a new `readOnly` prop passed to `ObjectiveCard`. `ObjectiveCard.jsx` combines its existing `isCompany` read-only path with the new `readOnly` prop into a single `noEdit` flag governing the status dot and `KrListInline`'s `readOnly` — Review and check-in stay keyed off `individualObjectiveId` alone, unaffected. `OkrMapPage.jsx`'s "+ Add objective" gate gained `!hasConfirmedThisQuarter` (drafts alone don't trip it).
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
