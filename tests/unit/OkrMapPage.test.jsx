@@ -58,8 +58,8 @@ const threeObjectives = [
 ]
 
 const individualObjectives = [
-  { id: 'io-1', title: 'Ship MVP' },
-  { id: 'io-2', title: 'Interview 10 users' },
+  { id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura' },
+  { id: 'io-2', title: 'Interview 10 users', owner_name: 'Satoshi Kimura' },
 ]
 
 describe('OkrMapPage', () => {
@@ -945,6 +945,12 @@ describe('OkrMapPage', () => {
     it('calls setViewMode when the Manager control is clicked', () => {
       const setViewMode = vi.fn()
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      // Give the viewer a confirmed-owner objective so the empty-state
+      // mandatory prompt (#B15) doesn't auto-open and disable this control
+      // (#B23 gates it while mandatory) — unrelated to what this test covers.
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives, loading: false, error: null, refetch: vi.fn(),
+      })
       mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode })
       render(<OkrMapPage />)
       fireEvent.click(screen.getByRole('button', { name: /^manager$/i }))
@@ -1175,6 +1181,97 @@ describe('OkrMapPage', () => {
       const props = mocks.OkrDialog.mock.calls.at(-1)[0]
       act(() => { props.onClose() })
       expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    describe('cannot be escaped once open (#B23, Codex review — split-view-review-all)', () => {
+      it('disables "OKR map" while the mandatory prompt is open', () => {
+        setEmptyMemberState()
+        render(<OkrMapPage />)
+        expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^okr map$/i })).toBeDisabled()
+      })
+
+      it('disables "Manager" while the mandatory prompt is open', () => {
+        setEmptyMemberState()
+        render(<OkrMapPage />)
+        expect(screen.getByRole('button', { name: /^manager$/i })).toBeDisabled()
+      })
+
+      it('re-enables both once the prompt is resolved (an objective now exists)', () => {
+        setEmptyMemberState()
+        const { rerender } = render(<OkrMapPage />)
+        expect(screen.getByRole('button', { name: /^okr map$/i })).toBeDisabled()
+
+        mocks.useIndividualObjectives.mockReturnValue({
+          objectives: [{ id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed' }],
+          loading: false, error: null, refetch: vi.fn(),
+        })
+        const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+        act(() => { props.onSave({ id: 'io-1', title: 'Ship MVP' }) })
+        rerender(<OkrMapPage />)
+
+        expect(screen.getByRole('button', { name: /^okr map$/i })).not.toBeDisabled()
+        expect(screen.getByRole('button', { name: /^manager$/i })).not.toBeDisabled()
+      })
+
+      it('does not disable "OKR map"/"Manager" for a normal (non-mandatory) open panel', () => {
+        mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+        mocks.useIndividualObjectives.mockReturnValue({
+          objectives: individualObjectives, loading: false, error: null, refetch: vi.fn(),
+        })
+        mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+        render(<OkrMapPage />)
+        fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
+        fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+        expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^okr map$/i })).not.toBeDisabled()
+        expect(screen.getByRole('button', { name: /^manager$/i })).not.toBeDisabled()
+      })
+    })
+  })
+
+  describe('closes any open panel on quarter change (#B23, Codex review — split-view-review-all)', () => {
+    it('closes the panel when the quarter changes, so a stale draft cannot be saved into the new quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives, loading: false, error: null, refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      const quarters = [
+        { id: 'q1', label: 'Q1 2026', is_active: true },
+        { id: 'q2', label: 'Q2 2026', is_active: false },
+      ]
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1', quarters, error: null, selectQuarter: vi.fn(), refetch: vi.fn(),
+      })
+      const { rerender } = render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
+      fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q2', quarters, error: null, selectQuarter: vi.fn(), refetch: vi.fn(),
+      })
+      rerender(<OkrMapPage />)
+
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('does not close the panel on a re-render where the quarter did not actually change', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: individualObjectives, loading: false, error: null, refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
+      fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /^okr map$/i }))
+      fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
+
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
     })
   })
 

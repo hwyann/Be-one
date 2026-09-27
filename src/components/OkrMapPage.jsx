@@ -127,7 +127,7 @@ function toggleButtonStyle(active) {
   }
 }
 
-function ViewModeToggle({ viewMode, onChange }) {
+function ViewModeToggle({ viewMode, onChange, managerDisabled = false }) {
   return (
     <div style={{
       display: 'inline-flex',
@@ -149,7 +149,8 @@ function ViewModeToggle({ viewMode, onChange }) {
         type="button"
         aria-pressed={viewMode === 'manager'}
         onClick={() => onChange('manager')}
-        style={toggleButtonStyle(viewMode === 'manager')}
+        disabled={managerDisabled}
+        style={{ ...toggleButtonStyle(viewMode === 'manager'), opacity: managerDisabled ? 0.5 : 1 }}
       >
         Manager
       </button>
@@ -174,8 +175,24 @@ export default function OkrMapPage() {
   const [view, setView] = useState(viewMode === 'manager' ? 'map' : 'my-thread')
   const [carouselIndex, setCarouselIndex] = useState(0)
   const autoOpenedQuarterRef = useRef(null)
+  const prevQuarterIdRef = useRef(quarterId)
 
   useEffect(() => { setCarouselIndex(0) }, [quarterId])
+
+  // Codex review finding (split-view-review-all): the split-view detail
+  // panel no longer sits behind a backdrop, so the quarter selector stays
+  // clickable while it's open. Since the panel isn't re-keyed by quarter,
+  // switching quarters mid-edit would otherwise leave the in-progress
+  // draft's supabase calls using the *new* quarterId with the *old*
+  // draft content — silently creating the objective in the wrong quarter.
+  // Close whatever's open on any quarter change so that can't happen; the
+  // auto-open effect below will re-evaluate the new quarter on its own.
+  useEffect(() => {
+    if (prevQuarterIdRef.current !== quarterId) {
+      prevQuarterIdRef.current = quarterId
+      setDialogState(null)
+    }
+  }, [quarterId])
 
   useEffect(() => {
     if (viewMode === 'manager' && view === 'my-thread') {
@@ -223,6 +240,16 @@ export default function OkrMapPage() {
     ? (individualObjectives.find(o => o.id === dialogState.objective.id) ?? dialogState.objective)
     : undefined
 
+  // Codex review finding (split-view-review-all): with the backdrop gone,
+  // "OKR map" and "Manager" are visible/clickable while the mandatory
+  // empty-state prompt (#B15) is open, and both unmount the split view
+  // entirely (it only renders in the my-thread branch) — silently letting
+  // the viewer escape a prompt that says they can't proceed without
+  // setting an OKR. Disable the two controls that navigate away from
+  // My Thread/Member while it's open; the mandatory panel is themselves
+  // guaranteed to only ever appear when already on my-thread + member.
+  const mandatoryOpen = !!dialogState?.mandatory
+
   function closeDialog() { setDialogState(null) }
 
   function handleSave() {
@@ -265,7 +292,8 @@ export default function OkrMapPage() {
               type="button"
               aria-pressed={view === 'map'}
               onClick={() => setView('map')}
-              style={toggleButtonStyle(view === 'map')}
+              disabled={mandatoryOpen}
+              style={{ ...toggleButtonStyle(view === 'map'), opacity: mandatoryOpen ? 0.5 : 1 }}
             >
               OKR map
             </button>
@@ -295,7 +323,7 @@ export default function OkrMapPage() {
           >
             + New quarter
           </button>
-          <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
+          <ViewModeToggle viewMode={viewMode} onChange={setViewMode} managerDisabled={mandatoryOpen} />
         </div>
         {view === 'my-thread' && !isPastQuarter && !hasConfirmedThisQuarter && (
           <button
