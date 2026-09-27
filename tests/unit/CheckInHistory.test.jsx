@@ -3,15 +3,11 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   useCheckInHistory: vi.fn(),
-  useKrSummary: vi.fn(),
   useCheckInQuestions: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCheckInHistory', () => ({
   default: mocks.useCheckInHistory,
-}))
-vi.mock('../../src/hooks/useKrSummary', () => ({
-  default: mocks.useKrSummary,
 }))
 vi.mock('../../src/hooks/useCheckInQuestions', () => ({
   default: mocks.useCheckInQuestions,
@@ -19,7 +15,6 @@ vi.mock('../../src/hooks/useCheckInQuestions', () => ({
 
 import CheckInHistory from '../../src/components/CheckInHistory'
 
-const emptySummary = { summary: null, loading: false, error: null, status: null }
 const emptyQuestions = {
   questionsByCheckInId: {},
   loading: false,
@@ -32,7 +27,6 @@ const emptyQuestions = {
 describe('CheckInHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.useKrSummary.mockReturnValue(emptySummary)
     mocks.useCheckInQuestions.mockReturnValue(emptyQuestions)
   })
 
@@ -92,13 +86,21 @@ describe('CheckInHistory', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/DB down/)
   })
 
-  it('passes the key result id (not the objective id) to useCheckInHistory', () => {
+  it('passes both the individual objective id and the key result id to useCheckInHistory', () => {
     mocks.useCheckInHistory.mockReturnValue({ checkIns: [], loading: false, error: null })
     render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-42" />)
-    expect(mocks.useCheckInHistory).toHaveBeenCalledWith('kr-42')
+    expect(mocks.useCheckInHistory).toHaveBeenCalledWith('io-1', 'kr-42')
   })
 
-  describe('summary block (deliberately stays objective-level, not per-KR)', () => {
+  // The AI summary is deliberately objective-level, not per-KR (the
+  // generate-kr-summary Edge Function and kr_summaries table are keyed by
+  // individual_objective_id, unchanged). Since an objective can have
+  // several KRs, computing it once per objective and passing it down
+  // avoids firing one Edge Function request per KR row for the same
+  // summary (Codex review finding, per-kr-checkin round 1) — so
+  // CheckInHistory no longer calls useKrSummary itself; its caller
+  // (KrListInline) does, once, and passes summary/summaryStatus as props.
+  describe('summary block (passed in as props, computed once per objective by the caller)', () => {
     beforeEach(() => {
       mocks.useCheckInHistory.mockReturnValue({
         checkIns: [
@@ -109,50 +111,43 @@ describe('CheckInHistory', () => {
       })
     })
 
-    it('passes the individual objective id (not the key result id) to useKrSummary', () => {
-      render(<CheckInHistory individualObjectiveId="io-42" keyResultId="kr-1" />)
-      expect(mocks.useKrSummary).toHaveBeenCalledWith('io-42')
-    })
-
-    it('renders the summary text above the list when status is ready', () => {
-      mocks.useKrSummary.mockReturnValue({
-        summary: 'Improving trajectory; shipping steadily.',
-        loading: false,
-        error: null,
-        status: 'ready',
-      })
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+    it('renders the summary text above the list when summaryStatus is ready', () => {
+      render(
+        <CheckInHistory
+          individualObjectiveId="io-1"
+          keyResultId="kr-1"
+          summary="Improving trajectory; shipping steadily."
+          summaryStatus="ready"
+        />
+      )
       const summary = screen.getByRole('note', { name: /summary/i })
       expect(summary).toHaveTextContent('Improving trajectory; shipping steadily.')
       const list = screen.getByRole('list')
       expect(summary.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
-    it('renders "Not enough check-ins yet." when status is insufficient_data', () => {
-      mocks.useKrSummary.mockReturnValue({ summary: null, loading: false, error: null, status: 'insufficient_data' })
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+    it('renders "Not enough check-ins yet." when summaryStatus is insufficient_data', () => {
+      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" summaryStatus="insufficient_data" />)
       expect(screen.getByText(/not enough check-ins yet/i)).toBeInTheDocument()
     })
 
-    it('renders "Generating summary…" placeholder when status is loading', () => {
-      mocks.useKrSummary.mockReturnValue({ summary: null, loading: true, error: null, status: 'loading' })
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+    it('renders "Generating summary…" placeholder when summaryStatus is loading', () => {
+      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" summaryStatus="loading" />)
       expect(screen.getByText(/generating summary/i)).toBeInTheDocument()
     })
 
-    it('renders "Summary unavailable" when status is error, but still shows the list', () => {
-      mocks.useKrSummary.mockReturnValue({ summary: null, loading: false, error: 'boom', status: 'error' })
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+    it('renders "Summary unavailable" when summaryStatus is error, but still shows the list', () => {
+      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" summaryStatus="error" />)
       expect(screen.getByText(/summary unavailable/i)).toBeInTheDocument()
       expect(screen.getByRole('list')).toBeInTheDocument()
     })
 
-    it('does not render a summary block when status is null (no objective id)', () => {
-      mocks.useKrSummary.mockReturnValue(emptySummary)
+    it('does not render a summary block when summaryStatus is not provided (null)', () => {
       render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
-      expect(screen.queryByText(/summary/i)).not.toBeInTheDocument()
       expect(screen.queryByText(/not enough check-ins yet/i)).not.toBeInTheDocument()
       expect(screen.queryByText(/generating summary/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/summary unavailable/i)).not.toBeInTheDocument()
+      expect(screen.queryByRole('note', { name: /summary/i })).not.toBeInTheDocument()
     })
   })
 
@@ -173,8 +168,8 @@ describe('CheckInHistory', () => {
       expect(mocks.useCheckInQuestions).toHaveBeenCalledWith(['c1', 'c2'])
     })
 
-    it('renders an "Ask a question" affordance for each check-in with no question by default (canAskQuestion not set)', () => {
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+    it('renders an "Ask a question" affordance for each check-in with no question when canAskQuestion is true', () => {
+      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" canAskQuestion />)
       expect(screen.getAllByRole('button', { name: /ask a question/i })).toHaveLength(2)
     })
 
@@ -185,7 +180,7 @@ describe('CheckInHistory', () => {
           c1: { id: 'q1', question_text: 'What blocked this?', reply_text: 'Waiting on design.' },
         },
       })
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" canAskQuestion />)
       expect(screen.getAllByRole('button', { name: /ask a question/i })).toHaveLength(1)
       expect(screen.getByText('What blocked this?')).toBeInTheDocument()
       expect(screen.getByText('Waiting on design.')).toBeInTheDocument()
@@ -194,7 +189,7 @@ describe('CheckInHistory', () => {
     it('calls askQuestion with the check-in id and question text when sent', () => {
       const askQuestion = vi.fn()
       mocks.useCheckInQuestions.mockReturnValue({ ...emptyQuestions, askQuestion })
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" canAskQuestion />)
       const askButtons = screen.getAllByRole('button', { name: /ask a question/i })
       fireEvent.click(askButtons[0])
       fireEvent.change(screen.getAllByRole('textbox')[0], { target: { value: 'What blocked this?' } })
@@ -211,7 +206,7 @@ describe('CheckInHistory', () => {
           c1: { id: 'q1', question_text: 'What blocked this?', reply_text: null },
         },
       })
-      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" />)
+      render(<CheckInHistory individualObjectiveId="io-1" keyResultId="kr-1" canAskQuestion={false} />)
       fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Waiting on design.' } })
       fireEvent.click(screen.getByRole('button', { name: /reply/i }))
       expect(replyToQuestion).toHaveBeenCalledWith('q1', 'Waiting on design.')

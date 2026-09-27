@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useKrMutation from '../hooks/useKrMutation'
+import useKrSummary from '../hooks/useKrSummary'
 import CheckInPanel from './CheckInPanel'
 import CheckInHistory from './CheckInHistory'
 
@@ -116,12 +117,22 @@ export function KrForm({ initialTitle = '', initialTargetNote = '', onSubmit, on
   )
 }
 
-function KrRow({ kr, individualObjectiveId, viewMode, allowCheckIn, onCheckInSaved, onEdit, readOnly }) {
+function KrRow({
+  kr, individualObjectiveId, viewMode, allowCheckIn, summary, summaryStatus,
+  onCheckInSaved, onEdit, readOnly,
+}) {
   const linked = kr.individual_objectives ?? []
   const owners = linked.filter(o => o.owner_name)
   const overflow = owners.length > MAX_INLINE_OWNERS ? owners.length - COLLAPSED_INLINE_OWNERS : 0
   const shown = overflow > 0 ? owners.slice(0, COLLAPSED_INLINE_OWNERS) : owners
   const [checkingIn, setCheckingIn] = useState(false)
+  // Codex review finding (per-kr-checkin, round 1): CheckInHistory owns its
+  // own fetch internally and had no way to know a new check-in was just
+  // saved, so it kept showing stale ("No check-ins yet") data until the
+  // whole dialog was reopened. Bumping this on save and keying the history
+  // block by it forces a clean remount -> fresh fetch, without needing an
+  // imperative refetch handle threaded back out of CheckInHistory.
+  const [historyVersion, setHistoryVersion] = useState(0)
 
   return (
     <div>
@@ -160,8 +171,11 @@ function KrRow({ kr, individualObjectiveId, viewMode, allowCheckIn, onCheckInSav
       {allowCheckIn && (
         <>
           <CheckInHistory
+            key={historyVersion}
             individualObjectiveId={individualObjectiveId}
             keyResultId={kr.id}
+            summary={summary}
+            summaryStatus={summaryStatus}
             canAskQuestion={viewMode === 'manager'}
           />
           {!checkingIn && (
@@ -171,7 +185,10 @@ function KrRow({ kr, individualObjectiveId, viewMode, allowCheckIn, onCheckInSav
             <CheckInPanel
               individualObjectiveId={individualObjectiveId}
               keyResultId={kr.id}
-              onSaved={onCheckInSaved}
+              onSaved={() => {
+                onCheckInSaved?.()
+                setHistoryVersion(v => v + 1)
+              }}
               onDone={() => setCheckingIn(false)}
             />
           )}
@@ -193,6 +210,11 @@ export default function KrListInline({
 }) {
   const [krFormMode, setKrFormMode] = useState(null)
   const { create, update } = useKrMutation()
+  // Called once per objective, not once per KR — see the note on
+  // CheckInHistory's props for why (Codex review finding, per-kr-checkin).
+  // Safe to call unconditionally: useKrSummary no-ops when its id is null
+  // (the company/Map case, where individualObjectiveId is never set).
+  const { summary, status: summaryStatus } = useKrSummary(individualObjectiveId)
 
   async function handleKrSave({ title, targetNote }) {
     let ok
@@ -232,6 +254,8 @@ export default function KrListInline({
                 individualObjectiveId={individualObjectiveId}
                 viewMode={viewMode}
                 allowCheckIn={allowCheckIn}
+                summary={summary}
+                summaryStatus={summaryStatus}
                 onCheckInSaved={onCheckInSaved}
                 onEdit={() => setKrFormMode({ kind: 'edit', krId: kr.id })}
                 readOnly={readOnly}

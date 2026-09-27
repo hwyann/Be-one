@@ -1,5 +1,4 @@
 import useCheckInHistory from '../hooks/useCheckInHistory'
-import useKrSummary from '../hooks/useKrSummary'
 import useCheckInQuestions from '../hooks/useCheckInQuestions'
 import CheckInQuestion from './CheckInQuestion'
 import { STATUS_BY_VALUE } from '../lib/statuses'
@@ -53,9 +52,15 @@ function SummaryBlock({ status, summary }) {
   return null
 }
 
-export default function CheckInHistory({ individualObjectiveId, keyResultId, canAskQuestion }) {
-  const { checkIns, error } = useCheckInHistory(keyResultId)
-  const { summary, status: summaryStatus } = useKrSummary(individualObjectiveId)
+// summary/summaryStatus are computed once per objective by the caller
+// (useKrSummary is objective-scoped, not per-KR) and passed down, rather
+// than called again in every KR's history block — calling it here too,
+// once per KR, would fire duplicate Edge Function requests for the same
+// objective in parallel (Codex review finding).
+export default function CheckInHistory({
+  individualObjectiveId, keyResultId, summary, summaryStatus, canAskQuestion,
+}) {
+  const { checkIns, error } = useCheckInHistory(individualObjectiveId, keyResultId)
   const checkInIds = checkIns.map(ci => ci.id)
   const { questionsByCheckInId, askQuestion, replyToQuestion } = useCheckInQuestions(checkInIds)
 

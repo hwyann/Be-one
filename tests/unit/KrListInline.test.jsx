@@ -1,15 +1,22 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
+import { useEffect } from 'react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   krCreate: vi.fn(),
   krUpdate: vi.fn(),
   checkInHistoryProps: vi.fn(),
+  checkInHistoryMounts: vi.fn(),
   checkInPanelProps: vi.fn(),
+  useKrSummaryMock: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useKrMutation', () => ({
   default: () => ({ create: mocks.krCreate, update: mocks.krUpdate, saving: false, error: null }),
+}))
+
+vi.mock('../../src/hooks/useKrSummary', () => ({
+  default: (...args) => mocks.useKrSummaryMock(...args),
 }))
 
 // KrListInline's own responsibility is prop-threading (individualObjectiveId,
@@ -21,6 +28,7 @@ vi.mock('../../src/hooks/useKrMutation', () => ({
 vi.mock('../../src/components/CheckInHistory', () => ({
   default: (props) => {
     mocks.checkInHistoryProps(props)
+    useEffect(() => { mocks.checkInHistoryMounts() }, [])
     return <div role="group" aria-label="Check-in history" data-testid="check-in-history" />
   },
 }))
@@ -43,6 +51,7 @@ const kr = { id: 'kr-1', title: 'Reach 100 accounts', individual_objectives: [] 
 describe('KrListInline', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.useKrSummaryMock.mockReturnValue({ summary: null, status: null })
   })
 
   describe('allowCheckIn (distinct from readOnly)', () => {
@@ -187,6 +196,87 @@ describe('KrListInline', () => {
       )
       expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /add key result/i })).toBeInTheDocument()
+    })
+  })
+
+  describe('AI summary is fetched once per objective, not once per KR (Codex review finding)', () => {
+    const kr2 = { id: 'kr-2', title: 'Sign 5 enterprise deals', individual_objectives: [] }
+
+    it('calls useKrSummary exactly once for an objective with multiple key results', () => {
+      render(
+        <KrListInline
+          individualObjectiveId="io-9"
+          keyResults={[kr, kr2]}
+          allowCheckIn
+        />
+      )
+      expect(mocks.useKrSummaryMock).toHaveBeenCalledTimes(1)
+      expect(mocks.useKrSummaryMock).toHaveBeenCalledWith('io-9')
+    })
+
+    it('passes the same summary/summaryStatus down to every KR\'s CheckInHistory', () => {
+      mocks.useKrSummaryMock.mockReturnValue({ summary: 'Trending up.', status: 'ready' })
+      render(
+        <KrListInline
+          individualObjectiveId="io-9"
+          keyResults={[kr, kr2]}
+          allowCheckIn
+        />
+      )
+      const calls = mocks.checkInHistoryProps.mock.calls.map(([props]) => props)
+      expect(calls).toHaveLength(2)
+      for (const props of calls) {
+        expect(props.summary).toBe('Trending up.')
+        expect(props.summaryStatus).toBe('ready')
+      }
+    })
+
+    it('does not call useKrSummary for a company objective (no individualObjectiveId)', () => {
+      render(
+        <KrListInline
+          objectiveId="co-1"
+          keyResults={[kr]}
+          allowCheckIn={false}
+          readOnly
+        />
+      )
+      expect(mocks.useKrSummaryMock).toHaveBeenCalledWith(undefined)
+    })
+  })
+
+  describe('history refreshes right after a check-in is saved (Codex review finding)', () => {
+    it('remounts the history block (fresh fetch) once the entry form reports a save, without needing the dialog reopened', () => {
+      render(<KrListInline individualObjectiveId="io-9" keyResults={[kr]} allowCheckIn />)
+      expect(mocks.checkInHistoryMounts).toHaveBeenCalledTimes(1)
+
+      fireEvent.click(screen.getByRole('button', { name: /^check-in$/i }))
+      const { onSaved } = mocks.checkInPanelProps.mock.calls.at(-1)[0]
+      act(() => { onSaved() })
+
+      expect(mocks.checkInHistoryMounts).toHaveBeenCalledTimes(2)
+    })
+
+    it('calls the onCheckInSaved callback passed down from the parent when a check-in is saved', () => {
+      const onCheckInSaved = vi.fn()
+      render(
+        <KrListInline
+          individualObjectiveId="io-9"
+          keyResults={[kr]}
+          allowCheckIn
+          onCheckInSaved={onCheckInSaved}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /^check-in$/i }))
+      const { onSaved } = mocks.checkInPanelProps.mock.calls.at(-1)[0]
+      act(() => { onSaved() })
+      expect(onCheckInSaved).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not remount the history block on an unrelated re-render (only on an actual save)', () => {
+      const { rerender } = render(<KrListInline individualObjectiveId="io-9" keyResults={[kr]} allowCheckIn viewMode="member" />)
+      expect(mocks.checkInHistoryMounts).toHaveBeenCalledTimes(1)
+      rerender(<KrListInline individualObjectiveId="io-9" keyResults={[kr]} allowCheckIn viewMode="manager" />)
+      expect(mocks.checkInHistoryMounts).toHaveBeenCalledTimes(1)
     })
   })
 })
