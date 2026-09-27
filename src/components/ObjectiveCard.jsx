@@ -12,9 +12,11 @@ export default function ObjectiveCard({
   onCheckInSaved,
   onStatusSaved,
   onKrSaved,
+  readOnly = false,
 }) {
   const { id, category, title, status } = objective
   const isCompany = !individualObjectiveId
+  const noEdit = isCompany || readOnly
   const statusMeta = status
     ? (STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' })
     : null
@@ -55,7 +57,7 @@ export default function ObjectiveCard({
           {title}
         </span>
         {statusMeta && (
-          isCompany ? (
+          noEdit ? (
             <span
               title={statusMeta.label}
               style={{
@@ -106,7 +108,7 @@ export default function ObjectiveCard({
           )
         )}
       </div>
-      {!isCompany && editingStatus && (
+      {!noEdit && editingStatus && (
         <StatusEditor
           objectiveId={id}
           currentStatus={status}
@@ -120,7 +122,7 @@ export default function ObjectiveCard({
         keyResults={keyResults}
         onCheckInSaved={onCheckInSaved}
         onKrSaved={onKrSaved}
-        readOnly={isCompany}
+        readOnly={noEdit}
       />
       <RationaleSection rationale={rationale} />
       {individualObjectiveId && (

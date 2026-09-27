@@ -209,6 +209,16 @@ export default function OkrMapPage() {
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
 
+  // Once the viewer has confirmed an OKR this quarter, they can no longer
+  // add or edit — only check in on progress (#B17/#B18). Drafts don't
+  // count here; only a confirmed row closes the door.
+  const hasConfirmedThisQuarter = individualObjectives.some(
+    o => o.owner_name === VIEWER_OWNER_NAME && o.status === 'confirmed',
+  )
+  const myDrafts = individualObjectives.filter(
+    o => o.owner_name === VIEWER_OWNER_NAME && o.status === 'draft',
+  )
+
   const liveDialogObjective = dialogState?.objective
     ? (individualObjectives.find(o => o.id === dialogState.objective.id) ?? dialogState.objective)
     : undefined
@@ -287,7 +297,7 @@ export default function OkrMapPage() {
           </button>
           <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
-        {view === 'my-thread' && !isPastQuarter && canCreate && (
+        {view === 'my-thread' && !isPastQuarter && canCreate && !hasConfirmedThisQuarter && (
           <button
             type="button"
             onClick={() => setDialogState({})}
@@ -356,6 +366,7 @@ export default function OkrMapPage() {
             objective={liveDialogObjective}
             companyObjectives={objectives}
             mandatory={!!dialogState?.mandatory}
+            existingDrafts={myDrafts}
             onSave={handleSave}
             onClose={closeDialog}
             onKrSaved={refetchIndividual}

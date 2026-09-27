@@ -1177,4 +1177,65 @@ describe('OkrMapPage', () => {
       expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
     })
   })
+
+  describe('confirmed OKR locks out further add/edit (#B17/#B18)', () => {
+    it('hides "+ Add objective" once the viewer has a confirmed objective this quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: [{ id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed' }],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      expect(screen.queryByRole('button', { name: /add objective/i })).not.toBeInTheDocument()
+    })
+
+    it('still shows "+ Add objective" when the viewer only has a draft (not confirmed)', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: [{ id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'draft' }],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
+    })
+
+    it('does not hide "+ Add objective" for a confirmed objective belonging to someone else', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: [{ id: 'io-1', title: 'Hire designer', owner_name: 'Hiroshi Tanaka', status: 'confirmed' }],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
+    })
+
+    it('passes the viewer\'s draft objectives to the dialog as existingDrafts', () => {
+      const myDraft = { id: 'io-1', title: 'Interview users', owner_name: 'Satoshi Kimura', status: 'draft' }
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useIndividualObjectives.mockReturnValue({
+        objectives: [myDraft],
+        loading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my thread/i }))
+      fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
+      const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+      expect(props.existingDrafts).toEqual([myDraft])
+    })
+  })
 })

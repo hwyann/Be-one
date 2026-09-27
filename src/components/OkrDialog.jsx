@@ -156,6 +156,40 @@ function emptyDraft() {
   return { title: '', link: '', draftKrs: [], showKrForm: false }
 }
 
+// Inverse of parseLink — reconstructs the <select> value from a persisted
+// individual_objectives row, so a reloaded draft (#B18) shows its original
+// alignment instead of the placeholder option.
+function formatLink(o) {
+  if (o.link_type === 'direct_kr' && o.key_result_id) {
+    return `direct_kr:${o.key_result_id}:${o.linked_company_objective_id}`
+  }
+  if (o.link_type === 'objective_level' && o.linked_company_objective_id) {
+    return `objective_level:${o.linked_company_objective_id}`
+  }
+  return ''
+}
+
+// Rehydrates the viewer's saved-but-not-yet-confirmed objectives into the
+// draft-editing shape, so re-opening "+ Add objective" resumes a draft
+// instead of starting blank (#B18). Existing key results are flagged
+// `existing: true` — they're already persisted, so the KR list shows them
+// without a Remove control and the save loop doesn't re-create them.
+function draftsFromExisting(existingDrafts) {
+  if (!existingDrafts || existingDrafts.length === 0) return [emptyDraft()]
+  return existingDrafts.map(o => ({
+    id: o.id,
+    title: o.title,
+    link: formatLink(o),
+    draftKrs: (o.key_results ?? []).map(kr => ({
+      id: kr.id,
+      title: kr.title,
+      targetNote: kr.target_note ?? '',
+      existing: true,
+    })),
+    showKrForm: false,
+  }))
+}
+
 function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRemove }) {
   return (
     <div style={draftSectionStyle}>
@@ -200,13 +234,15 @@ function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRem
           {draft.draftKrs.map((kr, i) => (
             <li key={i} style={draftKrItemStyle}>
               <span>{kr.title}</span>
-              <button
-                type="button"
-                onClick={() => onChange({ draftKrs: draft.draftKrs.filter((_, idx) => idx !== i) })}
-                style={secondaryButtonStyle()}
-              >
-                Remove
-              </button>
+              {!kr.existing && (
+                <button
+                  type="button"
+                  onClick={() => onChange({ draftKrs: draft.draftKrs.filter((_, idx) => idx !== i) })}
+                  style={secondaryButtonStyle()}
+                >
+                  Remove
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -234,6 +270,7 @@ export default function OkrDialog({
   objective = null,
   companyObjectives = [],
   mandatory = false,
+  existingDrafts = [],
   onSave,
   onClose,
   onKrSaved,
@@ -242,10 +279,11 @@ export default function OkrDialog({
   const [error, setError] = useState(null)
   const [showCoach, setShowCoach] = useState(false)
   const [coachAnswers, setCoachAnswers] = useState({})
-  const [objectiveDrafts, setObjectiveDrafts] = useState([emptyDraft()])
+  const [objectiveDrafts, setObjectiveDrafts] = useState(() => draftsFromExisting(existingDrafts))
   const [checkInMode, setCheckInMode] = useState(null)
   const { save: saveRationale } = useRationale(null)
   const { create: createKr } = useKrMutation()
+  const isConfirmedObjective = !!objective && objective.status === 'confirmed'
 
   function updateDraft(index, patch) {
     setObjectiveDrafts(drafts => drafts.map((d, i) => (i === index ? { ...d, ...patch } : d)))
@@ -293,10 +331,18 @@ export default function OkrDialog({
 
     const savedObjectives = []
     for (const { draft, linkFields } of parsedDrafts) {
-      const { data, error: err } = await supabase
-        .from('individual_objectives')
-        .insert([{ title: draft.title, quarter_id: quarterId, owner_name: 'Satoshi Kimura', status, ...linkFields }])
-        .select()
+      const query = draft.id
+        ? supabase
+            .from('individual_objectives')
+            .update({ title: draft.title, status, link_type: linkFields.link_type, linked_company_objective_id: linkFields.linked_company_objective_id, key_result_id: linkFields.key_result_id ?? null })
+            .eq('id', draft.id)
+            .select()
+        : supabase
+            .from('individual_objectives')
+            .insert([{ title: draft.title, quarter_id: quarterId, owner_name: 'Satoshi Kimura', status, ...linkFields }])
+            .select()
+
+      const { data, error: err } = await query
       if (err) {
         setError(err.message)
         return
@@ -305,6 +351,7 @@ export default function OkrDialog({
       savedObjectives.push(savedObjective)
 
       for (const kr of draft.draftKrs) {
+        if (kr.existing) continue
         const ok = await createKr({
           individualObjectiveId: savedObjective.id,
           title: kr.title,
@@ -344,15 +391,24 @@ export default function OkrDialog({
         </div>
       )}
       {objective ? (
-        <label htmlFor="okr-title" style={labelStyle}>
-          Objective
-          <input
-            id="okr-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
+        isConfirmedObjective ? (
+          <div style={labelStyle}>
+            Objective
+            <div style={{ font: '600 13px var(--font-sans)', color: 'var(--ink-900)', padding: '7px 0' }}>
+              {title}
+            </div>
+          </div>
+        ) : (
+          <label htmlFor="okr-title" style={labelStyle}>
+            Objective
+            <input
+              id="okr-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={inputStyle}
+            />
+          </label>
+        )
       ) : (
         <>
           {objectiveDrafts.map((draft, index) => (
@@ -362,7 +418,7 @@ export default function OkrDialog({
               index={index}
               companyObjectives={companyObjectives}
               onChange={(patch) => updateDraft(index, patch)}
-              onRemove={index > 0 ? () => removeDraft(index) : null}
+              onRemove={index > 0 && !draft.id ? () => removeDraft(index) : null}
             />
           ))}
           <button type="button" onClick={addDraft} style={addObjectiveButtonStyle()}>
@@ -370,9 +426,11 @@ export default function OkrDialog({
           </button>
         </>
       )}
-      <button type="button" onClick={() => setShowCoach(true)} style={secondaryButtonStyle()}>
-        Coach me
-      </button>
+      {!isConfirmedObjective && (
+        <button type="button" onClick={() => setShowCoach(true)} style={secondaryButtonStyle()}>
+          Coach me
+        </button>
+      )}
       {showCoach && (
         <CoachPanel onSkip={() => setShowCoach(false)} onAnswersChange={setCoachAnswers} />
       )}
@@ -382,6 +440,7 @@ export default function OkrDialog({
             objective={objective}
             individualObjectiveId={objective.id}
             onKrSaved={onKrSaved}
+            readOnly={isConfirmedObjective}
           />
           <div style={{ display: 'flex', gap: '6px' }}>
             {checkInMode !== 'checkin' && (
@@ -413,19 +472,25 @@ export default function OkrDialog({
         </>
       )}
       <div style={footerRowStyle}>
-        {!mandatory && (
-          <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>
-        )}
-        {objective ? (
-          <button type="button" onClick={() => handleSave()} style={primaryButtonStyle()}>Save</button>
+        {isConfirmedObjective ? (
+          <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Close</button>
         ) : (
           <>
-            <button type="button" onClick={() => handleSave('draft')} style={secondaryButtonStyle()}>
-              Save as draft
-            </button>
-            <button type="button" onClick={() => handleSave('confirmed')} style={primaryButtonStyle()}>
-              {confirmLabel}
-            </button>
+            {!mandatory && (
+              <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>
+            )}
+            {objective ? (
+              <button type="button" onClick={() => handleSave()} style={primaryButtonStyle()}>Save</button>
+            ) : (
+              <>
+                <button type="button" onClick={() => handleSave('draft')} style={secondaryButtonStyle()}>
+                  Save as draft
+                </button>
+                <button type="button" onClick={() => handleSave('confirmed')} style={primaryButtonStyle()}>
+                  {confirmLabel}
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

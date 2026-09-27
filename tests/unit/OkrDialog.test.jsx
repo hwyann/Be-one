@@ -712,4 +712,138 @@ describe('OkrDialog', () => {
       expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument()
     })
   })
+
+  describe('read-only drill-down for a confirmed objective', () => {
+    const confirmedObjective = { id: 'obj-1', title: 'Ship MVP', status: 'confirmed' }
+    const draftObjective = { id: 'obj-2', title: 'Interview users', status: 'draft' }
+
+    it('renders the title as plain read-only text, not an input', () => {
+      render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByLabelText(/objective/i)).not.toBeInTheDocument()
+      expect(screen.getAllByText('Ship MVP').length).toBeGreaterThan(0)
+    })
+
+    it('still shows an editable title input for a draft objective (not confirmed)', () => {
+      render(<OkrDialog quarterId="q1" objective={draftObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.getByLabelText(/objective/i)).toHaveValue('Interview users')
+    })
+
+    it('does not render "Coach me" when the objective is confirmed', () => {
+      render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByRole('button', { name: /coach me/i })).not.toBeInTheDocument()
+    })
+
+    it('passes readOnly to the embedded ObjectiveCard when confirmed (no Add/Edit KR affordances)', () => {
+      render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.queryByRole('button', { name: /add key result/i })).not.toBeInTheDocument()
+    })
+
+    it('still renders Check-in, History, and Review for a confirmed objective', () => {
+      render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /check in/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
+    })
+
+    it('renders only a Close button in the footer, no Save/Cancel', () => {
+      render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /^close$/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument()
+    })
+
+    it('calls onClose when Close is clicked', () => {
+      render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
+      fireEvent.click(screen.getByRole('button', { name: /^close$/i }))
+      expect(onClose).toHaveBeenCalled()
+    })
+  })
+
+  describe('reloading existing draft objectives (#B18)', () => {
+    const savedDraft = {
+      id: 'draft-1',
+      title: 'Interview 10 users',
+      link_type: 'objective_level',
+      linked_company_objective_id: 'co-2',
+      key_result_id: null,
+      key_results: [{ id: 'kr-existing', title: 'Talk to 10 customers', target_note: 'by Friday' }],
+    }
+
+    it('pre-fills a draft’s title, alignment, and existing key results when creating with existingDrafts', () => {
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      expect(screen.getByLabelText(/objective/i)).toHaveValue('Interview 10 users')
+      expect(screen.getByLabelText(/aligns with/i)).toHaveValue('objective_level:co-2')
+      expect(screen.getByText('Talk to 10 customers')).toBeInTheDocument()
+    })
+
+    it('does not show a Remove control on an already-persisted key result', () => {
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      expect(screen.queryByRole('button', { name: /^remove$/i })).not.toBeInTheDocument()
+    })
+
+    it('updates the existing row (not a duplicate insert) when the reloaded draft is confirmed', async () => {
+      mocks.select.mockResolvedValue({ data: [{ id: 'draft-1', title: 'Interview 10 users' }], error: null })
+      render(
+        <OkrDialog
+          quarterId="q1"
+          quarterName="Q3 2026"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /confirm okr/i }))
+      await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({
+        title: 'Interview 10 users',
+        status: 'confirmed',
+        link_type: 'objective_level',
+        linked_company_objective_id: 'co-2',
+        key_result_id: null,
+      }))
+      expect(mocks.eq).toHaveBeenCalledWith('id', 'draft-1')
+      expect(mocks.insert).not.toHaveBeenCalled()
+    })
+
+    it('does not re-create an already-persisted key result on save, but does create a newly-added one', async () => {
+      mocks.select.mockResolvedValue({ data: [{ id: 'draft-1', title: 'Interview 10 users' }], error: null })
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      await addDraftKr('A second KR')
+      fireEvent.click(screen.getByRole('button', { name: /save as draft/i }))
+      await waitFor(() => expect(onSave).toHaveBeenCalled())
+      expect(mocks.krInsert).toHaveBeenCalledTimes(1)
+      expect(mocks.krInsert).toHaveBeenCalledWith(
+        expect.objectContaining({ individual_objective_id: 'draft-1', title: 'A second KR' })
+      )
+    })
+
+    it('starts with a single blank draft when there are no existingDrafts', () => {
+      render(<OkrDialog quarterId="q1" companyObjectives={companyObjectivesFixture} onSave={onSave} onClose={onClose} />)
+      expect(screen.getByLabelText(/objective/i)).toHaveValue('')
+    })
+  })
 })

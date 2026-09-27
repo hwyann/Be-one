@@ -637,4 +637,35 @@ describe('ObjectiveCard', () => {
       expect(screen.queryByRole('dialog', { name: /quarter review/i })).not.toBeInTheDocument()
     })
   })
+
+  describe('readOnly prop (confirmed OKR drill-down)', () => {
+    const individualObjective = { id: 'io-9', title: 'Ship MVP', status: 'on_track' }
+
+    it('renders the status dot as non-interactive (no button) when readOnly', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" readOnly />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+    })
+
+    it('does not render an Add KR affordance when readOnly', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" readOnly />)
+      expect(screen.queryByRole('button', { name: /add key result/i })).not.toBeInTheDocument()
+    })
+
+    it('does not render an Edit trigger on an existing KR row when readOnly', () => {
+      const withKrs = { ...individualObjective, key_results: [{ id: 'k1', title: 'Ship v1' }] }
+      render(<ObjectiveCard objective={withKrs} individualObjectiveId="io-9" readOnly />)
+      expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
+    })
+
+    it('still renders the Review trigger when readOnly', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" readOnly />)
+      expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
+    })
+
+    it('is fully editable by default (readOnly not set)', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      expect(screen.getByRole('button', { name: /on track/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /add key result/i })).toBeInTheDocument()
+    })
+  })
 })

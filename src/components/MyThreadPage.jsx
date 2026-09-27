@@ -5,7 +5,9 @@ export default function MyThreadPage({
   onEdit,
   readOnly = false,
 }) {
-  const mine = objectives.filter(o => o.owner_name === ownerName)
+  // Draft objectives (#B17/#B18) aren't shown as cards here — they're only
+  // visible again inside the Add Objective modal until confirmed.
+  const mine = objectives.filter(o => o.owner_name === ownerName && o.status === 'confirmed')
   if (mine.length === 0) return null
 
   function resolveLink(objective) {
@@ -53,22 +55,7 @@ export default function MyThreadPage({
                   gap: '2px',
                 }}
               >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  {objective.title}
-                  {objective.status === 'draft' && (
-                    <span style={{
-                      font: '700 9px var(--font-display)',
-                      letterSpacing: '.08em',
-                      textTransform: 'uppercase',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid var(--hairline)',
-                      borderRadius: '999px',
-                      padding: '1px 6px',
-                    }}>
-                      Draft
-                    </span>
-                  )}
-                </span>
+                <span>{objective.title}</span>
                 {coTitle && (
                   <span style={{
                     font: '500 11px var(--font-sans)',

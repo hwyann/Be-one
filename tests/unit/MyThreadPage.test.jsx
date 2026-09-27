@@ -23,6 +23,7 @@ const objectives = [
     id: 'io-1',
     title: 'Ship MVP',
     owner_name: 'Satoshi Kimura',
+    status: 'confirmed',
     link_type: 'direct_kr',
     linked_company_objective_id: 'co-1',
     key_result_id: 'kr-1',
@@ -31,6 +32,7 @@ const objectives = [
     id: 'io-2',
     title: 'Interview 10 users',
     owner_name: 'Satoshi Kimura',
+    status: 'confirmed',
     link_type: 'objective_level',
     linked_company_objective_id: 'co-2',
     key_result_id: null,
@@ -39,6 +41,7 @@ const objectives = [
     id: 'io-3',
     title: 'Hire designer',
     owner_name: 'Hiroshi Tanaka',
+    status: 'confirmed',
     link_type: 'objective_level',
     linked_company_objective_id: 'co-1',
     key_result_id: null,
@@ -152,8 +155,8 @@ describe('MyThreadPage', () => {
     expect(screen.getByText(/my thread/i)).toBeInTheDocument()
   })
 
-  describe('draft status badge', () => {
-    it('shows a "Draft" badge on an objective with status "draft"', () => {
+  describe('draft objectives are not shown as cards (#B17/#B18)', () => {
+    it('does not render a card for an objective with status "draft"', () => {
       render(
         <MyThreadPage
           ownerName="Satoshi Kimura"
@@ -161,18 +164,30 @@ describe('MyThreadPage', () => {
           companyObjectives={companyObjectives}
         />
       )
-      expect(screen.getByText(/^draft$/i)).toBeInTheDocument()
+      expect(screen.queryByText('Ship MVP')).not.toBeInTheDocument()
     })
 
-    it('does not show a "Draft" badge on a confirmed objective', () => {
+    it('renders nothing (no "My thread" heading either) when the viewer only has drafts', () => {
       render(
         <MyThreadPage
           ownerName="Satoshi Kimura"
-          objectives={[{ ...objectives[0], status: 'confirmed' }]}
+          objectives={[{ ...objectives[0], status: 'draft' }, { ...objectives[1], status: 'draft' }]}
           companyObjectives={companyObjectives}
         />
       )
-      expect(screen.queryByText(/^draft$/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/my thread/i)).not.toBeInTheDocument()
+    })
+
+    it('renders confirmed objectives even when a draft also exists alongside them', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[objectives[0], { ...objectives[1], status: 'draft' }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByText('Ship MVP')).toBeInTheDocument()
+      expect(screen.queryByText('Interview 10 users')).not.toBeInTheDocument()
     })
   })
 
