@@ -276,7 +276,7 @@ export default function OkrMapPage() {
                 onClick={() => setView('my-thread')}
                 style={toggleButtonStyle(view === 'my-thread')}
               >
-                My thread
+                My OKR
               </button>
             )}
           </div>
@@ -354,9 +354,6 @@ export default function OkrMapPage() {
             position: 'fixed',
             inset: 0,
             background: 'rgba(19,30,40,.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             zIndex: 10,
           }}
         >

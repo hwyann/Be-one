@@ -83,6 +83,17 @@ describe('MyThreadPage', () => {
     expect(screen.getByText(/Grow revenue/)).toBeInTheDocument()
   })
 
+  it('labels the company-OKR link with "Linked to Company OKR: "', () => {
+    render(
+      <MyThreadPage
+        ownerName="Satoshi Kimura"
+        objectives={[objectives[0]]}
+        companyObjectives={companyObjectives}
+      />
+    )
+    expect(screen.getByText(/^Linked to Company OKR: Grow revenue/)).toBeInTheDocument()
+  })
+
   it('shows the linked KR title for direct_kr rows', () => {
     render(
       <MyThreadPage
@@ -144,7 +155,7 @@ describe('MyThreadPage', () => {
     expect(screen.queryByText('Hire designer')).not.toBeInTheDocument()
   })
 
-  it('renders a "My thread" heading when the viewer has at least one objective', () => {
+  it('renders a "My Current OKR" heading when the viewer has at least one objective', () => {
     render(
       <MyThreadPage
         ownerName="Satoshi Kimura"
@@ -152,7 +163,20 @@ describe('MyThreadPage', () => {
         companyObjectives={companyObjectives}
       />
     )
-    expect(screen.getByText(/my thread/i)).toBeInTheDocument()
+    expect(screen.getByText(/my current okr/i)).toBeInTheDocument()
+  })
+
+  it('renders the heading as a prominent, non-kicker section heading (bigger font, no uppercase treatment)', () => {
+    render(
+      <MyThreadPage
+        ownerName="Satoshi Kimura"
+        objectives={objectives}
+        companyObjectives={companyObjectives}
+      />
+    )
+    const heading = screen.getByText(/my current okr/i)
+    expect(heading.style.font).toContain('20px')
+    expect(heading.style.textTransform).not.toBe('uppercase')
   })
 
   describe('draft objectives are not shown as cards (#B17/#B18)', () => {
@@ -167,7 +191,7 @@ describe('MyThreadPage', () => {
       expect(screen.queryByText('Ship MVP')).not.toBeInTheDocument()
     })
 
-    it('renders nothing (no "My thread" heading either) when the viewer only has drafts', () => {
+    it('renders nothing (no "My Current OKR" heading either) when the viewer only has drafts', () => {
       render(
         <MyThreadPage
           ownerName="Satoshi Kimura"
@@ -175,7 +199,7 @@ describe('MyThreadPage', () => {
           companyObjectives={companyObjectives}
         />
       )
-      expect(screen.queryByText(/my thread/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/my current okr/i)).not.toBeInTheDocument()
     })
 
     it('renders confirmed objectives even when a draft also exists alongside them', () => {
@@ -188,6 +212,80 @@ describe('MyThreadPage', () => {
       )
       expect(screen.getByText('Ship MVP')).toBeInTheDocument()
       expect(screen.queryByText('Interview 10 users')).not.toBeInTheDocument()
+    })
+  })
+
+  describe("objective's own key results", () => {
+    it("renders each of the objective's own key results", () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[{
+            ...objectives[0],
+            key_results: [
+              { id: 'own-kr-1', title: 'Ship v1 to prod' },
+              { id: 'own-kr-2', title: 'Onboard 3 pilot customers' },
+            ],
+          }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByText('Ship v1 to prod')).toBeInTheDocument()
+      expect(screen.getByText('Onboard 3 pilot customers')).toBeInTheDocument()
+    })
+
+    it("renders a key result's target_note as muted secondary text when present", () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[{
+            ...objectives[0],
+            key_results: [
+              { id: 'own-kr-1', title: 'Ship v1 to prod', target_note: 'by end of quarter' },
+            ],
+          }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByText('Ship v1 to prod')).toBeInTheDocument()
+      expect(screen.getByText('by end of quarter')).toBeInTheDocument()
+    })
+
+    it('does not render a target_note when the key result has none', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[{
+            ...objectives[0],
+            key_results: [{ id: 'own-kr-1', title: 'Ship v1 to prod' }],
+          }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByText('Ship v1 to prod')).toBeInTheDocument()
+    })
+
+    it('renders fine with no crash and no empty KR list when the objective has zero key results', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[{ ...objectives[0], key_results: [] }]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByText('Ship MVP')).toBeInTheDocument()
+      expect(screen.queryByTestId('objective-krs-io-1')).not.toBeInTheDocument()
+    })
+
+    it('renders fine when key_results is not provided on the objective at all', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={[objectives[0]]}
+          companyObjectives={companyObjectives}
+        />
+      )
+      expect(screen.getByText('Ship MVP')).toBeInTheDocument()
     })
   })
 

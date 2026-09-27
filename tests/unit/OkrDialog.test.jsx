@@ -93,11 +93,11 @@ describe('OkrDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /^add$/i }))
   }
 
-  it('renders title input and Save/Cancel buttons', () => {
+  it('renders title input, Save button, and a close (X) button', () => {
     render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
     expect(screen.getByLabelText(/objective/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^close$/i })).toBeInTheDocument()
   })
 
   it('pre-fills title when editing an existing objective', () => {
@@ -165,9 +165,9 @@ describe('OkrDialog', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledWith(updated))
   })
 
-  it('calls onClose when Cancel is clicked', () => {
+  it('calls onClose when the close (X) button is clicked', () => {
     render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^close$/i }))
     expect(onClose).toHaveBeenCalled()
   })
 
@@ -457,15 +457,15 @@ describe('OkrDialog', () => {
   })
 
   describe('mandatory empty-state prompt', () => {
-    it('hides the Cancel button when mandatory is true', () => {
+    it('hides the close (X) button when mandatory is true', () => {
       render(<OkrDialog quarterId="q1" mandatory onSave={onSave} onClose={onClose} />)
-      expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^close$/i })).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: /confirm okr/i })).toBeInTheDocument()
     })
 
-    it('shows Cancel by default (mandatory not set)', () => {
+    it('shows the close (X) button by default (mandatory not set)', () => {
       render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
-      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^close$/i })).toBeInTheDocument()
     })
 
     it('shows a note naming the quarter when mandatory and creating a new objective', () => {
@@ -480,18 +480,23 @@ describe('OkrDialog', () => {
     })
   })
 
-  describe('modal card styling (#B9)', () => {
-    it('renders the dialog root as a styled card with surface background, hairline border, radius, padding, and a max width', () => {
+  describe('right-side drawer styling (objective drill-down)', () => {
+    it('renders the dialog root as a fixed, right-anchored drawer at ~30% width filling the viewport height', () => {
       render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
       const dialog = screen.getByRole('dialog')
+      expect(dialog.style.position).toBe('fixed')
+      expect(dialog.style.top).toBe('0px')
+      expect(dialog.style.right).toBe('0px')
+      expect(dialog.style.height).toBe('100vh')
+      expect(dialog.style.width).toBe('30%')
+      expect(dialog.style.minWidth).toBe('360px')
       expect(dialog.style.background).toBe('var(--surface)')
       expect(dialog.style.border).toContain('var(--hairline)')
-      expect(dialog.style.borderRadius).not.toBe('')
       expect(dialog.style.padding).not.toBe('')
-      expect(dialog.style.maxWidth).not.toBe('')
+      expect(dialog.style.overflowY).toBe('auto')
     })
 
-    it('styles the title input and Save/Cancel buttons to match the app design language', () => {
+    it('styles the title input and Save button to match the app design language', () => {
       render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
       const titleInput = screen.getByLabelText(/objective/i)
       expect(titleInput.style.border).toContain('var(--hairline)')
@@ -502,10 +507,11 @@ describe('OkrDialog', () => {
       expect(saveButton.style.borderRadius).not.toBe('')
       expect(saveButton.style.padding).not.toBe('')
       expect(saveButton.style.background).not.toBe('')
+    })
 
-      const cancelButton = screen.getByRole('button', { name: /cancel/i })
-      expect(cancelButton.style.borderRadius).not.toBe('')
-      expect(cancelButton.style.padding).not.toBe('')
+    it('gives the close (X) button a real accessible name', () => {
+      render(<OkrDialog quarterId="q1" onSave={onSave} onClose={onClose} />)
+      expect(screen.getByRole('button', { name: /^close$/i })).toHaveAccessibleName('Close')
     })
   })
 
@@ -749,14 +755,14 @@ describe('OkrDialog', () => {
       expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
     })
 
-    it('renders only a Close button in the footer, no Save/Cancel', () => {
+    it('renders no Save/Cancel footer buttons — the header close (X) is the only close affordance', () => {
       render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
       expect(screen.getByRole('button', { name: /^close$/i })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument()
     })
 
-    it('calls onClose when Close is clicked', () => {
+    it('calls onClose when the close (X) button is clicked', () => {
       render(<OkrDialog quarterId="q1" objective={confirmedObjective} onSave={onSave} onClose={onClose} />)
       fireEvent.click(screen.getByRole('button', { name: /^close$/i }))
       expect(onClose).toHaveBeenCalled()

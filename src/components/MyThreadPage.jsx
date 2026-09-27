@@ -22,17 +22,16 @@ export default function MyThreadPage({
   return (
     <div style={{ marginTop: '24px' }}>
       <div style={{
-        font: '700 10px var(--font-display)',
-        letterSpacing: '.16em',
-        textTransform: 'uppercase',
+        font: '700 20px var(--font-display)',
         color: 'var(--ink-700, #666)',
         marginBottom: '8px',
       }}>
-        My thread
+        My Current OKR
       </div>
       <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px', padding: 0 }}>
         {mine.map(objective => {
           const { coTitle, krTitle } = resolveLink(objective)
+          const keyResults = objective.key_results ?? []
           return (
             <li key={objective.id}>
               <button
@@ -61,8 +60,32 @@ export default function MyThreadPage({
                     font: '500 11px var(--font-sans)',
                     color: 'var(--text-secondary)',
                   }}>
-                    ↑ {coTitle}{krTitle ? ` · ${krTitle}` : ''}
+                    Linked to Company OKR: {coTitle}{krTitle ? ` · ${krTitle}` : ''}
                   </span>
+                )}
+                {keyResults.length > 0 && (
+                  <ul data-testid={`objective-krs-${objective.id}`} style={{
+                    listStyle: 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    margin: 0,
+                    padding: 0,
+                    marginTop: '4px',
+                  }}>
+                    {keyResults.map(kr => (
+                      <li key={kr.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ font: '500 11px var(--font-sans)', color: 'var(--text-secondary)' }}>
+                          {kr.title}
+                        </span>
+                        {kr.target_note && (
+                          <span style={{ font: '400 11px var(--font-sans)', color: 'var(--text-muted)' }}>
+                            {kr.target_note}
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </button>
             </li>

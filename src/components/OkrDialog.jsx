@@ -9,18 +9,34 @@ import useRationale from '../hooks/useRationale'
 import useKrMutation from '../hooks/useKrMutation'
 
 const cardStyle = {
+  position: 'fixed',
+  top: 0,
+  right: 0,
+  height: '100vh',
+  width: '30%',
+  minWidth: '360px',
   background: 'var(--surface)',
   border: '1px solid var(--hairline)',
-  borderRadius: '16px',
   boxShadow: '0 1px 3px rgba(19,30,40,.06)',
   padding: '18px',
-  maxWidth: '480px',
-  width: '100%',
   display: 'flex',
   flexDirection: 'column',
   gap: '10px',
-  maxHeight: '85vh',
   overflowY: 'auto',
+}
+
+function closeButtonStyle() {
+  return {
+    alignSelf: 'flex-end',
+    font: '600 16px var(--font-display)',
+    lineHeight: 1,
+    padding: '4px 8px',
+    borderRadius: '8px',
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+  }
 }
 
 const labelStyle = {
@@ -424,6 +440,9 @@ export default function OkrDialog({
 
   return (
     <div role="dialog" style={cardStyle}>
+      {!mandatory && (
+        <button type="button" onClick={onClose} aria-label="Close" style={closeButtonStyle()}>×</button>
+      )}
       {mandatory && !objective && (
         <div style={{ font: '500 12px var(--font-sans)', color: 'var(--text-secondary)' }}>
           Set your OKR{quarterName ? ` for ${quarterName}` : ''} to continue.
@@ -516,29 +535,22 @@ export default function OkrDialog({
           )}
         </>
       )}
-      <div style={footerRowStyle}>
-        {isConfirmedObjective ? (
-          <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Close</button>
-        ) : (
-          <>
-            {!mandatory && (
-              <button type="button" onClick={onClose} style={secondaryButtonStyle()}>Cancel</button>
-            )}
-            {objective ? (
-              <button type="button" onClick={() => handleSave()} style={primaryButtonStyle()}>Save</button>
-            ) : (
-              <>
-                <button type="button" onClick={() => handleSave('draft')} style={secondaryButtonStyle()}>
-                  Save as draft
-                </button>
-                <button type="button" onClick={() => handleSave('confirmed')} style={primaryButtonStyle()}>
-                  {confirmLabel}
-                </button>
-              </>
-            )}
-          </>
-        )}
-      </div>
+      {!isConfirmedObjective && (
+        <div style={footerRowStyle}>
+          {objective ? (
+            <button type="button" onClick={() => handleSave()} style={primaryButtonStyle()}>Save</button>
+          ) : (
+            <>
+              <button type="button" onClick={() => handleSave('draft')} style={secondaryButtonStyle()}>
+                Save as draft
+              </button>
+              <button type="button" onClick={() => handleSave('confirmed')} style={primaryButtonStyle()}>
+                {confirmLabel}
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
