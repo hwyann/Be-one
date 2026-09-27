@@ -190,7 +190,9 @@ function draftsFromExisting(existingDrafts) {
   }))
 }
 
-function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRemove }) {
+function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRemove, onEditExistingKr }) {
+  const [editingKrIndex, setEditingKrIndex] = useState(null)
+
   return (
     <div style={draftSectionStyle}>
       {onRemove && (
@@ -232,18 +234,43 @@ function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRem
       {draft.draftKrs.length > 0 && (
         <ul style={draftKrListStyle}>
           {draft.draftKrs.map((kr, i) => (
-            <li key={i} style={draftKrItemStyle}>
-              <span>{kr.title}</span>
-              {!kr.existing && (
-                <button
-                  type="button"
-                  onClick={() => onChange({ draftKrs: draft.draftKrs.filter((_, idx) => idx !== i) })}
-                  style={secondaryButtonStyle()}
-                >
-                  Remove
-                </button>
-              )}
-            </li>
+            editingKrIndex === i ? (
+              <KrForm
+                key={i}
+                initialTitle={kr.title}
+                initialTargetNote={kr.targetNote}
+                submitLabel="Save"
+                onSubmit={(values) => {
+                  onEditExistingKr(i, values)
+                  setEditingKrIndex(null)
+                }}
+                onCancel={() => setEditingKrIndex(null)}
+              />
+            ) : (
+              <li key={i} style={draftKrItemStyle}>
+                <span style={{ display: 'flex', flexDirection: 'column' }}>
+                  {kr.title}
+                  {kr.targetNote && (
+                    <span style={{ font: '400 11px var(--font-sans)', color: 'var(--text-muted)' }}>
+                      {kr.targetNote}
+                    </span>
+                  )}
+                </span>
+                {kr.existing ? (
+                  <button type="button" onClick={() => setEditingKrIndex(i)} style={secondaryButtonStyle()}>
+                    Edit
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ draftKrs: draft.draftKrs.filter((_, idx) => idx !== i) })}
+                    style={secondaryButtonStyle()}
+                  >
+                    Remove
+                  </button>
+                )}
+              </li>
+            )
           ))}
         </ul>
       )}
@@ -282,7 +309,7 @@ export default function OkrDialog({
   const [objectiveDrafts, setObjectiveDrafts] = useState(() => draftsFromExisting(existingDrafts))
   const [checkInMode, setCheckInMode] = useState(null)
   const { save: saveRationale } = useRationale(null)
-  const { create: createKr } = useKrMutation()
+  const { create: createKr, update: updateKr } = useKrMutation()
   const isConfirmedObjective = !!objective && objective.status === 'confirmed'
 
   function updateDraft(index, patch) {
@@ -295,6 +322,23 @@ export default function OkrDialog({
 
   function removeDraft(index) {
     setObjectiveDrafts(drafts => drafts.filter((_, i) => i !== index))
+  }
+
+  // Edits an already-persisted key result on a reloaded draft (#B21) —
+  // unlike a freshly-added one, it exists in Supabase already, so this
+  // updates it in place via useKrMutation.update rather than local-only
+  // state, then reflects the new title/note back into the draft.
+  async function handleEditExistingKr(draftIndex, krIndex, { title: krTitle, targetNote }) {
+    const draft = objectiveDrafts[draftIndex]
+    const kr = draft.draftKrs[krIndex]
+    const ok = await updateKr({ id: kr.id, title: krTitle, targetNote })
+    if (!ok) {
+      setError(`Failed to update key result: "${kr.title}".`)
+      return
+    }
+    updateDraft(draftIndex, {
+      draftKrs: draft.draftKrs.map((k, i) => (i === krIndex ? { ...k, title: krTitle, targetNote } : k)),
+    })
   }
 
   async function handleEditSave() {
@@ -419,6 +463,7 @@ export default function OkrDialog({
               companyObjectives={companyObjectives}
               onChange={(patch) => updateDraft(index, patch)}
               onRemove={index > 0 && !draft.id ? () => removeDraft(index) : null}
+              onEditExistingKr={(krIndex, values) => handleEditExistingKr(index, krIndex, values)}
             />
           ))}
           <button type="button" onClick={addDraft} style={addObjectiveButtonStyle()}>

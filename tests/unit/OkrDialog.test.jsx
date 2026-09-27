@@ -25,6 +25,8 @@ const mocks = vi.hoisted(() => ({
   single: vi.fn(),
   rationaleSave: vi.fn(),
   krInsert: vi.fn(),
+  krUpdate: vi.fn(),
+  krUpdateEq: vi.fn(),
   checkInSave: vi.fn(),
   useCheckInHistoryMock: vi.fn(),
 }))
@@ -33,7 +35,7 @@ vi.mock('../../src/lib/supabase', () => ({
   supabase: {
     from: (table) => {
       if (table === 'key_results') {
-        return { insert: mocks.krInsert }
+        return { insert: mocks.krInsert, update: mocks.krUpdate }
       }
       return {
         insert: mocks.insert,
@@ -79,6 +81,8 @@ describe('OkrDialog', () => {
     mocks.select.mockResolvedValue({ data: null, error: null })
     mocks.rationaleSave.mockResolvedValue(true)
     mocks.krInsert.mockResolvedValue({ error: null })
+    mocks.krUpdate.mockReturnValue({ eq: mocks.krUpdateEq })
+    mocks.krUpdateEq.mockResolvedValue({ error: null })
     mocks.checkInSave.mockResolvedValue(true)
     mocks.useCheckInHistoryMock.mockReturnValue({ checkIns: [], loading: false, error: null })
   })
@@ -795,6 +799,76 @@ describe('OkrDialog', () => {
         />
       )
       expect(screen.queryByRole('button', { name: /^remove$/i })).not.toBeInTheDocument()
+    })
+
+    it('shows an Edit button on an already-persisted key result instead', () => {
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      expect(screen.getByRole('button', { name: /^edit$/i })).toBeInTheDocument()
+    })
+
+    it('opens an edit form pre-filled with the key result\'s title and target note when Edit is clicked', () => {
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+      expect(screen.getByLabelText(/key result/i)).toHaveValue('Talk to 10 customers')
+      expect(screen.getByLabelText(/target note/i)).toHaveValue('by Friday')
+    })
+
+    it('persists the edited key result via useKrMutation.update and reflects it in the list', async () => {
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+      fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: 'Talk to 20 customers' } })
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+      await waitFor(() => expect(mocks.krUpdate).toHaveBeenCalledWith({
+        title: 'Talk to 20 customers',
+        target_note: 'by Friday',
+      }))
+      expect(mocks.krUpdateEq).toHaveBeenCalledWith('id', 'kr-existing')
+      expect(screen.getByText('Talk to 20 customers')).toBeInTheDocument()
+      expect(screen.queryByText('Talk to 10 customers')).not.toBeInTheDocument()
+    })
+
+    it('shows an error and keeps the edit form data unset when the key result update fails', async () => {
+      mocks.krUpdateEq.mockResolvedValue({ error: { message: 'update boom' } })
+      render(
+        <OkrDialog
+          quarterId="q1"
+          companyObjectives={companyObjectivesFixture}
+          existingDrafts={[savedDraft]}
+          onSave={onSave}
+          onClose={onClose}
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
+      fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: 'Broken update' } })
+      fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/failed to update key result/i)
+      expect(screen.getByText('Talk to 10 customers')).toBeInTheDocument()
     })
 
     it('updates the existing row (not a duplicate insert) when the reloaded draft is confirmed', async () => {
