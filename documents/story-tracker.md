@@ -412,6 +412,8 @@ Feature: Unified drill-down modal for individual objectives
 |---|------|------|-------|-----|-------|
 | B14 | No way to create a new quarter for demo purposes | Feature | **Accepted** (merged direct to `main` `caf5332`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 | B15 | Empty individual-OKR state (Company OKR set, no personal OKR yet) never prompted the viewer to set one | Feature | **Accepted** (merged direct to `main` `caf5332`, no PR/review — demo-build process, 2026-09-27). Same commit as B14. | none | PM (direct) |
+| B16 | Add Objective modal only ever creates one OKR per session, no way to add a second in the same pass | Feature | **Finished, not yet deployed** (commit `e86a45b`, local `main` only — **held back from push**, see blocker note below) | none | PM (direct) |
+| B17 | No way to save an OKR as a draft vs. confirming it as final for the quarter | Feature | **Finished, not yet deployed** (commit `e86a45b`, local `main` only). Same commit as B16. Needs migration `0010_individual_objectives_status.sql` applied to live Supabase first — **manual step, see PM** (same pattern as 0005/0006/0007/0009). | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -458,6 +460,51 @@ Feature: Empty-state nudge into Add Objective
 `e2e: none`. Implementation: new effect in `OkrMapPage.jsx`, ref-gated per `quarterId` so it fires exactly once per quarter; `OkrDialog.jsx` gained a `mandatory` prop that hides the Cancel button and shows "Set your OKR for {quarterName} to continue." — scoped to the auto-opened instance only, so a manual "+ Add objective" click still shows Cancel as before.
 
 **Scope + verification note**: both stories built, unit-tested (32 new/updated tests; full suite 390/390 passing, `npm run lint` clean, `npm run build` clean), and pushed directly to `main` in one commit (`caf5332`) per Jess's explicit choice to iterate in this session rather than through the Chip/Dale pipeline. `netlify.toml`'s `[context.production] branch = "main"` misconfig (flagged 2026-09-21, still unfixed) means this went straight to **production** — confirmed live on `https://striketrio-beone.netlify.app` via built-JS string grep for both new UI strings ("New quarter", "Set your OKR").
+
+**B16 — Add another objective in the same Add Objective session**
+As Satoshi, I want a full-width "+ Add another objective" button in the Add Objective modal, so I can set up more than one OKR in the same pass instead of reopening the modal per objective.
+
+```gherkin
+Feature: Add another objective within the same modal session
+
+  Scenario: Adds a second, independent objective section
+    Given the Add Objective modal is open in create mode
+    When Satoshi clicks the full-width "+ Add another objective" button
+    Then a second section appears with its own Objective title, Aligns-with selector, and key results — independent of the first
+
+  Scenario: Additional sections can be removed
+    Given a second (or later) objective section has been added
+    Then it has its own Remove control; the first section never shows Remove
+
+  Scenario: Saving creates one row per section
+    Given two objective sections are each filled in with a title, an alignment, and at least one key result
+    When Satoshi saves
+    Then one individual_objectives row (and its key results) is created per section, and the save is all-or-nothing — if any section is invalid, nothing is inserted
+```
+`e2e: none`. Implementation: `OkrDialog.jsx`'s create-mode state changed from a single `{title, link, draftKrs}` to an `objectiveDrafts` array, rendered via a new internal `ObjectiveDraftFields` component. Edit mode (existing objective) is untouched — still a single title field, no add/remove.
+
+**B17 — Save as draft vs. Confirm OKR for a quarter**
+As Satoshi, I want to choose "Save as draft" or "Confirm OKR for Q3 2026" when setting my OKR, so I can capture a draft without it counting as my finalized commitment for the quarter yet.
+
+```gherkin
+Feature: Draft vs. confirmed OKR status
+
+  Scenario: Save as draft
+    Given Satoshi is creating one or more objectives in the Add Objective modal
+    When he clicks "Save as draft"
+    Then each created individual_objectives row is saved with status: 'draft'
+
+  Scenario: Confirm OKR for the quarter
+    When he clicks "Confirm OKR for <quarter name>" instead
+    Then each created row is saved with status: 'confirmed'
+
+  Scenario: Draft rows are visibly marked
+    Given an objective has status: 'draft'
+    Then My Thread shows a small "Draft" badge next to its title
+```
+`e2e: none`. Implementation: migration `0010_individual_objectives_status.sql` adds `individual_objectives.status` (`draft`/`confirmed`, existing rows backfilled to `confirmed`, new-row default `draft`). `useIndividualObjectives.js` now selects `status`; `MyThreadPage.jsx` renders the badge. Edit mode (existing objective) keeps the single "Save" button unchanged — status is a create-time choice only for now, not editable after the fact.
+
+**⚠️ Blocker — B16/B17 held back from push, not yet deployed**: migration 0010 has **not** been applied to the live Supabase project (same "manual step, see PM" situation as 0005/0006/0007/0009 above). Since B14/B15 confirmed `main` currently deploys straight to **production** (`netlify.toml` misconfig, still unfixed), pushing this commit before the migration is applied would make every "Save as draft"/"Confirm OKR" insert fail live with an unknown-column error. Commit `e86a45b` is built, tested, and committed on local `main`, but deliberately **not pushed**. To unblock: run `supabase db push --linked` from a terminal that has `SUPABASE_ACCESS_TOKEN` set (the PM session's sandbox could authenticate as itself for read-only/history operations but not for this migration's temporary elevated DB role), or apply `supabase/migrations/0010_individual_objectives_status.sql` via the Supabase SQL editor — then say the word and this gets pushed and verified live the same way B14/B15 were.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
