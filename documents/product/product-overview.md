@@ -1,6 +1,6 @@
 # Be-one — Product Overview
 
-*Last updated: 2026-07-15*
+*Last updated: 2026-09-21 — reconciled with the Vault planning copy's 2026-07-15 Growth-removal decisions, which had diverged from this repo copy and never been synced back. Backlog section replaced with a pointer to `documents/story-tracker.md`. Wireframes section updated same day to match the shipped carousel map, confirmed live after the paused Supabase project was restored.*
 
 ---
 
@@ -18,9 +18,9 @@ Claude checks the content of each section below on PM session start and updates 
 | Feature Exploration | ✅ | 15 features explored (7 Satoshi, 8 Hiroshi) |
 | Feature Priority | ✅ | 10 MVP features (5 Satoshi, 5 Hiroshi); Growth OKR lane cut from MVP for now |
 | Technical Feasibility | ✅ | No blocking issues on React + Supabase + Netlify; auth resolved as Supabase magic-link, restricted to Jess |
-| Wireframes | ✅ | 3 MVP screens wireframed (OKR map, capture dialog, check-in); status wording aligned to "Behind"; map stays growth-aggregate-only |
+| Wireframes | ✅ | 3 MVP screens wireframed (OKR map, capture dialog, check-in); status wording aligned to "Behind"; growth removed from map and capture dialog (2026-07-15); OKR map description updated 2026-09-21 to match the shipped carousel (confirmed live) rather than the original 4-column grid |
 | Story Mapping | ✅ | 5 activities, 12 MVP stories + 4 later stories mapped |
-| Tracker Boot Backlog | ✅ | 12 MVP stories registered in project 100000292 (#200029030–#200029042) |
+| Backlog | ✅ | 18 Iteration #1 rows (16 MVP stories/chores + 2 pre-existing infra chores) + 3 later stories + 8 built-beyond-scope items live in `documents/story-tracker.md` (migrated off Tracker Boot 2026-09-21; 2 rows still need Gherkin migrated — see file for the flagged gap) |
 
 ---
 
@@ -178,10 +178,13 @@ Filter rule: **must-have** = directly required to test the prioritized bet (habi
 
 **Later**:
 - Growth OKR lane (🌱) — **cut from MVP for now.** PRD updated 2026-07-15 to match (§5 F1 superseded note, §6 non-goal, §10 future candidate). Revisit post-MVP.
-- Auto-carry-forward of last quarter's OKR as a starting draft
+- ~~Auto-carry-forward of last quarter's OKR as a starting draft~~ — **dropped 2026-07-15** (PM decision; removed from backlog, not just deferred)
 - Filter/sort by risk status
 - Quarter-over-quarter comparison
-- Board-ready export/summary view — weakest of the later items; serves the deferred A1 assumption (board demand)
+- ~~Board-ready export/summary view~~ — **dropped 2026-07-15** (PM decision; removed from backlog, not just deferred)
+- Search across users within the organization — **added 2026-07-15** (post-MVP, multi-user concern)
+
+**Not in this list but shipped anyway (2026-09-21 reconciliation finding)**: an AI-generated check-in summary (`#200029543`/`#200029544`/`#200029613`) and a company-objective-carousel redesign of the map (`#200029565`/`#200029577`/`#200029527`) both merged to `main` without ever going through Feature Exploration/Priority. See `documents/story-tracker.md` → "Built beyond original MVP scope" for the full list and the open wireframe-conflict question.
 
 ---
 
@@ -189,7 +192,7 @@ Filter rule: **must-have** = directly required to test the prioritized bet (habi
 
 **Stack**: React + Supabase + Netlify.
 
-> ⚠️ **Stack conflict resolved**: the MVP PRD (§8, 2026-07-04) specifies local-first/no-server/localStorage with "no multi-user, auth, or real-time" as an explicit non-goal. CLAUDE.md specifies Supabase. Confirmed with Jess: **Supabase is current** — feasibility below assumes a real backend from day one, not localStorage. PRD §8 is now stale on this point and should be updated before Wireframes/Story Mapping so Dev tracks don't inherit the old localStorage assumption.
+> ⚠️ **Stack conflict resolved**: the MVP PRD (§8, 2026-07-04) specifies local-first/no-server/localStorage with "no multi-user, auth, or real-time" as an explicit non-goal. CLAUDE.md specifies Supabase. Confirmed with Jess: **Supabase is current** — feasibility below assumes a real backend from day one, not localStorage.
 
 | Feature | Feasible | Notes |
 |---------|----------|-------|
@@ -216,25 +219,29 @@ Wireframes agreed for the 3 MVP screens. The standalone HTML design mock is the 
 
 The header row contains a "Map / My thread" segmented toggle, with Map as the default/active state, alongside a legend. The legend documents the two link types that connect a company objective or KR down to an individual objective — a solid line means "Direct KR link," a dashed line means "Objective-level" — and the five status dot colors: on track (green), at risk (amber), behind (red), not started (gray/muted), done (blue).
 
-The body is a 4-column grid of company objective cards, one card per company objective (e.g. O1 Brand, O2 Discovery, O3 People, O4 Delivery). Each card carries a small category kicker label, the objective title, and a status dot in the top corner. Inside each card, the objective's key results are listed as rows: each KR row has its own status dot, the KR text, and a small cluster of avatar initials showing which individuals are linked to that KR.
+> ⚠️ **Superseded 2026-09-21** (confirmed live via `https://striketrio-beone.netlify.app/` after the Supabase project was restored from an inactivity pause). Originally specified a 4-column grid of company objective cards; a Chip/Dale build during the 2026-07-15→22 iteration replaced it with a single-objective carousel (`#200029565`, `#200029577`, `#200029527`) without this doc being updated to match — see `documents/story-tracker.md` for the full reconciliation. Description below now reflects what's actually built.
 
-Below the grid sits a 3-card summary strip. The first card reads "Direct KR · N objectives" (the solid-link count); the second reads "Objective-level · N objectives" (the dashed-link count, with example badge text like "Aligns to O3 · People"); the third reads "Growth · N objectives." The Growth card is visually distinct — a light blue tint — and carries the caption "Personal mastery, no company link — celebrated, never flagged," reflecting the design principle that growth OKRs are never treated as a warning.
+Company objectives are shown in a "Company Objectives" section as a **single-objective, ~70%-width centered carousel**, not a static grid — one objective card in view at a time, with a smooth slide animation moving between objectives (`#200029565`, `#200029577`). Each card carries a small category kicker label, the objective title, and a status dot in the top corner. Inside each card, the objective's key results are listed as rows: each KR row has its own status dot, the KR text, and a small cluster of avatar/owner initials showing which individuals are linked to that KR (`#200029149`). A static legend row near the top of the Map view content documents the two link types — solid = "Direct KR link," dashed = "Objective-level" (`#200029034`) — rather than per-connector lines drawn between cards.
+
+Below the carousel sits a 2-card summary strip. The first card reads "Direct KR · N objectives" (the solid-link count); the second reads "Objective-level · N objectives" (the dashed-link count, with example badge text like "Aligns to O3 · People").
 
 **Terminology (resolved 2026-07-15)**: the MVP PRD's original text called the red status "off track"; the reference design mock labels it "Behind." Wording is now aligned on "Behind" across the PRD and this doc, since the mock is the source of truth for status vocabulary.
 
-**Growth on the map (resolved 2026-07-15)**: the map screen stays aggregate-only for growth — it shows just the "Growth · N objectives" summary card, not full growth-objective cards. Full growth-objective cards remain a "My thread" (per-person) concern only. This supersedes the PRD §5 F1 wording that called for a dedicated growth lane on the map screen itself.
+**Growth removed from the map wireframe (2026-07-15, PM decision)**: the summary strip was originally 3 cards, with a third "Growth · N objectives" card. Since Growth OKR lane is cut from MVP scope, that third card is removed rather than kept as an always-empty placeholder.
+
+**AI-generated KR summary (shipped, not originally wireframed)**: `#200029543`/`#200029544` added an AI-generated summary above a KR's check-in history. Confirmed live 2026-09-21. No Problem Exploration / Value Prop / Feature Priority entry exists for this — see `story-tracker.md` "Built beyond original MVP scope" for the flag.
 
 ### 2. Fast capture/edit dialog
 
-A single modal dialog rendered as a centered overlay. It contains a title text input and a select/link field that optionally attaches the objective to a specific KR (direct link) or just to a company objective (objective-level link). Helper text on that field clarifies "leave empty for a growth objective" — one field handles all three link types depending on what is chosen or left blank. The dialog closes with Cancel and Save buttons. Design goal per the PRD: the whole flow takes under 30 seconds.
+A single modal dialog rendered as a centered overlay. It contains a title text input and a select/link field that attaches the objective to a company objective, optionally a specific KR (direct link) or just the objective itself (objective-level link). The dialog closes with Cancel and Save buttons. Design goal per the PRD: the whole flow takes under 30 seconds.
+
+**Growth removed from the capture dialog (2026-07-15, PM decision)**: the field's helper text previously read "leave empty for a growth objective," implying a third link type with no company link at all. That contradicted PRD §6 (every individual Objective requires at least a company-Objective link in MVP) and is removed — the field now only ever produces a direct-KR or objective-level link, matching story 1b's AC.
 
 ### 3. Check-in flow
 
 An inline "quick check-in" panel — not a separate modal. It expands in place, e.g. under an objective/KR card. The panel contains, top to bottom: a row of 5 status dot-selectors for on track / at risk / behind / not started / done, matching the OKR map's status vocabulary exactly; a one-line free-text input prompted "what changed? one line is enough"; a second one-line free-text input prompted "plan for next week"; Save check-in / Cancel buttons; and a small "under 30 seconds" hint text, consistent with the zero-friction design principle.
 
-The "plan for next week" field is a new MVP feature added during Feature Priority and is not yet present in the older reference mock — a deliberate addition beyond what the mock currently shows.
-
-Past check-ins accumulate into a visible history log per objective/KR. The history is read access only and is not part of this quick check-in interaction.
+Past check-ins accumulate into a visible history log per objective/KR, and (as shipped, `#200029543`/`#200029544`) an AI-generated summary now appears above that history — not originally in this wireframe, see Feature Priority note above.
 
 ---
 
@@ -246,21 +253,23 @@ Stories arranged along a user-journey (Activity) axis, in the order a user actua
 
 - **MVP** — As Satoshi, I want to add or edit an OKR in one inline dialog, so that creating one takes under 30 seconds. (F5)
 - **MVP** — As Satoshi, I want my individual objective to link to a company objective (optionally a specific KR), so that alignment is explicit the moment I create it.
-- **Later** — As Satoshi, I want last quarter's OKR pre-filled as a starting draft, so I don't start from a blank page each quarter.
+- **MVP** — As Satoshi, I want to add one or more key results to an objective as free text (with an optional numeric target), so that outcome is captured qualitatively without being forced into a number. (F2)
+- ~~**Later** — As Satoshi, I want last quarter's OKR pre-filled as a starting draft, so I don't start from a blank page each quarter.~~ **Dropped 2026-07-15.**
 
 ### 2. See the whole map
 
 - **MVP** — As Hiroshi, I want to see all company objectives and their KRs on one screen, so I don't have to open each page individually. (F1 core)
 - **MVP** — As Hiroshi, I want solid lines for direct-KR links and dashed lines for objective-level links, so I can see alignment strength at a glance.
 - **MVP** — As Hiroshi, I want an aggregated traffic-light status across all objectives, so I know at a glance which of the 18 products need attention.
-- **MVP** — As Hiroshi, I want a summary strip of direct-KR / objective-level / growth counts, so I get overall alignment health without reading every card.
+- **MVP** — As Hiroshi, I want a summary strip of direct-KR / objective-level counts, so I get overall alignment health without reading every card. *(Growth count excluded 2026-07-15.)*
 - **Later** — As Hiroshi, I want to filter/sort by risk status, so red/yellow items surface first.
-- **Later** — As Hiroshi, I want a board-ready export view, so I stop hand-building a rollup slide.
+- ~~**Later** — As Hiroshi, I want a board-ready export view, so I stop hand-building a rollup slide.~~ **Dropped 2026-07-15.**
 
 ### 3. Drill into my thread
 
 - **MVP** — As Satoshi, I want a "my thread" view of just my own objectives and how they connect upward, so I can focus without the whole map's noise.
 - **MVP** — As Satoshi/Hiroshi, I want to toggle between map view and my-thread view, so I can switch between aggregate and personal perspective.
+- **Later (added 2026-07-15)** — As Hiroshi, I want to search for a specific person by name, so I can jump straight to their objectives without scanning the whole map.
 
 ### 4. Check in on progress
 
@@ -275,221 +284,8 @@ Stories arranged along a user-journey (Activity) axis, in the order a user actua
 
 ---
 
-## Critical Paths
+## Critical Paths & Backlog
 
-*(**The reference point for deciding when e2e fires** — `/story` self-check cross-checks each story against this list to decide whether e2e applies.)*
+**Moved to `documents/story-tracker.md`** (2026-09-21) — that file is now the single source of truth for the backlog, story state, Gherkin AC, chores, "Later" stories, dropped stories, built-beyond-scope items, and the Critical Paths list (the e2e-judgment reference point). It was rebuilt from `git log` + the dev track files, since Tracker Boot itself is retired and this repo's own copy of the backlog had gone stale.
 
-**Definition**: A Critical Path is not a "user journey" — it's the **end-to-end integration spine the product depends on**. It covers user journeys (URL → screen), but also the **data spine** (server integrations like webhook → ingest → DB that a user never directly walks, yet are catastrophic when broken).
-
-**Slot criterion — integration-risk filter**: Only paths whose **core risk lives at an integration point (realtime, transport, webhook, deploy, browser, etc.) that units can't catch** make this list. Pure logic, isolated UI, and simple translate+render are **excluded even if they're user journeys** — units catch those.
-
-> ⚠️ **Inflation boundary**: Once this list starts mirroring the feature list, you're back to "e2e on every story" (the very trap we escaped). Start **conservatively, with just a seed** (usually one), and grow it **only when a regression actually occurs and proves the need**. A backbone journey doesn't earn a slot automatically — it must pass the integration-risk filter.
-
-Format: `**[path name]**: [one-line end-to-end flow] — [e2e spec file path or "none yet"]`
-
-Examples:
-- **cube arrival**: URL open → realtime event received → cube renders on screen — `e2e/cube-arrival.spec.js` *(realtime/transport integration risk — units can't catch it)*
-- *(data spine example: event ingest — webhook → Edge Function → DB load. Not a user journey, but high integration risk makes it a slot candidate)*
-
--
-
----
-
-## Tracker Boot Backlog
-
-**Status**: 12 MVP stories registered in Tracker Boot project 100000292 (2026-07-15).
-
-| Story | ID |
-|-------|----|
-| 1a — Add or edit an OKR in one inline dialog | #200029030 |
-| 1b — Link an individual objective to a company objective on creation | #200029031 |
-| 2a — View all company objectives and their KRs on one screen | #200029032 |
-| 2b — Show solid lines for direct-KR links and dashed lines for objective-level links | #200029034 |
-| 2c — Display aggregated traffic-light status across all objectives | #200029035 |
-| 2d — Show a summary strip of direct-KR / objective-level / growth counts | #200029036 |
-| 3a — View only my own objectives in a "my thread" view | #200029037 |
-| 3b — Toggle between map view and my-thread view | #200029038 |
-| 4a — Set a traffic-light status with a short note on a check-in | #200029039 |
-| 4b — Include a "plan for next week" prompt in the check-in | #200029040 |
-| 4c — View narrative check-in history log per objective | #200029041 |
-| 5a — Organize OKRs by quarter with past quarters read-only | #200029042 |
-
-**e2e judgment (all 12)**: `e2e: none — Critical Paths list is empty; no reference point exists yet. Per aabt-workflow's anti-inflation guidance, don't grow the list speculatively — revisit once a regression or real usage need proves a path belongs there.`
-
-**Estimation flag for IPM**: story 2a (OKR map core screen) is the largest of the 12 — already flagged in Technical Feasibility as the highest-effort item. Consider whether it needs splitting at IPM estimation time (e.g. company-objective-cards-only vs. KR-rows-with-avatar-clusters as a follow-on).
-
----
-
-### 1. Set up an objective
-
-**1a.**
-As Satoshi, I want to add or edit an OKR in one inline dialog, so that creating one takes under 30 seconds.
-
-```gherkin
-Feature: Fast capture and edit of an OKR
-
-  Scenario: Create a new objective in under 30 seconds
-    Given Satoshi has the OKR map open
-    When he opens the new objective dialog, enters a title, and saves
-    Then the objective appears on the map immediately with no further required fields
-
-  Scenario: Edit an existing objective inline
-    Given an objective already exists
-    When Satoshi opens it from the map and changes its title
-    Then the updated title is reflected immediately without a page reload
-```
-
-**1b.**
-As Satoshi, I want my individual objective to link to a company objective (optionally a specific KR), so that alignment is explicit the moment I create it.
-
-```gherkin
-Feature: Individual objective alignment link
-
-  Scenario: A company-level link is required
-    Given Satoshi is creating a new individual objective
-    When he leaves the link field empty and tries to save
-    Then the save is blocked with a message that a company objective link is required
-
-  Scenario: Objective links directly to a KR
-    Given Satoshi is creating a new individual objective
-    When he selects a specific company KR as the link
-    Then the objective is saved with link type "direct KR"
-```
-
-### 2. See the whole map
-
-**2a.**
-As Hiroshi, I want to see all company objectives and their KRs on one screen, so I don't have to open each page individually.
-
-```gherkin
-Feature: OKR map single-screen view
-
-  Scenario: View all company objectives without navigating
-    Given company objectives and their KRs exist for the current quarter
-    When Hiroshi opens the OKR map
-    Then all company objectives and their KRs are visible on one screen with no required navigation into sub-pages
-```
-
-**2b.**
-As Hiroshi, I want solid lines for direct-KR links and dashed lines for objective-level links, so I can see alignment strength at a glance.
-
-```gherkin
-Feature: Visually distinct link types
-
-  Scenario: Direct KR link renders as solid
-    Given an individual objective links directly to a company KR
-    When the map renders that connection
-    Then it displays as a solid, prominent line
-
-  Scenario: Objective-level link renders as dashed
-    Given an individual objective links only to a company objective, with no specific KR
-    When the map renders that connection
-    Then it displays as a dashed, secondary-style line
-```
-
-**2c.**
-As Hiroshi, I want an aggregated traffic-light status across all objectives, so I know at a glance which of the 18 products need attention.
-
-```gherkin
-Feature: Aggregated status across objectives
-
-  Scenario: Company objective shows an owner-set status
-    Given a company objective has multiple KRs with different statuses
-    When Hiroshi views that objective's card on the map
-    Then it shows a single owner-set traffic-light status, not an auto-computed rollup
-```
-
-**2d.**
-As Hiroshi, I want a summary strip of direct-KR / objective-level / growth counts, so I get overall alignment health without reading every card.
-
-```gherkin
-Feature: Alignment summary strip
-
-  Scenario: Summary counts reflect current data
-    Given some individual objectives are direct-KR linked, some are objective-level linked, and some are growth-only
-    When Hiroshi views the map
-    Then the summary strip shows accurate counts for each of the three categories
-```
-
-### 3. Drill into my thread
-
-**3a.**
-As Satoshi, I want a "my thread" view of just my own objectives and how they connect upward, so I can focus without the whole map's noise.
-
-```gherkin
-Feature: My thread view
-
-  Scenario: View only my own objectives
-    Given Satoshi has several individual objectives
-    When he switches to "my thread" view
-    Then only his own objectives and their upward connections are shown, with no other contributors' objectives visible
-```
-
-**3b.**
-As Satoshi/Hiroshi, I want to toggle between map view and my-thread view, so I can switch between aggregate and personal perspective.
-
-```gherkin
-Feature: View toggle
-
-  Scenario: Switch between map and my-thread views
-    Given a user is viewing the OKR map
-    When they select the "my thread" toggle
-    Then the screen switches to the my-thread view without losing the selected quarter
-```
-
-### 4. Check in on progress
-
-**4a.**
-As Satoshi, I want to set a traffic-light status with a short note on why, so progress is expressed qualitatively, not by number.
-
-```gherkin
-Feature: Quick check-in
-
-  Scenario: Save a status and note
-    Given Satoshi is checking in on an objective
-    When he selects a traffic-light status and enters a short note, then saves
-    Then the new status and note appear as the latest entry in that objective's check-in history
-```
-
-**4b.**
-As Satoshi, I want a "plan for next week" prompt in the same check-in, so it helps me plan, not just report upward.
-
-```gherkin
-Feature: Plan-next-week prompt in check-in
-
-  Scenario: Capture a next-week plan alongside the check-in
-    Given Satoshi is filling out a quick check-in
-    When he enters text in the "plan for next week" field and saves
-    Then the plan text is stored alongside that check-in entry
-```
-
-**4c.**
-As Hiroshi, I want the narrative check-in history log per objective, so I have an evidence trail when setting next-term OKRs.
-
-```gherkin
-Feature: Check-in history log
-
-  Scenario: View accumulated check-in history for an objective
-    Given an objective has multiple past check-ins
-    When Hiroshi opens that objective's history log
-    Then all past check-ins are listed in chronological order with their status and note
-```
-
-### 5. Manage quarters
-
-**5a.**
-As Jess, I want OKRs organized by quarter with past quarters read-only, so history is preserved without accidental edits.
-
-```gherkin
-Feature: Quarter framing and read-only history
-
-  Scenario: Past quarter is read-only
-    Given a quarter has ended and a new quarter has started
-    When a user views the past quarter's OKRs
-    Then no edit or check-in controls are available, only viewing
-
-  Scenario: Switch the active quarter
-    Given multiple quarters of data exist
-    When a user selects a different quarter
-    Then the map/thread view updates to show that quarter's objectives
-```
+Keep this document (`product-overview.md`) as the D&F record: vision, personas, problem/feature exploration and priority, technical feasibility, wireframes. Anything backlog- or story-shaped goes in `story-tracker.md` instead.

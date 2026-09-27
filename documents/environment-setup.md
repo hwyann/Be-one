@@ -14,12 +14,12 @@ On `start setup`, Claude reads the table below to brief the current position, an
 
 | Step | Status | Value / note |
 |------|--------|--------------|
-| 1. Tracker Boot project | ✅ | Project ID: 100000292 |
+| 1. Story tracker | ✅ | `documents/story-tracker.md` (replaces Tracker Boot project 100000292, retired 2026-09-21 — see aabt-workflow §3) |
 | 2. GitHub repo | ✅ | hwyann/be-one (private) |
-| 3. Bot access | ✅ | strike-trio-devbot, push access; token in ~/.strike-trio/.env |
+| 3. Bot access | ✅ | strike-trio-devbot, push access; token in ~/.strike-trio/.env. Kept for now (bot-authored PR + human-approve gate, delivery-playbook Steps 3/5) |
 | 4. Deploy hosting | ✅ | striketrio-beone.netlify.app |
 | 5. Local wiring | ✅ | .env.local created; src/lib/supabase.js wired |
-| 6. Verify (first ready) | ✅ | https://striketrio-beone.netlify.app loads |
+| 6. Verify (first background Dev run) | 🔄 | Site + Supabase confirmed live end-to-end 2026-09-21 (paused Supabase project restored; `striketrio-beone.netlify.app` loads, auth works, no console errors). Still ⬜ on the actual point of this step — a full Chip/Dale background-Agent story cycle hasn't run yet under the new (non-`ready-*.command`) launch method. |
 
 Status marks: ⬜ not done · 🔄 in progress · ✅ done
 
@@ -37,7 +37,7 @@ Status marks: ⬜ not done · 🔄 in progress · ✅ done
 
 *(Claude fills these in as each step is confirmed.)*
 
-- **Tracker Boot Project ID**: 100000292
+- **Story tracker**: `documents/story-tracker.md` (Tracker Boot project 100000292 retired 2026-09-21)
 - **GitHub repo**: `hwyann/be-one`
 - **Deploy hosting**: `striketrio-beone.netlify.app`
 - **Production URL**: https://striketrio-beone.netlify.app

@@ -10,7 +10,7 @@ After an IPM or after the previous Accept is complete, the cycle starts when PM 
 
 ### Step 1 — Story Assignment
 
-Claude pulls the next story from the Tracker Boot backlog and writes **only the number, title, and a track directive** into the `## Current Story` section of `documents/tracks/dev-chip.md` or `documents/tracks/dev-dale.md`. Don't copy-paste the details, AC, Gherkin, or TDD — **the source of truth is the tracker, and the Dev reads the details and AC with `tb_get_story` when starting the story.** Keeping a copy in the track file becomes a source of drift against the tracker.
+Claude pulls the next story from `documents/story-tracker.md` and writes **only the number, title, and a track directive** into the `## Current Story` section of `documents/tracks/dev-chip.md` or `documents/tracks/dev-dale.md`. Don't copy-paste the details, AC, Gherkin, or TDD — **the source of truth is `story-tracker.md`, and the Dev sub-agent reads the details and AC directly from that file when starting the story.** Keeping a copy in the track file becomes a source of drift against the tracker.
 
 ```markdown
 ### #[number] — [title]
@@ -18,13 +18,14 @@ Claude pulls the next story from the Tracker Boot backlog and writes **only the 
 **Track directive**: [a one-line scope this track will own — so files don't overlap with the other Dev]
 ```
 
-Double-click `commands/ready-chip.command` or `commands/ready-dale.command`. Claude Code launches, automatically resets the branch to the latest main, and sends the `dev-chip start` or `dev-dale start` trigger.
+Claude (PM session) launches Chip or Dale with the Agent tool (`run_in_background: true`), pointing it at the track file and the story entry in `story-tracker.md`. It runs in the background — no manual branch reset, no `ready-chip.command`/`ready-dale.command` double-click.
 
-The Dev track automatically:
+The Dev sub-agent automatically:
 - Reads the track file and confirms the story
-- Marks the story as **Started** in Tracker Boot
+- Marks the story's state as **Started** in `story-tracker.md`
 - Begins the TDD cycle (Red → Green → Refactor → Push)
-- Marks the story as **Finished** in Tracker Boot before pushing
+- Marks the story's state as **Finished** in `story-tracker.md` before pushing
+- Reports back to the PM session when it completes, blocks, or needs an architecture/priority decision
 
 ---
 
@@ -42,16 +43,16 @@ Claude presents the preview URL and check points. **The URL must be a clickable 
 
 > **If a screen change isn't showing, suspect a stale deploy first.** A PaaS whose preview trigger lives in an external dashboard (e.g., Netlify) can't guarantee deploy completion in code. Before digging into the CSS or code, re-trigger the preview with an empty commit (`git commit --allow-empty`) or a redeploy to confirm you're on the latest bundle first.
 
-- **If there are issues** → PM describes the feedback. Claude **comments on the current story with `tb_create_comment`** (not the track file). PM types **"read the comments on #[number] and apply them"** in the Dev session. → The home of feedback is the Tracker Boot comment. The act of writing the comment is itself the feedback signal, so a missing one surfaces immediately (no separate emit to remember).
-- **If all looks good** → Claude **instructs PM to type "PR it" in the Dev session**. Creating a PR is the Dev's (author's) act, not a PM double-click stand-in.
+- **If there are issues** → PM describes the feedback. Claude **appends it as a dated note under that story's entry in `story-tracker.md`** (not the track file). PM tells Claude to resume the Dev sub-agent with **"read the notes on #[number] and apply them."** → The home of feedback is the story-tracker note. The act of writing the note is itself the feedback signal, so a missing one surfaces immediately (no separate emit to remember).
+- **If all looks good** → Claude **resumes the Dev sub-agent with "PR it."** Creating a PR is the Dev's (author's) act, not a PM double-click stand-in.
 
-> Preview feedback stays in the **Tracker Boot comment** as above. Only code-review findings go to the PR review in Step 4 — the two have different homes.
+> Preview feedback stays as a **story-tracker.md note** as above. Only code-review findings go to the PR review in Step 4 — the two have different homes.
 
 ---
 
 ### Step 3 — Create PR (bot identity)
 
-When the PM says **"PR it"** in the Dev session, the Dev runs `bash commands/pr.sh <track>` to open a PR **under the bot account**. With the bot as the PR author, the PM can approve with their own account (the precondition for the Step 5 merge gate), and the AABT structure ("AI writes, human approves") stays honest in the history. If it's refused for lack of a token, the Dev notifies the PM (no un-botted PR is silently opened). Paste the PR result (number, URL) into the PM session.
+When the PM tells the Dev sub-agent **"PR it,"** it runs `bash commands/pr.sh <track>` to open a PR **under the bot account**. With the bot as the PR author, the PM can approve with their own account (the precondition for the Step 5 merge gate), and the AABT structure ("AI writes, human approves") stays honest in the history. If it's refused for lack of a token, the Dev notifies the PM (no un-botted PR is silently opened). Paste the PR result (number, URL) into the PM session.
 
 ---
 
@@ -66,7 +67,9 @@ Claude only decides the verdict (pass/changes-needed). **The act of leaving it i
 - **Changes needed** → Claude writes the body of the findings into `.review-body.md`, and the PM **double-clicks `decline-chip.command` or `decline-dale.command`** — the command shows the body and submits `request-changes` only after a "submit as-is? (y/n)" confirmation (the human makes the submit decision = HITL). Dev trigger to receive it: **"read the review on PR #[number] and apply it"** → the Dev reads it via `gh pr view <N> --json reviews` and applies it.
 - **Approved** → the PM **double-clicks `approve-chip.command` or `approve-dale.command`** to approve (a pass has no body — a review-free double-click; the Step 5 merge gate requires this approval). **approve produces no screen output, so there's nothing to paste** — never ask to "paste the approve result". Move straight to Step 5 merge; the artifact to paste is that merge result.
 
-> **The home of code-review findings = the PR review** (different from the Tracker Boot comment, which is the home of preview feedback). Reason: the merge approve gate (`reviewDecision == APPROVED`) hangs on the PR review, so the code-review verdict must live there as a PR review for the gate to work. A Tracker Boot comment can't flip the gate. **Preview feedback = Tracker Boot comment / code-review findings = PR review** — the two channels split.
+> **The home of code-review findings = the PR review** (different from the story-tracker note, which is the home of preview feedback). Reason: the merge approve gate (`reviewDecision == APPROVED`) hangs on the PR review, so the code-review verdict must live there as a PR review for the gate to work. A story-tracker note can't flip the gate. **Preview feedback = story-tracker.md note / code-review findings = PR review** — the two channels split.
+>
+> **Codex plugin, later**: this step (Claude reading the diff and deciding pass/changes-needed) is a placeholder for the Codex plugin once it's wired in — Codex takes over the diff review, Claude/PM still owns the human-approve action. Until then it's manual, as described below.
 
 ---
 
@@ -76,7 +79,7 @@ PM double-clicks `merge-chip.command` or `merge-dale.command` and pastes the res
 
 - **Approve gate** → the merge command refuses the merge unless `reviewDecision` is `APPROVED` (it passes only after the PM approved with their own account in Step 4). A missing review is caught immediately at the command level — this gate works only because the author is the bot.
 - **Conflict** → Claude (PM session) reads both branches, compares the intent of each change, and resolves directly.
-- **Success** → The merge goes to main (= acceptance) — **production does not change.** Mark the story as **Delivered** in Tracker Boot and present check points on the **acceptance URL** (prod mirror), not the preview. Proceed to Step 6.
+- **Success** → The merge goes to main (= acceptance) — **production does not change.** Mark the story's state as **Delivered** in `story-tracker.md` and present check points on the **acceptance URL** (prod mirror), not the preview. Proceed to Step 6.
 
 ---
 
@@ -88,7 +91,7 @@ Claude presents the **acceptance URL** (prod mirror) and check points. PM opens 
 
 If all looks good, PM says **"Accept"**. Claude immediately:
 
-1. Updates the story to **Accepted** in Tracker Boot
+1. Updates the story's state to **Accepted** in `story-tracker.md`
 2. Updates the track file:
    - Adds `- #[number] — [title]` to `## Completed Stories`
    - Clears the entire `## Current Story` section

@@ -1,19 +1,19 @@
-# Strike Trio Workflow — Team Operations Playbook
+# Be-one Workflow — Team Operations Playbook
 
-*Bekind Labs Standard · Strike Trio*
-*Last updated: 2026-07-01*
+*Bekind Labs Standard · AABT, without the Strike Trio skill*
+*Last updated: 2026-09-21*
 
 ---
 
-## Strike Trio
+## How this project runs
 
-A skill that lets a trio — one PM and two AI agents — work as a full Balanced Team. A concrete set of processes and tools for practicing AABT — leading AI to continuously deliver high-quality software.
+One PM (Jess) and two AI dev tracks (Chip / Dale), practicing AABT — leading AI to continuously deliver high-quality software. As of 2026-09-21 this runs as **plain Claude Code**, not the Strike Trio skill: no `ready-*.command` triggers, no Tracker Boot, no Tobi. Chip and Dale are launched as **background sub-agents from this same PM session** (via the Agent tool) instead of separate double-clicked sessions — see §1.
 
 ---
 
 ## Purpose of This Document
 
-The standard workflow for building products the Strike Trio way. Defines every phase from vision to deployment, and how the team operates. Reading this document at the start of a new project or session gives you the full picture.
+The standard workflow for building Be-one. Defines every phase from vision to deployment, and how the team operates. Reading this document at the start of a new project or session gives you the full picture.
 
 ---
 
@@ -24,20 +24,19 @@ The standard workflow for building products the Strike Trio way. Defines every p
 | Role | Filled by | Description |
 |------|-----------|-------------|
 | **PM** | Human | Decides product direction, writes stories, makes Accept decisions, relays between tracks |
-| **Dev A** | AI agent (Claude) | Dedicated development of an independent scope |
-| **Dev B** | AI agent (Claude) | Dedicated development of an independent scope |
+| **Dev A (Chip)** | AI agent (Claude, background sub-agent) | Dedicated development of an independent scope |
+| **Dev B (Dale)** | AI agent (Claude, background sub-agent) | Dedicated development of an independent scope |
 
 There is no QA role in AABT. Quality is ensured by TDD (unit tests) and PM Accept. The absence of a QA lane is itself a methodological statement.
 
 ### Session Structure
 
-Each role runs in a separate Claude session.
+- **PM session** (this session, foreground): All of Discovery & Framing, story management, preview checks, code review, merge approval. This is where Jess talks to Claude.
+- **Chip / Dale** (background sub-agents): Launched from the PM session with the Agent tool when a story is ready — each one reads its track file (`documents/tracks/dev-chip.md` / `documents/tracks/dev-dale.md`), works its scope, and reports back when it finishes (push, PR, blocker). No separate terminal windows, no `ready-*.command` files.
 
-- **PM session**: All of Discovery & Framing, IPM, story management, preview checks, code review, merge approval
-- **Dev A session**: `dev-[dev-a-name] start` trigger from `CLAUDE.md` → reads `documents/tracks/dev-[dev-a-name].md` and begins
-- **Dev B session**: `dev-[dev-b-name] start` trigger from `CLAUDE.md` → reads `documents/tracks/dev-[dev-b-name].md` and begins
-
-> **Rule**: Each Dev session is dedicated to development only. For architecture decisions or priority changes, ask the PM session.
+> **Rule**: A Dev sub-agent is dedicated to development only, for the one story it was launched with. For architecture decisions or priority changes, that's a PM-session (foreground) decision, not something a Dev sub-agent resolves on its own — it should surface the question back and pause.
+>
+> **Track independence still applies.** Chip and Dale run concurrently in the background; if their file scopes overlap, you get real merge conflicts. Keep scopes disjoint per track when assigning stories (same rule as before — see delivery-playbook "Exception — Merge Conflict").
 
 ---
 
@@ -58,7 +57,7 @@ Vision
                           └─ Technical Feasibility Review
                               └─ Wireframes
                                   └─ Story Mapping
-                                      └─ Tracker Boot Backlog
+                                      └─ Story Tracker Backlog
 ```
 
 ### Phase Descriptions
@@ -115,30 +114,28 @@ When each stage is complete, Claude immediately does the following:
 | Technical Feasibility | Number of issues (or "No issues") |
 | Wireframes | Complete |
 | Story Mapping | Complete |
-| Tracker Boot Backlog | Number of stories registered |
+| Story Tracker Backlog | Number of stories added to `documents/story-tracker.md` |
 
 ---
 
-## 3. Tracker Boot & IPM
+## 3. Story Tracker & IPM
 
-### Tracker Boot
+### Story Tracker
 
-A user story and Gherkin AC tracker built by Bekind Labs, carrying Pivotal Tracker's DNA and optimized for Strike Trio. → [trackerboot.com](https://trackerboot.com)
+`documents/story-tracker.md` is the backlog and AC source of truth — replaces Tracker Boot (retired 2026-09-21). Plain markdown, one file, git-tracked like every other project doc (no separate tool, no separate login).
 
 - **Story state flow**: Unstarted → Started → Finished → Delivered → Accepted
 - **Chore state flow**: Unstarted → Started → Accepted
 
-### Tobi
+State lives as a `**State**:` field per story in that file. Updating it is a normal Edit — same persistence rule as any other git-tracked doc (see "Document Persistence Rule" in `CLAUDE.md`).
 
-Tracker Boot's AI bot. Invaluable for story refinement before IPM, but available to answer anything anytime.
-
-🎵 [Tobi Song](https://youtu.be/Vt9iQPDV_iQ?si=qOTtOfwyi4fNg_rB)
+There is no Tobi-equivalent automated review step. Story quality is self-checked against the `/story` checklist in §4 below — the PM (Jess, with Claude) is the reviewer.
 
 ### Post-D&F → Pre-Development Flow
 
 ```
 Story mapping complete
-  └─ Register user stories in Tracker Boot
+  └─ Add user stories to documents/story-tracker.md
       └─ IPM — select iteration stories + assign to tracks
           └─ Track assignment — PM writes stories into each Dev track file
               └─ "start dev" → infrastructure setup Chores → development begins
@@ -210,7 +207,7 @@ Feature: [feature name]
 
 ### Story Types
 
-| Type | Description | Tracker Boot State Flow |
+| Type | Description | Story Tracker State Flow |
 |------|-------------|------------------------|
 | Feature | New functionality | Unstarted → Started → Finished → Delivered → Accepted |
 | Bug | Bug fix | Unstarted → Started → Finished → Delivered → Accepted |
@@ -237,18 +234,18 @@ Feature: [feature name]
 - `e2e: regression — [path]` — it **touches the behavior of an existing critical path.** Confirm the existing e2e suite passes before pushing (don't write a new one).
 - `e2e: none — [reason]` — it crosses no critical path (pure logic, isolated UI, etc.). Unit only.
 
-**3. Register in tracker** — Use `tb_create_story` to register into **Pre-IPM**. Put the three parts verbatim in the Why (description) section. Only register stories that pass the self-check.
+**3. Add to the tracker** — Add the story as a new entry (or new row + detail section) in `documents/story-tracker.md`, state `Unstarted`, three parts verbatim, at least one Gherkin scenario, the `e2e:` field. Only add stories that pass the self-check.
 
-**4. Tobi review** — Tobi's role is *verification*, not *correction*. Since only self-checked stories arrive, Tobi rarely has to repeat the same notes (missing As / I want / so that, etc.).
+**4. PM review** — Since only self-checked stories are added, review is quick: skim for the same things Tobi used to catch (missing As / I want / so that, vague persona, implementation-detail action). This is a PM (Jess + Claude, foreground) judgment call, not a separate tool.
 
-#### Draft → Register → Review Flow (after story mapping)
+#### Draft → Add → Review Flow (after story mapping)
 
-Don't dump all the stories from story mapping onto Tobi at once. If the units are imprecise, you only inflate Tobi's review burden.
+Don't dump every story from story mapping into the tracker unreviewed. If the units are imprecise, review burden piles up later instead of now.
 
 1. Write each derived story as a **draft** and run it through the self-check.
-2. Register into **Pre-IPM** and get Tobi's review.
-3. Bring Tobi's notes into the PM track for discussion → finalize the changes → hand back to Tobi.
-4. Once Pre-IPM is done, **estimate** each story one by one in **IPM** and move it to the backlog.
+2. Add it to `story-tracker.md` under a clearly marked draft/Unstarted state.
+3. PM reviews, discusses any notes, finalizes the wording directly in the file.
+4. Once a batch is done, **estimate** each story (rough points, if useful) during IPM and confirm build order.
 
 ---
 
@@ -310,7 +307,7 @@ Example: `feat: update calendar event on guest edit (#200023982)`
 
 **E2E tests** (`{{E2E_TOOL}}`, e.g., Playwright/Cypress/Cucumber): verify a user journey works end-to-end for real (routing, real DB, browser, realtime — the integration points unit tests can't see). Because they're slow, they run **once right before push**, not on every commit, and **only on stories that touch a critical path**, not on all stories.
 
-> **Whether to add a glue layer is a trade-off the tenant weighs — the methodology does not prescribe it.** Laying a Gherkin↔code glue layer (e.g. Cucumber) and running `{{E2E_TOOL}}` standalone each have a cost and a value. One side is **DRY** — the source of truth for AC is the Tracker Boot story, so glue duplicates the Gherkin into code too. The other is a **living executable spec** — scenarios wired straight to code, alive, and coherent with BDD being the methodology's standard language (Cucumber is Gherkin's native runner). On a project with few e2e, standalone-without-glue is often the lighter choice — but that's a **judgment call, not a rule**. The tool and the glue decision are both the tenant's; the skill only guarantees that choice through the `{{E2E_TOOL}}` placeholder, and never steers toward one tool.
+> **Whether to add a glue layer is a trade-off the tenant weighs — the methodology does not prescribe it.** Laying a Gherkin↔code glue layer (e.g. Cucumber) and running `{{E2E_TOOL}}` standalone each have a cost and a value. One side is **DRY** — the source of truth for AC is the `story-tracker.md` entry, so glue duplicates the Gherkin into code too. The other is a **living executable spec** — scenarios wired straight to code, alive, and coherent with BDD being the methodology's standard language (Cucumber is Gherkin's native runner). On a project with few e2e, standalone-without-glue is often the lighter choice — but that's a **judgment call, not a rule**. The tool and the glue decision are both the tenant's; the skill only guarantees that choice through the `{{E2E_TOOL}}` placeholder, and never steers toward one tool.
 
 - **Timing**: before push (right before sending to the remote). Not on commit — commits are frequent local checkpoints, a poor fit for slow e2e.
 - **Condition**: follows the story's `e2e:` annotation. `new` → write the e2e for that path red-first, `regression` → confirm the existing suite passes, `none` → don't run it.
@@ -334,26 +331,27 @@ Example: `feat: update calendar event on guest edit (#200023982)`
     coding-standards.md            ← coding standards
     glossary.md                    ← project term definitions
     iteration-plan.md              ← decision log
+    story-tracker.md               ← backlog, story state, Gherkin AC, Critical Paths (replaces Tracker Boot)
     product/
-      product-overview.md          ← vision, personas, VPs, Critical Paths
+      product-overview.md          ← vision, personas, VPs (D&F record; no longer holds backlog)
     tracks/
-      dev-[dev-a-name].md          ← Dev A instructions (PM writes, symlink)
-      dev-[dev-b-name].md          ← Dev B instructions (PM writes, symlink)
+      dev-chip.md                  ← Chip instructions (PM writes; Chip sub-agent reads on launch)
+      dev-dale.md                  ← Dale instructions (PM writes; Dale sub-agent reads on launch)
   src/                             ← source code
   tests/
     unit/
     e2e/
   commands/
-    ready-[dev-a-name].command     ← start a Dev session (per track)
-    ready-[dev-b-name].command
     pr.sh                          ← bot-authored PR
-    approve-[dev].command / decline-[dev].command  ← code-review gate
+    approve-[dev].command / decline-[dev].command  ← code-review gate (manual for now — Codex plugin takes this over later)
     merge-[dev].command            ← merge with approve gate
     push-docs.command              ← persist PM docs
   .github/workflows/
     promote.yml                    ← auto-publish to production after Accept
 ```
 
+*(`ready-chip.command`/`ready-dale.command` are retired — Chip/Dale no longer need a double-clicked launcher; the PM session launches them directly as background sub-agents.)*
+
 ---
 
-*This document is the operational standard for Bekind Labs' AABT methodology. Extend it as needed per project, but maintain the core principles: TDD, PM Accept, and track independence.*
+*This document is the operational standard for Bekind Labs' AABT methodology, run as plain Claude Code (no Strike Trio skill). Extend it as needed per project, but maintain the core principles: TDD, PM Accept, and track independence.*
