@@ -418,6 +418,7 @@ Feature: Unified drill-down modal for individual objectives
 | B19 | After confirming an OKR, the viewer could still reopen it and edit title/KRs/Coach-me — no real "locked" state for the quarter | Feature | **Accepted** (merged direct to `main` `c1cf87a`, no PR/review — demo-build process, 2026-09-27). Same commit as B18. No schema change — reuses the `status` column from migration 0010. | none | PM (direct) |
 | B20 | "+ Add objective" disappeared on a brand-new quarter with only an unconfirmed draft, with no way back into the modal to finish it | Bug | **Accepted** (merged direct to `main` `f3ef981`, no PR/review — demo-build process, 2026-09-27). Found by Jess live-testing a real "+ New quarter" → draft → stuck flow. | none | PM (direct) |
 | B21 | A reloaded draft's already-saved key result had no way to fix a typo — no Remove (by design) and no Edit either | Bug | **Accepted** (merged direct to `main` `dadaa81`, no PR/review — demo-build process, 2026-09-27). Found by Jess live-testing the B20 fix on Q2 2027. | none | PM (direct) |
+| B22 | "My thread" view/heading framing, drill-down as a centered modal, cards missing own KRs and an explicit company-OKR label | Feature | **Accepted** (merged direct to `main` `eecc5b2`, no PR/review — demo-build process, 2026-09-27). Built by a background sub-agent in an isolated worktree; Codex-reviewed before merge (see note below). | none | PM (background sub-agent + Codex review) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -592,6 +593,34 @@ Feature: Edit an existing key result on a reloaded draft
     Then it still shows Remove as before — Edit only applies to already-persisted ones
 ```
 `e2e: none`. Found live: after B20 shipped, Jess could see her reloaded draft's key result again but it rendered as flat text with nothing to click — the title/alignment fields were already editable, but the KR row itself never had an edit path in the original B18 implementation. Implementation: `ObjectiveDraftFields` (`OkrDialog.jsx`) gained local `editingKrIndex` state and an `onEditExistingKr` callback; `OkrDialog`'s `handleEditExistingKr` calls `useKrMutation().update` and reflects the result back into `objectiveDrafts`.
+
+**B22 — "My OKR" reframe: rename, drawer drill-down, richer cards**
+As Satoshi, I want My Thread to read as "my OKR" (not a feed), open my objective in a side panel instead of a blocking modal, and see my own key results plus a clear label for what it's linked to, right on the card.
+
+```gherkin
+Feature: My OKR view rename, drawer drill-down, and richer cards
+
+  Scenario: View toggle and heading renamed
+    Given the member is on the My Thread screen
+    Then the view-toggle button reads "My OKR" and the section heading reads "My Current OKR" in a visibly larger font than before
+
+  Scenario: Drill-down opens as a right-side drawer, not a centered modal
+    Given the member clicks an OKR card
+    Then a panel slides in anchored to the right edge, roughly 30% of the viewport width, with the same content and functionality as before
+
+  Scenario: Drawer closes via an X, not Cancel/Close text buttons
+    Given the drawer is open and not in the mandatory empty-state prompt
+    Then a close (×) control is available and closes it; the old Cancel/Close footer buttons are gone
+    Given the drawer is the mandatory empty-state prompt (#B15)
+    Then the close (×) control is hidden, same as Cancel was hidden before
+
+  Scenario: Cards show the objective's own key results and an explicit link label
+    Given an OKR card is rendered on My Thread
+    Then its own key results (title + target note when present) are listed on the card, and any company-OKR alignment is prefixed with "Linked to Company OKR: " instead of an arrow glyph
+```
+`e2e: none`. Implementation: `OkrMapPage.jsx` (view-toggle label only — the internal `'my-thread'` view id is untouched), `MyThreadPage.jsx` (heading text/size, "Linked to Company OKR: " label, own-KR list rendered as a sibling of the card's `<button>` — not a descendant, see the Codex finding below), `OkrDialog.jsx` (`cardStyle` converted from a centered card to a `position:fixed; top:0; right:0; height:100vh; width:30%; minWidth:360px` drawer; header × button with `aria-label="Close"`, hidden when `mandatory`; the old footer Cancel and confirmed-view Close buttons removed since the × is now the only close affordance).
+
+**Process note — first use of background sub-agent + Codex review this project**: Jess asked for this batch to be built by a background sub-agent and reviewed by Codex before merge, rather than the PM session editing directly (the pattern for B14–B21). Sequence: PM created an isolated git worktree (`~/Documents/Claude/Worktrees/be-one-ux-refactor`, branch `ux-my-okr-refactor`, off `main`) since the Agent tool's built-in worktree isolation requires the PM shell to already be inside the repo, which it isn't (Vault-rooted session); launched a `claude`-type background sub-agent scoped to that worktree with the full spec + this project's testing/commit conventions; sub-agent implemented all four changes, updated the ~40 existing tests referencing the old "My thread" label, added new coverage, and committed once `npm test`/`lint`/`build` were clean (439/439). PM then ran `codex review --base main` (Codex CLI, ChatGPT auth, already configured on this machine) against the sub-agent's commit — one finding: **[P2] a `<ul>` of key results was nested inside a `<button>` in `MyThreadPage.jsx`, which violates the button content model** (buttons may only contain phrasing content) and could expose the list inconsistently to assistive tech. PM fixed it directly (moved the KR list to a sibling of the button within the same `<li>` — same visual result, valid structure), re-verified 439/439 green, then fast-forward-merged the worktree branch into `main` and pushed. Worktree and branch removed after merge.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
