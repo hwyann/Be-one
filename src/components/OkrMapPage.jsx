@@ -9,6 +9,7 @@ import useRequestQuarterReview from '../hooks/useRequestQuarterReview'
 import useViewMode from '../hooks/useViewMode'
 import ObjectiveCarousel from './ObjectiveCarousel'
 import OkrDialog from './OkrDialog'
+import CompanyOkrDialog from './CompanyOkrDialog'
 import Toast from './Toast'
 import MyThreadPage from './MyThreadPage'
 import { VIEWER_OWNER_NAME } from '../lib/viewer'
@@ -116,8 +117,26 @@ export default function OkrMapPage() {
   // follow-up) — a right-side panel, same design as a member's own
   // "My OKR" detail view, just read-only (see managerReview on OkrDialog).
   const [selectedMemberObjective, setSelectedMemberObjective] = useState(null)
+  // Manager's Map-view "set the Company OKR" panel (#B30) — shares the
+  // same right-column slot as selectedMemberObjective above; the two are
+  // mutually exclusive (see selectMember/openCompanyDialog below).
+  const [companyDialogOpen, setCompanyDialogOpen] = useState(false)
   const autoOpenedQuarterRef = useRef(null)
+  const autoOpenedCompanyQuarterRef = useRef(null)
   const prevQuarterIdRef = useRef(quarterId)
+
+  // Opens the member-detail panel and makes sure it's never shown at the
+  // same time as the Company OKR panel (#B30) — both live in the same
+  // right-column slot on the Map.
+  function selectMember(member) {
+    setCompanyDialogOpen(false)
+    setSelectedMemberObjective(member)
+  }
+
+  function openCompanyDialog() {
+    setSelectedMemberObjective(null)
+    setCompanyDialogOpen(true)
+  }
 
   useEffect(() => { setCarouselIndex(0) }, [quarterId])
 
@@ -134,6 +153,7 @@ export default function OkrMapPage() {
       prevQuarterIdRef.current = quarterId
       setDialogState(null)
       setSelectedMemberObjective(null)
+      setCompanyDialogOpen(false)
     }
   }, [quarterId])
 
@@ -165,6 +185,27 @@ export default function OkrMapPage() {
     viewMode, view, loading, individualLoading, isPastQuarter, canCreate,
     objectives, individualObjectives, dialogState, quarterId,
   ])
+
+  // Empty-state nudge for Company OKR itself (#B30): "+ New quarter"
+  // normally clones the previous quarter's Company OKR (useCreateQuarter.js)
+  // so this doesn't usually fire, but it covers the quarter that has
+  // nothing to clone from (the very first quarter ever, or a source
+  // quarter that itself had none) — and any other quarter a Manager
+  // switches to that happens to have no Company OKR set yet. Fires once
+  // per quarter (ref-gated), same pattern as the member empty-state nudge
+  // above; a Manager who dismisses it can still reach the form again via
+  // the persistent "+ Add company objective" button.
+  useEffect(() => {
+    if (viewMode !== 'manager' || view !== 'map') return
+    if (loading) return
+    if (isPastQuarter) return
+    if (objectives.length > 0) return
+    if (companyDialogOpen) return
+    if (autoOpenedCompanyQuarterRef.current === quarterId) return
+
+    autoOpenedCompanyQuarterRef.current = quarterId
+    setCompanyDialogOpen(true)
+  }, [viewMode, view, loading, isPastQuarter, objectives, companyDialogOpen, quarterId])
 
   if (loading) return <div>Loading...</div>
   if (error) return <p role="alert">{error}</p>
@@ -227,6 +268,12 @@ export default function OkrMapPage() {
     setToastMessage(`Requested all members to review their OKR for ${currentQuarter?.name ?? 'this quarter'}.`)
   }
 
+  function handleCompanyOkrSaved() {
+    refetch()
+    setCompanyDialogOpen(false)
+    setToastMessage('Company OKR saved.')
+  }
+
   return (
     <div style={{ minWidth: '980px', padding: '24px' }}>
       <div style={{
@@ -282,42 +329,61 @@ export default function OkrMapPage() {
           </button>
           <ViewModeToggle viewMode={viewMode} onChange={setViewMode} managerDisabled={mandatoryOpen} />
         </div>
-        {view === 'my-thread' && !isPastQuarter && !hasConfirmedThisQuarter && (
-          <button
-            type="button"
-            onClick={() => setDialogState({})}
-            style={{
-              font: '600 13px var(--font-display)',
-              padding: '8px 14px',
-              borderRadius: '10px',
-              border: '1px solid var(--hairline)',
-              background: 'var(--surface)',
-              color: 'var(--ink-900)',
-              cursor: 'pointer',
-            }}
-          >
-            + Add objective
-          </button>
-        )}
-        {viewMode === 'manager' && (
-          <button
-            type="button"
-            onClick={handleRequestReview}
-            disabled={requestingReview}
-            style={{
-              font: '600 13px var(--font-display)',
-              padding: '8px 14px',
-              borderRadius: '10px',
-              border: '1px solid var(--hairline)',
-              background: 'var(--surface)',
-              color: 'var(--ink-900)',
-              cursor: requestingReview ? 'default' : 'pointer',
-              opacity: requestingReview ? 0.6 : 1,
-            }}
-          >
-            {reviewRequested ? 'Re-request OKR review' : 'Request all members to review OKR'}
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {view === 'my-thread' && !isPastQuarter && !hasConfirmedThisQuarter && (
+            <button
+              type="button"
+              onClick={() => setDialogState({})}
+              style={{
+                font: '600 13px var(--font-display)',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--hairline)',
+                background: 'var(--surface)',
+                color: 'var(--ink-900)',
+                cursor: 'pointer',
+              }}
+            >
+              + Add objective
+            </button>
+          )}
+          {viewMode === 'manager' && view === 'map' && (
+            <button
+              type="button"
+              onClick={openCompanyDialog}
+              style={{
+                font: '600 13px var(--font-display)',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--hairline)',
+                background: 'var(--surface)',
+                color: 'var(--ink-900)',
+                cursor: 'pointer',
+              }}
+            >
+              + Add company objective
+            </button>
+          )}
+          {viewMode === 'manager' && (
+            <button
+              type="button"
+              onClick={handleRequestReview}
+              disabled={requestingReview}
+              style={{
+                font: '600 13px var(--font-display)',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: '1px solid var(--hairline)',
+                background: 'var(--surface)',
+                color: 'var(--ink-900)',
+                cursor: requestingReview ? 'default' : 'pointer',
+                opacity: requestingReview ? 0.6 : 1,
+              }}
+            >
+              {reviewRequested ? 'Re-request OKR review' : 'Request all members to review OKR'}
+            </button>
+          )}
+        </div>
       </div>
       {view === 'map' ? (
         <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
@@ -333,12 +399,22 @@ export default function OkrMapPage() {
                 onKrSaved={refetch}
                 readOnly={isPastQuarter}
                 viewMode={viewMode}
-                onSelectMember={setSelectedMemberObjective}
+                onSelectMember={selectMember}
                 selectedMemberId={selectedMemberObjective?.id}
               />
             )}
           </div>
-          {viewMode === 'manager' && selectedMemberObjective && (
+          {viewMode === 'manager' && companyDialogOpen && (
+            <div style={{ width: '30%', minWidth: '360px', flexShrink: 0, position: 'sticky', top: 0 }}>
+              <CompanyOkrDialog
+                quarterId={quarterId}
+                quarterName={currentQuarter?.name}
+                onSaved={handleCompanyOkrSaved}
+                onClose={() => setCompanyDialogOpen(false)}
+              />
+            </div>
+          )}
+          {viewMode === 'manager' && !companyDialogOpen && selectedMemberObjective && (
             <div style={{ width: '30%', minWidth: '360px', flexShrink: 0, position: 'sticky', top: 0 }}>
               <OkrDialog
                 key={selectedMemberObjective.id}

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   useRequestQuarterReview: vi.fn(),
   OkrDialog: vi.fn(),
   MyThreadPage: vi.fn(),
+  CompanyOkrDialog: vi.fn(),
 }))
 
 vi.mock('../../src/hooks/useCompanyObjectives', () => ({
@@ -49,6 +50,10 @@ vi.mock('../../src/components/MyThreadPage', () => ({
   default: (props) => mocks.MyThreadPage(props),
 }))
 
+vi.mock('../../src/components/CompanyOkrDialog', () => ({
+  default: (props) => mocks.CompanyOkrDialog(props),
+}))
+
 import OkrMapPage from '../../src/components/OkrMapPage'
 
 const objectives = [
@@ -72,6 +77,7 @@ describe('OkrMapPage', () => {
     vi.clearAllMocks()
     mocks.OkrDialog.mockReturnValue(<div data-testid="okr-dialog" />)
     mocks.MyThreadPage.mockReturnValue(<div data-testid="my-thread" />)
+    mocks.CompanyOkrDialog.mockReturnValue(<div data-testid="company-okr-dialog" />)
     mocks.useIndividualObjectives.mockReturnValue({
       objectives: [],
       loading: false,
@@ -713,6 +719,115 @@ describe('OkrMapPage', () => {
       const { onClose } = mocks.OkrDialog.mock.calls.at(-1)[0]
       act(() => { onClose() })
       expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Company OKR empty-state panel on the Map (#B30)', () => {
+    it('auto-opens the Company OKR panel when a Manager is on Map view and the quarter has no company objectives', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: [], loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByTestId('company-okr-dialog')).toBeInTheDocument()
+    })
+
+    it('does not auto-open in Member view even with no company objectives', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: [], loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('does not auto-open when there are already company objectives', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('does not reopen automatically after the Manager closes it for the same quarter', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: [], loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByTestId('company-okr-dialog')).toBeInTheDocument()
+      const { onClose } = mocks.CompanyOkrDialog.mock.calls.at(-1)[0]
+      act(() => { onClose() })
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('lets the Manager reopen it via the persistent "+ Add company objective" button after dismissing it', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: [], loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      const { onClose } = mocks.CompanyOkrDialog.mock.calls.at(-1)[0]
+      act(() => { onClose() })
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /add company objective/i }))
+      expect(screen.getByTestId('company-okr-dialog')).toBeInTheDocument()
+    })
+
+    it('does not render the "+ Add company objective" button in Member view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByRole('button', { name: /add company objective/i })).not.toBeInTheDocument()
+    })
+
+    it('opening the Company OKR panel while a member right panel is open closes the member panel (mutually exclusive slot)', () => {
+      const memberObjective = { id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed', key_results: [] }
+      const withMember = [{ ...objectives[0], individual_objectives: [memberObjective] }, objectives[1]]
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.click(screen.getByRole('button', { name: /ship mvp/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /add company objective/i }))
+      expect(screen.getByTestId('company-okr-dialog')).toBeInTheDocument()
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('selecting a member while the Company OKR panel is open closes the Company OKR panel', () => {
+      const memberObjective = { id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed', key_results: [] }
+      const withMember = [{ ...objectives[0], individual_objectives: [memberObjective] }, objectives[1]]
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /add company objective/i }))
+      expect(screen.getByTestId('company-okr-dialog')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.click(screen.getByRole('button', { name: /ship mvp/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('refetches company objectives, closes the panel, and toasts when the dialog reports a save', async () => {
+      const refetch = vi.fn()
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: [], loading: false, error: null, refetch })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      const { onSaved } = mocks.CompanyOkrDialog.mock.calls.at(-1)[0]
+      act(() => { onSaved([{ id: 'new-co-1', title: 'Grow revenue' }]) })
+      expect(refetch).toHaveBeenCalled()
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+      expect(await screen.findByText(/company okr saved/i)).toBeInTheDocument()
+    })
+
+    it('passes quarterId and quarterName down to the panel', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: [], loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1',
+        quarters: [{ id: 'q1', name: 'Q1 2026', label: 'Q1 2026', is_active: true }],
+        error: null,
+        selectQuarter: vi.fn(),
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      const props = mocks.CompanyOkrDialog.mock.calls.at(-1)[0]
+      expect(props.quarterId).toBe('q1')
+      expect(props.quarterName).toBe('Q1 2026')
     })
   })
 
