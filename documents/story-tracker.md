@@ -427,6 +427,7 @@ Feature: Unified drill-down modal for individual objectives
 | B28 | Manager's member-OKR panel (#B26) only showed a flat title/owner/KR-title list — no AI summary, no check-in history, no way to see the same rich detail a member sees on their own card | Feature | **Accepted** (merged direct to `main` `daa406b`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 | B29 | Status was a bare, unlabeled dot anyone could theoretically click; a member's own status editor was silently broken (wrote to the wrong table/id); no role-based gating on who can change which kind of objective's status | Bug + Feature | **Accepted** (merged direct to `main` `9f3f712`, no PR/review — demo-build process, 2026-09-27). Migration `0012_individual_objectives_progress_status.sql` applied live by Jess via the Supabase SQL editor 2026-09-30. See process note below re: this migration's deploy sequencing. | none | PM (direct) |
 | B30 | No UI anywhere to create a company objective from scratch — only "+ New quarter"'s clone-from-previous-quarter path, which leaves a quarter with zero Company OKR whenever there's no source to clone from | Feature | **Accepted** (merged direct to `main` `a767595`, no PR/review — demo-build process, 2026-09-30) | none | PM (direct) |
+| B31 | Manager's company-status editor was a full-width block, not a tooltip; "+ New quarter" only reached Company OKR setup indirectly (via clone or the empty-state effect), with no way to rename the quarter or guarantee it started empty | Feature | **Accepted** (merged direct to `main` `03cae27`, no PR/review — demo-build process, 2026-09-30) | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -912,6 +913,47 @@ Feature: Manager can create Company OKR from scratch on the Map
       place, and vice versa
 ```
 `e2e: none`. Implementation: new `CompanyOkrDialog.jsx` — same dialog chrome family as `OkrDialog.jsx`'s create-mode (kept as a separate component since the two forms diverge enough: no alignment select, a Category field instead, no draft/confirm split for company objectives). Key results are created via the existing `useKrMutation` hook, which was already generic over `objectiveId` (company) vs `individualObjectiveId` (individual) — no new KR-creation code needed. Renders in `OkrMapPage.jsx`'s Map-view right-column slot, the same slot as the `managerReview` `OkrDialog` from #B28; `selectMember`/`openCompanyDialog` wrapper functions keep the two mutually exclusive. Auto-opens once per quarter (ref-gated, mirroring the #B15 member empty-state nudge) whenever a Manager is on Map view with zero company objectives for the active quarter — this covers "+New quarter produced an empty quarter" as one case among others (any quarter a Manager switches to with no Company OKR yet triggers it), rather than hooking the effect to the "+ New quarter" button specifically. No schema change needed.
+
+**B31 — Manager status tooltip + "+ New quarter" opens Company OKR setup directly**
+
+```gherkin
+Feature: Manager's company-status editor is a small floating tooltip
+  As Jess, I want a Manager's status editor for a company objective to
+  appear as a small popover near the badge, not a block that pushes the
+  rest of the card down.
+
+  Scenario: Clicking the badge opens a floating popover
+    Given a Manager is looking at a company objective's status badge
+    When they click it
+    Then a small popover opens near the badge, not a full-width block
+
+  Scenario: A member's own status editor is unaffected
+    Given a member is looking at their own OKR's status badge
+    When they click it
+    Then the original inline block appears below the header row, same
+      as before
+
+Feature: "+ New quarter" opens Company OKR setup directly, always empty
+  As Jess, I want "+ New quarter" to take a Manager straight into setting
+  the Company OKR, on a quarter that's guaranteed to start with none, and
+  let them set the quarter's name in that same place.
+
+  Scenario: Creating a quarter opens the Company OKR panel immediately
+    Given a Manager clicks "+ New quarter"
+    Then the quarter is created and the Company OKR panel opens right
+      away, without needing a separate click on "+ Add company objective"
+
+  Scenario: The new quarter always starts with zero Company OKR
+    Given a Manager creates a new quarter
+    Then no company objectives exist for it until the Manager saves some
+      via the panel — nothing is cloned from the previous quarter
+
+  Scenario: The Manager can rename the quarter from the same panel
+    Given the Company OKR panel is open with an auto-suggested quarter name
+    When the Manager changes it and clicks Save
+    Then the quarter's name is updated to what they typed
+```
+`e2e: none`. Implementation: `StatusEditor.jsx` gained a `floating` boolean — when true, renders `position: absolute` (anchored below-right of the badge, not literally above it despite the "on top of" phrasing — positioning above risked getting clipped by `ObjectiveCarousel`'s `overflow: hidden` slide wrapper on the Map, since the badge sits near the very top of the card) with a box-shadow, versus the original `margin`+`background` inline block. `ObjectiveCard.jsx` wraps the badge in a `position: relative` span and only passes `floating` for the company-objective case; the individual case keeps rendering `StatusEditor` at its original location, unchanged. `useCreateQuarter.js` dropped its entire clone-from-previous-quarter block (company_objectives/key_results are no longer touched at all) — it only creates the quarters row now. `OkrMapPage.jsx`'s `handleCreateQuarter` opens `CompanyOkrDialog` directly (Manager view only) right after creation, reusing the same `openCompanyDialog` mutual-exclusion helper from #B30. `CompanyOkrDialog.jsx` gained an editable "Quarter name" field (defaults to the passed-in `quarterName`), updating `quarters.name` on save only if changed. 16 new/updated tests across `StatusEditor`(via `ObjectiveCard`)/`useCreateQuarter`/`CompanyOkrDialog`/`OkrMapPage`; full suite 554/554.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
