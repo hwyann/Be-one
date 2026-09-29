@@ -422,6 +422,7 @@ Feature: Unified drill-down modal for individual objectives
 | B23 | Drill-down was still a covering panel, not a real split view; KR list sat outside the card; no way to review all OKRs at once | Feature | **Accepted** (merged direct to `main` `908ce32`, no PR/review — demo-build process, 2026-09-27). Background sub-agent + 3 rounds of Codex review before merge (2 real findings caught, see note below). | none | PM (background sub-agent + Codex review) |
 | B24 | Redundant per-objective Review button in the OKR detail area; check-in was objective-level not per-KR; "Ask a question" had no Manager gate | Feature | **Accepted** (merged direct to `main` `7a7b428`, no PR/review — demo-build process, 2026-09-27). Background sub-agent + 3 rounds of Codex review before merge (3 real findings caught, incl. a live data-loss bug — see note below). | none | PM (background sub-agent + Codex review) |
 | B25 | Per-KR card layout was summary+history bundled, then Check-in below; wanted summary → check-in → history (newest first) | Bug | **Accepted** (merged direct to `main` `8362561`, no PR/review — demo-build process, 2026-09-27). Built directly by the PM session (no sub-agent — small, well-scoped change). Also includes a `generate-kr-summary` Edge Function fix + live diagnosis, see note below. | none | PM (direct) |
+| B26 | Members could align to a specific company KR (direct_kr), not just the whole Objective; Map's member avatars were per-KR; no way for a Manager to see whose OKR relates to a company objective | Feature | **Accepted** (merged direct to `main` `b7a26af`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -698,6 +699,53 @@ Feature: Per-KR card order and check-in history sort
 `e2e: none`. Implementation: `SummaryBlock` (previously an internal, unexported piece of `CheckInHistory.jsx`) is now a named export, rendered directly by `KrRow` in `KrListInline.jsx` ahead of the Check-in trigger; `CheckInHistory`'s default export is now just the list + per-entry question, rendered last. `useCheckInHistory.js`'s query flipped from `ascending: true` to `ascending: false`.
 
 **Investigated alongside this: "Summary Unavailable" on "first Objective" / "questions prep"**. Confirmed this isn't specific to that objective or KR — `kr_summaries` is completely empty across every objective in the project; the AI summary feature has never successfully generated a summary for anyone. Root cause found by hardening `supabase/functions/generate-kr-summary/index.ts`: the Anthropic API call wasn't wrapped in try/catch, so a rejected call fell through to Deno's default handler and returned a bare 500 with no body — the frontend only ever saw a generic failure. Wrapped it (and the whole handler) in try/catch, deployed via `supabase functions deploy generate-kr-summary` (works directly from the PM sandbox, unlike `db push` which needs a DB role this session doesn't have), then re-invoked directly: `{"error":"Anthropic API error 400: ... \"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\""}`. **Not a code bug** — the Anthropic account backing `ANTHROPIC_API_KEY` needs a credit top-up; PM/Jess action required, outside what this session can do. The error-handling fix ships regardless (real robustness improvement, and means any *future* failure will be diagnosable the same way instead of another opaque 500).
+
+**B26 — Objective-level-only company alignment + Manager member-OKR drill-down**
+
+```gherkin
+Feature: Members align to a whole company Objective, not a specific KR
+  As Jess, I want members to only be able to align their OKR to a whole
+  company Objective (not a specific company KR), so that the Map's
+  alignment model is simpler and the member-avatar cluster reads as
+  "who is working on this Objective" instead of "who touched this KR".
+
+  Scenario: Add Objective's "Aligns with" only offers company objectives
+    Given the viewer opens "+ Add objective"
+    When they open the "Aligns with" select
+    Then they see one option per company Objective
+    And they do not see any option for an individual KR under an objective
+
+  Scenario: The Map's member avatar cluster is per-objective, not per-KR
+    Given a company Objective has one or more confirmed individual
+      objectives aligned to it
+    When the viewer looks at that Objective's card on the Map
+    Then a cluster of member-initial avatars appears once, on the card
+      itself, not repeated per KR row
+
+  Feature: Manager can drill into who is aligned to a company Objective
+    As a Manager, I want to click the member-avatar cluster on a company
+    Objective's card, so that I can see each aligned member's own OKR
+    without leaving the Map.
+
+    Scenario: Member view shows the cluster as a static, non-interactive icon
+      Given the viewer is in Member view
+      When they look at a company Objective's card with aligned members
+      Then the avatar cluster renders exactly as before, with no click
+        affordance
+
+    Scenario: Manager view can expand the cluster into a member-OKR panel
+      Given the viewer is in Manager view
+      When they click the avatar cluster on a company Objective's card
+      Then a panel appears below the card listing each aligned, confirmed
+        member's OKR title, owner name, and key results
+      And clicking the cluster again hides the panel
+
+    Scenario: Draft (unconfirmed) member OKRs never appear in the panel
+      Given a member has an unconfirmed draft aligned to this Objective
+      When a Manager expands the member-OKR panel
+      Then that draft does not appear in the list
+```
+`e2e: none`. Implementation: `useCompanyObjectives.js`'s query changed from embedding `individual_objectives` under each `key_results` row via the `key_result_id` FK to embedding them once per `company_objectives` row via the `linked_company_objective_id` FK — each embedded individual objective also brings its own `key_results` along (via `key_results_individual_objective_id_fkey`) so the Manager panel doesn't need a second fetch. The avatar cluster (`Avatar`/`initialsFor`, previously in `KrListInline.jsx`'s `KrRow`, one per KR) moved to `ObjectiveCard.jsx` as `MemberAvatarCluster`, rendered once in the card header, sourced from `objective.individual_objectives` filtered to `status === 'confirmed'`. A new `MemberOkrPanel` renders outside the card's bordered box (via a fragment) when a Manager clicks the cluster. `OkrDialog.jsx`'s "Aligns with" `<select>` dropped its per-KR `<option>`s (was one `<optgroup>` per company objective with a KR sub-option each); `parseLink`/`formatLink` simplified to only handle `objective_level`. `OkrMapPage.jsx`'s `LinkTypeLegend` (solid/dashed line legend) and `AlignmentSummaryStrip` (Direct KR / Objective-level counts) were removed entirely — that distinction no longer exists. `MyThreadPage.jsx`'s "Linked to Company OKR: " label dropped its `· KR title` suffix for the same reason. Two live `individual_objectives` rows that already had `link_type: 'direct_kr'` were migrated to `objective_level` (with `key_result_id` cleared) via a direct Supabase REST PATCH, so they resolve correctly under the new model — no schema change was needed for this feature (`linked_company_objective_id` already existed on the table). 22 tests removed/rewritten across `useCompanyObjectives`, `ObjectiveCard`, `OkrDialog`, `OkrMapPage`, and `MyThreadPage`; full suite 479/479.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
