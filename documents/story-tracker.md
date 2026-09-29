@@ -424,6 +424,7 @@ Feature: Unified drill-down modal for individual objectives
 | B25 | Per-KR card layout was summary+history bundled, then Check-in below; wanted summary → check-in → history (newest first) | Bug | **Accepted** (merged direct to `main` `8362561`, no PR/review — demo-build process, 2026-09-27). Built directly by the PM session (no sub-agent — small, well-scoped change). Also includes a `generate-kr-summary` Edge Function fix + live diagnosis, see note below. | none | PM (direct) |
 | B26 | Members could align to a specific company KR (direct_kr), not just the whole Objective; Map's member avatars were per-KR; no way for a Manager to see whose OKR relates to a company objective | Feature | **Accepted** (merged direct to `main` `b7a26af`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 | B27 | My OKR view's Review button was always on with no Manager trigger; Review opened as an in-place modal | Feature | **Accepted** (merged direct to `main` `b3de0c9`, no PR/review — demo-build process, 2026-09-27). Migration `0011_quarters_review_requested_at.sql` applied live by Jess via the Supabase SQL editor 2026-09-27 (additive, no backfill needed). | none | PM (direct) |
+| B28 | Manager's member-OKR panel (#B26) only showed a flat title/owner/KR-title list — no AI summary, no check-in history, no way to see the same rich detail a member sees on their own card | Feature | **Accepted** (merged direct to `main` `daa406b`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -789,6 +790,40 @@ Feature: Manager requests a review before Member's Review button activates
       And they can navigate away and back later to finish the rest
 ```
 `e2e: none`. Implementation: new `useRequestQuarterReview.js` hook (`update` on `quarters.review_requested_at`); `OkrMapPage.jsx` derives `reviewRequested` from `quarters.find(q => q.id === quarterId)?.review_requested_at` (reusing `useActiveQuarter`'s existing `select('*')` — no query change needed) and renders the request button only in Manager view. `MyThreadPage.jsx`'s Review button gained a `reviewEnabled` prop and now calls `useNavigate('/review')` instead of opening `AllOkrsReview` inline — this reverses #B23's "deliberately always-available" decision on purpose, per PM instruction. New `ReviewPage.jsx` (route `/review`, added to `App.jsx` ahead of the catch-all, `ProtectedRoute`-wrapped) reuses the existing `QuarterReviewFields` (already split out of `QuarterReviewModal.jsx` back in split-view-review-all) — since each objective's review already saves independently the moment Save is clicked (#B3), "save as draft and resume later" needed no new code, just no longer forcing the work to happen inside a single modal session. `AllOkrsReview.jsx` and its test are deleted (fully superseded). `VIEWER_OWNER_NAME` extracted from a local const in `OkrMapPage.jsx` to `src/lib/viewer.js` so `ReviewPage.jsx` doesn't redeclare it. 8 new/updated tests across `useRequestQuarterReview`, `ReviewPage`, `MyThreadPage`, and `OkrMapPage`; full suite 489/489.
+
+**B28 — Manager's member-OKR right-panel detail view**
+
+```gherkin
+Feature: Manager drills into a member's OKR via a right-panel detail view
+  As Jess, I want a Manager to click a member's OKR (from the panel under
+  a company objective's card) and see the same rich card detail a member
+  sees for their own OKR, so that reviewing someone's progress doesn't
+  mean guessing from a bare title/owner/KR-title list.
+
+  Scenario: Clicking a member's OKR opens a right-side detail panel
+    Given a Manager has expanded a company objective's member-OKR panel
+    When they click one of the listed member OKRs
+    Then a right-side panel opens with that member's OKR — same card
+      design (title, KR list, close (×) button) as a member's own
+      "My OKR" card detail view
+
+  Scenario: The AI summary always shows below each KR, same as usual
+    Given the Manager is viewing a member's OKR in the right panel
+    Then each key result shows its AI summary directly beneath it,
+      exactly like it does on the member's own card
+
+  Scenario: Manager cannot check in on someone else's KR
+    Given the Manager is viewing a member's OKR in the right panel
+    Then no "Check-in" trigger or entry form appears for any KR
+
+  Scenario: Check-in history defaults collapsed behind an arrow toggle
+    Given the Manager is viewing a member's OKR in the right panel
+    When they look at a key result
+    Then they see a "History" arrow toggle instead of the check-in list
+    When they click it
+    Then the check-in history for that KR appears
+```
+`e2e: none`. Implementation: new `managerReview` boolean threaded `OkrDialog -> ObjectiveCard -> KrListInline -> KrRow`. In `ObjectiveCard.jsx`, `allowCheckIn` becomes `!isCompany && !managerReview` (previously just `!isCompany`) — a Manager reading someone else's OKR never gets check-in, even though `isCompany` is false. In `KrListInline.jsx`'s `KrRow`, the summary/history block's gate changed from `allowCheckIn` alone to `allowCheckIn || managerReview` (so it still renders for a read-only Manager view), while the Check-in trigger/panel themselves stay gated on `allowCheckIn` specifically; when `managerReview` is set, a new `HistoryToggle` wrapper renders instead of the always-open `CheckInHistory` — a small arrow button that mounts `CheckInHistory` only once clicked. `OkrDialog.jsx` gained the same `managerReview` prop, forwarded to its embedded `ObjectiveCard`, and folded into its existing `isConfirmedObjective` check (`objective.status === 'confirmed' || managerReview`) so the same read-only chrome (static title, no Coach me, no footer) applies without adding new conditionals. `OkrMapPage.jsx`'s Map view gained a `selectedMemberObjective` state and a split layout (mirroring the existing my-thread split view) — clicking a member row (now `role="button"`, same pattern as `MyThreadPage`'s cards, #B22) in `ObjectiveCard.jsx`'s `MemberOkrPanel` opens `OkrDialog` in a sticky 30% right column with `managerReview`; resets on quarter change, same as the existing dialog-closing effect. 21 new tests across `KrListInline`, `ObjectiveCard`, `OkrDialog`, and `OkrMapPage`; full suite 509/509.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
