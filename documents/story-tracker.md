@@ -425,6 +425,8 @@ Feature: Unified drill-down modal for individual objectives
 | B26 | Members could align to a specific company KR (direct_kr), not just the whole Objective; Map's member avatars were per-KR; no way for a Manager to see whose OKR relates to a company objective | Feature | **Accepted** (merged direct to `main` `b7a26af`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
 | B27 | My OKR view's Review button was always on with no Manager trigger; Review opened as an in-place modal | Feature | **Accepted** (merged direct to `main` `b3de0c9`, no PR/review — demo-build process, 2026-09-27). Migration `0011_quarters_review_requested_at.sql` applied live by Jess via the Supabase SQL editor 2026-09-27 (additive, no backfill needed). | none | PM (direct) |
 | B28 | Manager's member-OKR panel (#B26) only showed a flat title/owner/KR-title list — no AI summary, no check-in history, no way to see the same rich detail a member sees on their own card | Feature | **Accepted** (merged direct to `main` `daa406b`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
+| B29 | Status was a bare, unlabeled dot anyone could theoretically click; a member's own status editor was silently broken (wrote to the wrong table/id); no role-based gating on who can change which kind of objective's status | Bug + Feature | **Accepted** (merged direct to `main` `9f3f712`, no PR/review — demo-build process, 2026-09-27). Migration `0012_individual_objectives_progress_status.sql` applied live by Jess via the Supabase SQL editor 2026-09-30. See process note below re: this migration's deploy sequencing. | none | PM (direct) |
+| B30 | No UI anywhere to create a company objective from scratch — only "+ New quarter"'s clone-from-previous-quarter path, which leaves a quarter with zero Company OKR whenever there's no source to clone from | Feature | **Accepted** (merged direct to `main` `a767595`, no PR/review — demo-build process, 2026-09-30) | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -824,6 +826,92 @@ Feature: Manager drills into a member's OKR via a right-panel detail view
     Then the check-in history for that KR appears
 ```
 `e2e: none`. Implementation: new `managerReview` boolean threaded `OkrDialog -> ObjectiveCard -> KrListInline -> KrRow`. In `ObjectiveCard.jsx`, `allowCheckIn` becomes `!isCompany && !managerReview` (previously just `!isCompany`) — a Manager reading someone else's OKR never gets check-in, even though `isCompany` is false. In `KrListInline.jsx`'s `KrRow`, the summary/history block's gate changed from `allowCheckIn` alone to `allowCheckIn || managerReview` (so it still renders for a read-only Manager view), while the Check-in trigger/panel themselves stay gated on `allowCheckIn` specifically; when `managerReview` is set, a new `HistoryToggle` wrapper renders instead of the always-open `CheckInHistory` — a small arrow button that mounts `CheckInHistory` only once clicked. `OkrDialog.jsx` gained the same `managerReview` prop, forwarded to its embedded `ObjectiveCard`, and folded into its existing `isConfirmedObjective` check (`objective.status === 'confirmed' || managerReview`) so the same read-only chrome (static title, no Coach me, no footer) applies without adding new conditionals. `OkrMapPage.jsx`'s Map view gained a `selectedMemberObjective` state and a split layout (mirroring the existing my-thread split view) — clicking a member row (now `role="button"`, same pattern as `MyThreadPage`'s cards, #B22) in `ObjectiveCard.jsx`'s `MemberOkrPanel` opens `OkrDialog` in a sticky 30% right column with `managerReview`; resets on quarter change, same as the existing dialog-closing effect. 21 new tests across `KrListInline`, `ObjectiveCard`, `OkrDialog`, and `OkrMapPage`; full suite 509/509.
+
+**B29 — Status badge (label + color) with role-based edit permission**
+
+```gherkin
+Feature: Status is a labeled, colored badge instead of a bare dot
+  As Jess, I want the status indicator to show its label on a colored
+  background, so that the status is legible at a glance instead of
+  requiring a hover/click to find out what a bare dot means.
+
+  Scenario: The badge shows the label text on a colored background
+    Given an objective has a status of "on_track"
+    Then its badge reads "On track" on a green-tinted background
+
+  Feature: Only the right role can click a given objective's status badge
+    As Jess, I want a company objective's status to be Manager-editable
+    only, and a member's own OKR status to be member-editable only, so
+    that each side owns the status that's actually theirs to set.
+
+    Scenario: Manager can edit a company objective's status
+      Given the viewer is in Manager view, looking at the Map
+      When they click a company objective's status badge
+      Then the status editor opens and they can save a new status
+
+    Scenario: Member cannot edit a company objective's status
+      Given the viewer is in Member view, looking at the Map
+      Then the company objective's status badge is not clickable
+
+    Scenario: Member can edit their own OKR's status
+      Given the viewer is in Member view, on their own confirmed-or-draft OKR
+      When they click the status badge
+      Then the status editor opens and they can save a new status
+
+    Scenario: Manager cannot edit a member's OKR status
+      Given a Manager is viewing a member's OKR (the #B28 right panel)
+      Then the status badge is not clickable
+
+    Scenario: A past/read-only quarter locks the badge regardless of role
+      Given the selected quarter is in the past
+      Then no status badge is clickable, for either kind of objective
+```
+`e2e: none`. Implementation: `lib/statuses.js` gained `bg`/`text`/`border` per status (reusing the existing `--ontrack-bg`/`--ontrack-text`/`--ontrack-border` etc. CSS variables already defined in `index.css` but previously unused). `ObjectiveCard.jsx`'s bare-dot markup became `StatusBadge` (dot + label text on a colored pill). Permission: `canEditStatus = (isCompany ? viewMode === 'manager' : viewMode === 'member') && !readOnly` — `readOnly` is now threaded from `ObjectiveCarousel` into `ObjectiveCard` (previously only used at the carousel's own click-swallowing wrapper level, never passed down), so a past quarter locks the badge outright rather than relying solely on the wrapper's `onClickCapture` swallow.
+
+**Real bug found and fixed along the way**: a member's own status editor called `useCompanyObjectiveStatus` — which targets the `company_objectives` table — with an `individual_objectives` id. This matched zero rows and returned no error, so the UI reported success while silently persisting nothing. Root cause: individual objectives never had their own traffic-light status column; `status` on that table was already the draft/confirmed field from #B17. Fix: migration `0012_individual_objectives_progress_status.sql` adds `individual_objectives.progress_status` (`NOT NULL DEFAULT 'not_started'`, same default as `company_objectives.status`), and a new `useIndividualObjectiveStatus` hook writes to it correctly. `StatusEditor.jsx` is now presentational — takes `update`/`saving`/`error` as props instead of importing a specific hook — so `ObjectiveCard` can pick the right hook per objective type. `useCompanyObjectives.js`'s `individual_objectives` embed and `useIndividualObjectives.js`'s select both gained `progress_status`.
+
+**Also in this batch**: My OKR view's Review button (#B27) turns coral (`var(--coral-700)`, matching e.g. `StatusEditor`'s Save button) once `reviewEnabled` is true, instead of looking identical whether it's usable or not.
+
+**Process note — deploy-sequencing mistake**: this migration was committed locally and correctly held back from `git push` pending Jess applying the SQL (same pattern as #B17/#B27/etc.). But the *next* batch of work (#B30) was committed as a second commit on top of it in the same local branch, and pushing #B30 sent **both** commits to `origin/main` together — `git push` sends everything ahead of the remote, not just the newest commit. Production briefly served code that queried `individual_objectives.progress_status` before that column existed, breaking My OKR view and the Map (PostgREST returns an error for a nonexistent column, failing the whole query). Caught immediately via a live `curl` check, fixed by having Jess run the held-back migration right away (already-drafted SQL, no new work needed) rather than any code rollback. Lesson for future batches: once a schema-dependent commit is held back, either push+deploy it (once the migration is confirmed) *before* starting the next batch, or keep pending schema work on a separate, unpushed branch/rebase rather than stacking further commits directly on `main`'s local HEAD.
+
+**B30 — Manager can set the Company OKR when the Map is empty**
+
+```gherkin
+Feature: Manager can create Company OKR from scratch on the Map
+  As Jess, I want a Manager to be able to set the Company OKR directly
+  from the Map when it's empty, so that a quarter is never stuck with
+  no Company OKR and no way to add one through the UI.
+
+  Scenario: The panel auto-opens when the Map has no Company OKR
+    Given a Manager is on Map view for a quarter with zero company
+      objectives
+    Then a "Set Company OKR" panel opens automatically on the right,
+      offering a title, an optional category, and key results
+
+  Scenario: Saving creates the objective(s) and their key results
+    Given the Manager fills in a title and at least one key result
+    When they click Save
+    Then a new company objective (status "not_started") is created for
+      the active quarter, along with its key results
+
+  Scenario: The Manager can add more than one objective in one session
+    Given the panel is open
+    When the Manager clicks "+ Add another objective"
+    Then a second objective section appears, saved independently
+      alongside the first
+
+  Scenario: Dismissing the panel doesn't lose it for good
+    Given the Manager closes the auto-opened panel without saving
+    Then a persistent "+ Add company objective" button remains
+      available to reopen it later, for this quarter or any other
+
+  Scenario: The panel and the member-OKR right panel never show at once
+    Given the Manager has a member's OKR open in the right panel (#B28)
+    When they click "+ Add company objective"
+    Then the member panel closes and the Company OKR panel opens in its
+      place, and vice versa
+```
+`e2e: none`. Implementation: new `CompanyOkrDialog.jsx` — same dialog chrome family as `OkrDialog.jsx`'s create-mode (kept as a separate component since the two forms diverge enough: no alignment select, a Category field instead, no draft/confirm split for company objectives). Key results are created via the existing `useKrMutation` hook, which was already generic over `objectiveId` (company) vs `individualObjectiveId` (individual) — no new KR-creation code needed. Renders in `OkrMapPage.jsx`'s Map-view right-column slot, the same slot as the `managerReview` `OkrDialog` from #B28; `selectMember`/`openCompanyDialog` wrapper functions keep the two mutually exclusive. Auto-opens once per quarter (ref-gated, mirroring the #B15 member empty-state nudge) whenever a Manager is on Map view with zero company objectives for the active quarter — this covers "+New quarter produced an empty quarter" as one case among others (any quarter a Manager switches to with no Company OKR yet triggers it), rather than hooking the effect to the "+ New quarter" button specifically. No schema change needed.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
