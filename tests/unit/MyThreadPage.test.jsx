@@ -1,12 +1,15 @@
-import { render, screen, fireEvent, within, act } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  AllOkrsReview: vi.fn(),
+  navigate: vi.fn(),
 }))
 
-vi.mock('../../src/components/AllOkrsReview', () => ({
-  default: (props) => mocks.AllOkrsReview(props),
+// MyThreadPage's Review button now navigates to a routed page (#B27)
+// instead of opening an in-place AllOkrsReview modal — mock useNavigate
+// rather than wrapping every render() in a <MemoryRouter>.
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => mocks.navigate,
 }))
 
 import MyThreadPage from '../../src/components/MyThreadPage'
@@ -60,7 +63,6 @@ const objectives = [
 describe('MyThreadPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mocks.AllOkrsReview.mockReturnValue(<div data-testid="all-okrs-review" />)
   })
 
   it('renders each of the viewer\'s objectives', () => {
@@ -414,7 +416,7 @@ describe('MyThreadPage', () => {
     })
   })
 
-  describe('"Review" all-OKRs entry point (#B22 follow-up)', () => {
+  describe('"Review" entry point, gated on a Manager\'s request (#B27)', () => {
     it('renders a Review button on the same row as the "My Current OKR" heading', () => {
       render(
         <MyThreadPage
@@ -426,7 +428,7 @@ describe('MyThreadPage', () => {
       expect(screen.getByRole('button', { name: /^review$/i })).toBeInTheDocument()
     })
 
-    it('opens AllOkrsReview with the viewer\'s confirmed objectives when Review is clicked', () => {
+    it('is disabled when reviewEnabled is false (default — no Manager request yet)', () => {
       render(
         <MyThreadPage
           ownerName="Satoshi Kimura"
@@ -434,42 +436,45 @@ describe('MyThreadPage', () => {
           companyObjectives={companyObjectives}
         />
       )
-      expect(screen.queryByTestId('all-okrs-review')).not.toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
-      expect(screen.getByTestId('all-okrs-review')).toBeInTheDocument()
-      const props = mocks.AllOkrsReview.mock.calls.at(-1)[0]
-      expect(props.objectives).toEqual([objectives[0], objectives[1]])
+      expect(screen.getByRole('button', { name: /^review$/i })).toBeDisabled()
     })
 
-    it('closes the all-review screen when its onClose is called', () => {
+    it('is enabled when reviewEnabled is true', () => {
       render(
         <MyThreadPage
           ownerName="Satoshi Kimura"
           objectives={objectives}
           companyObjectives={companyObjectives}
+          reviewEnabled
         />
       )
-      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
-      expect(screen.getByTestId('all-okrs-review')).toBeInTheDocument()
-      const props = mocks.AllOkrsReview.mock.calls.at(-1)[0]
-      act(() => { props.onClose() })
-      expect(screen.queryByTestId('all-okrs-review')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^review$/i })).not.toBeDisabled()
     })
 
-    it('still renders the Review button, enabled, when readOnly is true', () => {
+    it('stays enabled/disabled independent of readOnly (a distinct action from editing)', () => {
       render(
         <MyThreadPage
           ownerName="Satoshi Kimura"
           objectives={objectives}
           companyObjectives={companyObjectives}
+          reviewEnabled
           readOnly
         />
       )
-      const reviewButton = screen.getByRole('button', { name: /^review$/i })
-      expect(reviewButton).toBeInTheDocument()
-      expect(reviewButton).not.toBeDisabled()
-      fireEvent.click(reviewButton)
-      expect(screen.getByTestId('all-okrs-review')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^review$/i })).not.toBeDisabled()
+    })
+
+    it('navigates to /review when clicked while enabled', () => {
+      render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          reviewEnabled
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /^review$/i }))
+      expect(mocks.navigate).toHaveBeenCalledWith('/review')
     })
   })
 })

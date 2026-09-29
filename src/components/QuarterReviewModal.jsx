@@ -47,9 +47,10 @@ function buttonStyle(primary) {
 // radiogroup, reflection/comment + confirm checkboxes, finalized indicator,
 // and its own Save button. Split out from QuarterReviewModal (which adds
 // only the dialog chrome + Close button) so it can also be reused, one
-// section per objective, inside AllOkrsReview's "review all at once" screen
-// (split-view-review-all). Each instance owns its own useQuarterReview call
-// and saves to that objective's own quarter_reviews row independently.
+// section per objective, inside ReviewPage's "review all at once" screen
+// (split-view-review-all, later moved from a modal to a routed page in
+// #B27). Each instance owns its own useQuarterReview call and saves to
+// that objective's own quarter_reviews row independently.
 export function QuarterReviewFields({ objectiveId }) {
   const { review, loading, save, saving, error } = useQuarterReview(objectiveId)
   const [finalStatus, setFinalStatus] = useState(review?.final_status ?? null)

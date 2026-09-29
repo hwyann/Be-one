@@ -5,13 +5,13 @@ import useActiveQuarter from '../hooks/useActiveQuarter'
 import useQuarterIsPast from '../hooks/useQuarterIsPast'
 import useCanCreateObjective from '../hooks/useCanCreateObjective'
 import useCreateQuarter from '../hooks/useCreateQuarter'
+import useRequestQuarterReview from '../hooks/useRequestQuarterReview'
 import useViewMode from '../hooks/useViewMode'
 import ObjectiveCarousel from './ObjectiveCarousel'
 import OkrDialog from './OkrDialog'
 import Toast from './Toast'
 import MyThreadPage from './MyThreadPage'
-
-const VIEWER_OWNER_NAME = 'Satoshi Kimura'
+import { VIEWER_OWNER_NAME } from '../lib/viewer'
 
 function QuarterSelector({ quarters, quarterId, onChange, disabled = false }) {
   return (
@@ -107,6 +107,7 @@ export default function OkrMapPage() {
   } = useIndividualObjectives(quarterId)
   const { viewMode, setViewMode } = useViewMode()
   const { createQuarter, creating: creatingQuarter } = useCreateQuarter()
+  const { requestReview, requesting: requestingReview } = useRequestQuarterReview()
   const [dialogState, setDialogState] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
   const [view, setView] = useState(viewMode === 'manager' ? 'map' : 'my-thread')
@@ -173,6 +174,12 @@ export default function OkrMapPage() {
     o => o.owner_name === VIEWER_OWNER_NAME && o.status === 'draft',
   )
 
+  const currentQuarter = quarters.find(q => q.id === quarterId)
+  // Member's Review button (My OKR view) is gated on this (#B27) — a
+  // Manager has to explicitly request a review before it's usable, rather
+  // than it being always-on like it was under #B23.
+  const reviewRequested = !!currentQuarter?.review_requested_at
+
   const liveDialogObjective = dialogState?.objective
     ? (individualObjectives.find(o => o.id === dialogState.objective.id) ?? dialogState.objective)
     : undefined
@@ -206,6 +213,13 @@ export default function OkrMapPage() {
     await refetchQuarters()
     selectQuarter(newQuarter.id)
     setToastMessage(`New quarter "${newQuarter.name}" created.`)
+  }
+
+  async function handleRequestReview() {
+    const ok = await requestReview(quarterId)
+    if (!ok) return
+    await refetchQuarters()
+    setToastMessage(`Requested all members to review their OKR for ${currentQuarter?.name ?? 'this quarter'}.`)
   }
 
   return (
@@ -280,6 +294,25 @@ export default function OkrMapPage() {
             + Add objective
           </button>
         )}
+        {viewMode === 'manager' && (
+          <button
+            type="button"
+            onClick={handleRequestReview}
+            disabled={requestingReview}
+            style={{
+              font: '600 13px var(--font-display)',
+              padding: '8px 14px',
+              borderRadius: '10px',
+              border: '1px solid var(--hairline)',
+              background: 'var(--surface)',
+              color: 'var(--ink-900)',
+              cursor: requestingReview ? 'default' : 'pointer',
+              opacity: requestingReview ? 0.6 : 1,
+            }}
+          >
+            {reviewRequested ? 'Re-request OKR review' : 'Request all members to review OKR'}
+          </button>
+        )}
       </div>
       {view === 'map' ? (
         <>
@@ -307,6 +340,7 @@ export default function OkrMapPage() {
               onEdit={objective => setDialogState({ objective })}
               readOnly={isPastQuarter}
               selectedObjectiveId={liveDialogObjective?.id}
+              reviewEnabled={reviewRequested}
             />
           </div>
           {dialogState && (
@@ -314,7 +348,7 @@ export default function OkrMapPage() {
               <OkrDialog
                 key={liveDialogObjective?.id ?? 'create'}
                 quarterId={quarterId}
-                quarterName={quarters.find(q => q.id === quarterId)?.name}
+                quarterName={currentQuarter?.name}
                 objective={liveDialogObjective}
                 companyObjectives={objectives}
                 mandatory={!!dialogState?.mandatory}

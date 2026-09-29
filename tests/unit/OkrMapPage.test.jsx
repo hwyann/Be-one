@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   useViewMode: vi.fn(),
   useCanCreateObjective: vi.fn(),
   useCreateQuarter: vi.fn(),
+  useRequestQuarterReview: vi.fn(),
   OkrDialog: vi.fn(),
   MyThreadPage: vi.fn(),
 }))
@@ -34,6 +35,10 @@ vi.mock('../../src/hooks/useCanCreateObjective', () => ({
 
 vi.mock('../../src/hooks/useCreateQuarter', () => ({
   default: mocks.useCreateQuarter,
+}))
+
+vi.mock('../../src/hooks/useRequestQuarterReview', () => ({
+  default: mocks.useRequestQuarterReview,
 }))
 
 vi.mock('../../src/components/OkrDialog', () => ({
@@ -93,6 +98,11 @@ describe('OkrMapPage', () => {
     mocks.useCreateQuarter.mockReturnValue({
       createQuarter: vi.fn(),
       creating: false,
+      error: null,
+    })
+    mocks.useRequestQuarterReview.mockReturnValue({
+      requestReview: vi.fn().mockResolvedValue(true),
+      requesting: false,
       error: null,
     })
   })
@@ -1289,6 +1299,74 @@ describe('OkrMapPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /add objective/i }))
       const props = mocks.OkrDialog.mock.calls.at(-1)[0]
       expect(props.existingDrafts).toEqual([myDraft])
+    })
+  })
+
+  describe('Manager "Request all members to review OKR" button (#B27)', () => {
+    it('renders the request-review button in Manager view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.getByRole('button', { name: /request all members to review okr/i })).toBeInTheDocument()
+    })
+
+    it('does not render the request-review button in Member view', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByRole('button', { name: /request all members to review okr/i })).not.toBeInTheDocument()
+    })
+
+    it('calls requestReview with the active quarter id when clicked', async () => {
+      const requestReview = vi.fn().mockResolvedValue(true)
+      mocks.useRequestQuarterReview.mockReturnValue({ requestReview, requesting: false, error: null })
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /request all members to review okr/i }))
+      await waitFor(() => expect(requestReview).toHaveBeenCalledWith('q1'))
+    })
+
+    it('shows a "Re-request" label once the active quarter already has a review request', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1',
+        quarters: [
+          { id: 'q1', label: 'Q1 2026', is_active: true, review_requested_at: '2026-09-27T00:00:00Z' },
+          { id: 'q2', label: 'Q2 2026', is_active: false },
+        ],
+        error: null,
+        selectQuarter: vi.fn(),
+        refetch: vi.fn(),
+      })
+      render(<OkrMapPage />)
+      expect(screen.getByRole('button', { name: /re-request okr review/i })).toBeInTheDocument()
+    })
+
+    it('passes reviewEnabled=true to MyThreadPage when the active quarter has a review request', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1',
+        quarters: [
+          { id: 'q1', label: 'Q1 2026', is_active: true, review_requested_at: '2026-09-27T00:00:00Z' },
+          { id: 'q2', label: 'Q2 2026', is_active: false },
+        ],
+        error: null,
+        selectQuarter: vi.fn(),
+        refetch: vi.fn(),
+      })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
+      const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
+      expect(props.reviewEnabled).toBe(true)
+    })
+
+    it('passes reviewEnabled=false to MyThreadPage when the active quarter has no review request', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
+      const props = mocks.MyThreadPage.mock.calls.at(-1)[0]
+      expect(props.reviewEnabled).toBe(false)
     })
   })
 })

@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import AllOkrsReview from './AllOkrsReview'
+import { useNavigate } from 'react-router-dom'
 
 function cardStyle(selected) {
   return {
@@ -17,7 +16,7 @@ function cardStyle(selected) {
   }
 }
 
-function reviewButtonStyle() {
+function reviewButtonStyle(enabled) {
   return {
     font: '600 12px var(--font-display)',
     padding: '7px 14px',
@@ -25,7 +24,8 @@ function reviewButtonStyle() {
     border: '1px solid var(--hairline)',
     background: 'transparent',
     color: 'var(--text-secondary)',
-    cursor: 'pointer',
+    cursor: enabled ? 'pointer' : 'default',
+    opacity: enabled ? 1 : 0.5,
   }
 }
 
@@ -106,8 +106,9 @@ export default function MyThreadPage({
   onEdit,
   readOnly = false,
   selectedObjectiveId = null,
+  reviewEnabled = false,
 }) {
-  const [reviewingAll, setReviewingAll] = useState(false)
+  const navigate = useNavigate()
 
   // Draft objectives (#B17/#B18) aren't shown as cards here — they're only
   // visible again inside the Add Objective modal until confirmed.
@@ -136,10 +137,20 @@ export default function MyThreadPage({
         }}>
           My Current OKR
         </div>
-        {/* Reviewing is a distinct, deliberately-always-available action —
-            separate from editing/adding — so it stays enabled even when
-            readOnly (most relevant for a quarter that's ending or past). */}
-        <button type="button" onClick={() => setReviewingAll(true)} style={reviewButtonStyle()}>
+        {/* Reviewing is a distinct action from editing/adding, so it stays
+            enabled even when readOnly (most relevant for a quarter that's
+            ending or past) — but it's now gated on a Manager explicitly
+            requesting a review for this quarter (#B27), reversing #B23's
+            "always available" decision. Opens a real routed page instead
+            of an in-place modal, so a member's progress isn't tied to
+            keeping this screen open. */}
+        <button
+          type="button"
+          onClick={() => navigate('/review')}
+          disabled={!reviewEnabled}
+          title={reviewEnabled ? undefined : 'Your manager hasn\'t requested a review yet.'}
+          style={reviewButtonStyle(reviewEnabled)}
+        >
           Review
         </button>
       </div>
@@ -160,9 +171,6 @@ export default function MyThreadPage({
           )
         })}
       </ul>
-      {reviewingAll && (
-        <AllOkrsReview objectives={mine} onClose={() => setReviewingAll(false)} />
-      )}
     </div>
   )
 }

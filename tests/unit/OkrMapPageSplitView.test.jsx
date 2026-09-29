@@ -55,6 +55,13 @@ vi.mock('../../src/hooks/useCheckInHistory', () => ({
   default: () => ({ checkIns: [], loading: false, error: null }),
 }))
 
+// The real MyThreadPage renders here (unlike OkrMapPage.test.jsx, which
+// mocks it) and now calls useNavigate for its Review button (#B27) — stub
+// react-router-dom so that doesn't need an actual <Router> ancestor.
+vi.mock('react-router-dom', () => ({
+  useNavigate: () => vi.fn(),
+}))
+
 import OkrMapPage from '../../src/components/OkrMapPage'
 
 const individualObjectives = [
