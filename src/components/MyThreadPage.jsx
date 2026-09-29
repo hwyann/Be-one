@@ -29,7 +29,7 @@ function reviewButtonStyle() {
   }
 }
 
-function ObjectiveCardRow({ objective, coTitle, krTitle, keyResults, readOnly, selected, onEdit }) {
+function ObjectiveCardRow({ objective, coTitle, keyResults, readOnly, selected, onEdit }) {
   function handleSelect() {
     if (!readOnly) onEdit?.(objective)
   }
@@ -68,7 +68,7 @@ function ObjectiveCardRow({ objective, coTitle, krTitle, keyResults, readOnly, s
             font: '500 11px var(--font-sans)',
             color: 'var(--text-secondary)',
           }}>
-            Linked to Company OKR: {coTitle}{krTitle ? ` · ${krTitle}` : ''}
+            Linked to Company OKR: {coTitle}
           </span>
         )}
         {keyResults.length > 0 && (
@@ -114,13 +114,12 @@ export default function MyThreadPage({
   const mine = objectives.filter(o => o.owner_name === ownerName && o.status === 'confirmed')
   if (mine.length === 0) return null
 
+  // Members can only align to a whole company Objective now (#B26) — no
+  // more per-KR "direct_kr" link, so this only ever needs the objective's
+  // own title, not a KR title alongside it.
   function resolveLink(objective) {
     const co = companyObjectives.find(c => c.id === objective.linked_company_objective_id)
-    if (!co) return { coTitle: null, krTitle: null }
-    const kr = objective.key_result_id
-      ? (co.key_results ?? []).find(k => k.id === objective.key_result_id)
-      : null
-    return { coTitle: co.title, krTitle: kr?.title ?? null }
+    return { coTitle: co?.title ?? null }
   }
 
   return (
@@ -146,14 +145,13 @@ export default function MyThreadPage({
       </div>
       <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '6px', padding: 0 }}>
         {mine.map(objective => {
-          const { coTitle, krTitle } = resolveLink(objective)
+          const { coTitle } = resolveLink(objective)
           const keyResults = objective.key_results ?? []
           return (
             <ObjectiveCardRow
               key={objective.id}
               objective={objective}
               coTitle={coTitle}
-              krTitle={krTitle}
               keyResults={keyResults}
               readOnly={readOnly}
               selected={objective.id === selectedObjectiveId}

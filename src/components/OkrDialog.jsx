@@ -159,12 +159,12 @@ function emptyDraft() {
 
 // Inverse of parseLink — reconstructs the <select> value from a persisted
 // individual_objectives row, so a reloaded draft (#B18) shows its original
-// alignment instead of the placeholder option.
+// alignment instead of the placeholder option. Only objective-level links
+// are selectable going forward (#B26); any pre-existing direct_kr row is
+// migrated to objective_level in the database rather than special-cased
+// here (see story-tracker.md B26).
 function formatLink(o) {
-  if (o.link_type === 'direct_kr' && o.key_result_id) {
-    return `direct_kr:${o.key_result_id}:${o.linked_company_objective_id}`
-  }
-  if (o.link_type === 'objective_level' && o.linked_company_objective_id) {
+  if (o.linked_company_objective_id) {
     return `objective_level:${o.linked_company_objective_id}`
   }
   return ''
@@ -213,6 +213,10 @@ function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRem
       </label>
       <label htmlFor={`okr-link-${index}`} style={labelStyle}>
         Aligns with
+        {/* Members can only align at the objective level now (#B26) — the
+            old per-KR "direct_kr" sub-options are gone, so this is a flat
+            list of company objectives rather than an <optgroup> per
+            objective with its KRs nested underneath. */}
         <select
           id={`okr-link-${index}`}
           value={draft.link}
@@ -221,14 +225,7 @@ function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRem
         >
           <option value="">Select alignment…</option>
           {companyObjectives.map((obj) => (
-            <optgroup key={obj.id} label={obj.title}>
-              <option value={`objective_level:${obj.id}`}>{obj.title} (objective)</option>
-              {(obj.key_results ?? []).map((kr) => (
-                <option key={kr.id} value={`direct_kr:${kr.id}:${obj.id}`}>
-                  {kr.title}
-                </option>
-              ))}
-            </optgroup>
+            <option key={obj.id} value={`objective_level:${obj.id}`}>{obj.title}</option>
           ))}
         </select>
       </label>
@@ -512,18 +509,15 @@ export default function OkrDialog({
   )
 }
 
+// Members can only align to a company Objective as a whole now (#B26) — the
+// old "direct_kr" variant (linking straight to one of the company's KRs) has
+// been removed; the select never offers it, so this only ever needs to
+// parse the objective_level shape.
 function parseLink(value) {
   if (!value) return null
   const parts = value.split(':')
   if (parts[0] === 'objective_level' && parts[1]) {
     return { link_type: 'objective_level', linked_company_objective_id: parts[1] }
-  }
-  if (parts[0] === 'direct_kr' && parts[1] && parts[2]) {
-    return {
-      link_type: 'direct_kr',
-      linked_company_objective_id: parts[2],
-      key_result_id: parts[1],
-    }
   }
   return null
 }

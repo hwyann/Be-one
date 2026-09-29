@@ -180,7 +180,10 @@ describe('OkrDialog', () => {
     expect(onSave).not.toHaveBeenCalled()
   })
 
-  it('renders alignment options for each company objective and each KR', () => {
+  // Members can only align to a whole company Objective now (#B26) — the
+  // old per-KR "direct_kr" sub-options are gone, so this is a flat list of
+  // objective titles only, no KR-level options underneath.
+  it('renders one alignment option per company objective (no per-KR options)', () => {
     render(
       <OkrDialog
         quarterId="q1"
@@ -192,16 +195,16 @@ describe('OkrDialog', () => {
     const linkSelect = screen.getByLabelText(/aligns with/i)
     expect(linkSelect).toBeInTheDocument()
     expect(
-      within(linkSelect).getByRole('option', { name: /Expand into new markets \(objective\)/i })
+      within(linkSelect).getByRole('option', { name: 'Expand into new markets' })
     ).toBeInTheDocument()
     expect(
-      within(linkSelect).getByRole('option', { name: /Improve NPS \(objective\)/i })
+      within(linkSelect).getByRole('option', { name: 'Improve NPS' })
     ).toBeInTheDocument()
-    expect(within(linkSelect).getByRole('option', { name: /Launch in EU/ })).toBeInTheDocument()
+    expect(within(linkSelect).queryByRole('option', { name: /Launch in EU/ })).not.toBeInTheDocument()
     expect(
-      within(linkSelect).getByRole('option', { name: /Sign 5 enterprise deals/ })
-    ).toBeInTheDocument()
-    expect(within(linkSelect).getByRole('option', { name: /Reach NPS 50/ })).toBeInTheDocument()
+      within(linkSelect).queryByRole('option', { name: /Sign 5 enterprise deals/ })
+    ).not.toBeInTheDocument()
+    expect(within(linkSelect).queryByRole('option', { name: /Reach NPS 50/ })).not.toBeInTheDocument()
   })
 
   it('blocks add save when no company objective link is selected', async () => {
@@ -218,37 +221,6 @@ describe('OkrDialog', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/company objective link is required/i)
     await waitFor(() => expect(mocks.insert).not.toHaveBeenCalled())
     expect(onSave).not.toHaveBeenCalled()
-  })
-
-  it('inserts with link_type "direct_kr" and linked_company_objective_id when a KR is selected', async () => {
-    mocks.select.mockResolvedValue({ data: [{ id: 'new-1', title: 'Grow revenue' }], error: null })
-    render(
-      <OkrDialog
-        quarterId="q1"
-        companyObjectives={companyObjectivesFixture}
-        onSave={onSave}
-        onClose={onClose}
-      />
-    )
-    fireEvent.change(screen.getByLabelText(/objective/i), { target: { value: 'Grow revenue' } })
-    fireEvent.change(screen.getByLabelText(/aligns with/i), {
-      target: { value: 'direct_kr:kr-2:co-1' },
-    })
-    await addDraftKr()
-    fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    await waitFor(() =>
-      expect(mocks.insert).toHaveBeenCalledWith([
-        {
-          title: 'Grow revenue',
-          quarter_id: 'q1',
-          owner_name: 'Satoshi Kimura',
-          status: 'draft',
-          link_type: 'direct_kr',
-          linked_company_objective_id: 'co-1',
-          key_result_id: 'kr-2',
-        },
-      ])
-    )
   })
 
   it('inserts with link_type "objective_level" when an objective is selected', async () => {

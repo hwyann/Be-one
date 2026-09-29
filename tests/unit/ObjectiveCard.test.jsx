@@ -98,36 +98,33 @@ describe('ObjectiveCard', () => {
     expect(screen.getByText('Launch APAC channel')).toBeInTheDocument()
   })
 
-  it('renders initials for each linked owner', () => {
+  // Members can only align to the whole company Objective now (#B26), so
+  // the avatar cluster is sourced from objective.individual_objectives
+  // (one embed per company objective, via linked_company_objective_id) —
+  // not from a per-KR individual_objectives array like the old direct_kr
+  // link used to produce.
+  it('renders initials for each linked, confirmed member', () => {
     const withOwners = {
       ...objective,
-      key_results: [{
-        id: 'k1',
-        title: 'Reach 100 accounts',
-        individual_objectives: [
-          { owner_name: 'Satoshi Kimura' },
-          { owner_name: 'Hiroshi Tanaka' },
-        ],
-      }],
+      individual_objectives: [
+        { id: 'io-1', title: 'A', owner_name: 'Satoshi Kimura', status: 'confirmed' },
+        { id: 'io-2', title: 'B', owner_name: 'Hiroshi Tanaka', status: 'confirmed' },
+      ],
     }
     render(<ObjectiveCard objective={withOwners} />)
     expect(screen.getByText('SK')).toBeInTheDocument()
     expect(screen.getByText('HT')).toBeInTheDocument()
   })
 
-  it('collapses owners beyond three into a +N pill', () => {
+  it('collapses members beyond three into a +N pill', () => {
     const many = {
       ...objective,
-      key_results: [{
-        id: 'k1',
-        title: 'Reach 100 accounts',
-        individual_objectives: [
-          { owner_name: 'Alice Adams' },
-          { owner_name: 'Bob Brown' },
-          { owner_name: 'Carol Chan' },
-          { owner_name: 'Dan Doe' },
-        ],
-      }],
+      individual_objectives: [
+        { id: 'io-1', title: 'A', owner_name: 'Alice Adams', status: 'confirmed' },
+        { id: 'io-2', title: 'B', owner_name: 'Bob Brown', status: 'confirmed' },
+        { id: 'io-3', title: 'C', owner_name: 'Carol Chan', status: 'confirmed' },
+        { id: 'io-4', title: 'D', owner_name: 'Dan Doe', status: 'confirmed' },
+      ],
     }
     render(<ObjectiveCard objective={many} />)
     expect(screen.getByText('AA')).toBeInTheDocument()
@@ -137,32 +134,34 @@ describe('ObjectiveCard', () => {
     expect(screen.queryByText('DD')).not.toBeInTheDocument()
   })
 
-  it('skips owners without an owner_name', () => {
+  it('skips members without an owner_name', () => {
     const nulls = {
       ...objective,
-      key_results: [{
-        id: 'k1',
-        title: 'Reach 100 accounts',
-        individual_objectives: [
-          { owner_name: 'Satoshi Kimura' },
-          { owner_name: null },
-        ],
-      }],
+      individual_objectives: [
+        { id: 'io-1', title: 'A', owner_name: 'Satoshi Kimura', status: 'confirmed' },
+        { id: 'io-2', title: 'B', owner_name: null, status: 'confirmed' },
+      ],
     }
     render(<ObjectiveCard objective={nulls} />)
     expect(screen.getByText('SK')).toBeInTheDocument()
-    expect(screen.getByText('Reach 100 accounts')).toBeInTheDocument()
+  })
+
+  it('excludes an unconfirmed (draft) member from the cluster', () => {
+    const withDraft = {
+      ...objective,
+      individual_objectives: [
+        { id: 'io-1', title: 'A', owner_name: 'Satoshi Kimura', status: 'draft' },
+      ],
+    }
+    render(<ObjectiveCard objective={withDraft} />)
+    expect(screen.queryByText('SK')).not.toBeInTheDocument()
   })
 
   const withLinkedIO = {
     ...objective,
-    key_results: [{
-      id: 'k1',
-      title: 'Reach 100 accounts',
-      individual_objectives: [
-        { id: 'io-1', owner_name: 'Satoshi Kimura' },
-      ],
-    }],
+    individual_objectives: [
+      { id: 'io-1', title: 'Reach 100 accounts', owner_name: 'Satoshi Kimura', status: 'confirmed', key_results: [] },
+    ],
   }
 
   describe('read-only Map surface (#B12)', () => {
@@ -199,17 +198,17 @@ describe('ObjectiveCard', () => {
       expect(screen.queryByRole('button', { name: /add key result/i })).not.toBeInTheDocument()
     })
 
-    it('still renders the avatar cluster for a company KR row with a directly-linked individual objective', () => {
+    it('still renders the avatar cluster on a company objective with a linked individual objective', () => {
       render(<ObjectiveCard objective={withLinkedIO} />)
       expect(screen.getByText('SK')).toBeInTheDocument()
     })
 
-    it('does not render a Check-in trigger on the Map even when a company KR has a directly-linked individual objective', () => {
+    it('does not render a Check-in trigger on the Map even when a company objective has a linked individual objective', () => {
       render(<ObjectiveCard objective={withLinkedIO} />)
       expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument()
     })
 
-    it('does not render a History trigger on the Map even when a company KR has a directly-linked individual objective', () => {
+    it('does not render a History trigger on the Map even when a company objective has a linked individual objective', () => {
       render(<ObjectiveCard objective={withLinkedIO} />)
       expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
     })
@@ -223,6 +222,69 @@ describe('ObjectiveCard', () => {
       }
       render(<ObjectiveCard objective={withKrs} />)
       expect(screen.getByText(/stretch: 200/)).toBeInTheDocument()
+    })
+  })
+
+  describe('Manager member-OKR drill-down on a company objective (#B26)', () => {
+    const withMembers = {
+      ...objective,
+      individual_objectives: [
+        {
+          id: 'io-1',
+          title: 'Ship v2 redesign',
+          owner_name: 'Satoshi Kimura',
+          status: 'confirmed',
+          key_results: [{ id: 'k1', title: 'Ship v1 by Q3' }],
+        },
+        { id: 'io-2', title: 'Draft OKR', owner_name: 'Hiroshi Tanaka', status: 'draft' },
+      ],
+    }
+
+    it('renders the member avatar cluster as a plain (non-interactive) cluster in Member view', () => {
+      render(<ObjectiveCard objective={withMembers} viewMode="member" />)
+      expect(screen.getByText('SK')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /show member okrs/i })).not.toBeInTheDocument()
+    })
+
+    it('renders the member avatar cluster as a clickable trigger in Manager view', () => {
+      render(<ObjectiveCard objective={withMembers} viewMode="manager" />)
+      expect(screen.getByRole('button', { name: /show member okrs/i })).toBeInTheDocument()
+    })
+
+    it('does not show the member-OKR panel until the trigger is clicked', () => {
+      render(<ObjectiveCard objective={withMembers} viewMode="manager" />)
+      expect(screen.queryByRole('group', { name: /member okrs/i })).not.toBeInTheDocument()
+    })
+
+    it('shows each confirmed member\'s OKR (title, owner, key results) below the card when the trigger is clicked', () => {
+      render(<ObjectiveCard objective={withMembers} viewMode="manager" />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      const panel = screen.getByRole('group', { name: /member okrs/i })
+      expect(within(panel).getByText('Ship v2 redesign')).toBeInTheDocument()
+      expect(within(panel).getByText('Satoshi Kimura')).toBeInTheDocument()
+      expect(within(panel).getByText('Ship v1 by Q3')).toBeInTheDocument()
+    })
+
+    it('excludes an unconfirmed (draft) member from the panel', () => {
+      render(<ObjectiveCard objective={withMembers} viewMode="manager" />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      expect(screen.queryByText('Draft OKR')).not.toBeInTheDocument()
+      expect(screen.queryByText('Hiroshi Tanaka')).not.toBeInTheDocument()
+    })
+
+    it('hides the panel again when the trigger is clicked a second time', () => {
+      render(<ObjectiveCard objective={withMembers} viewMode="manager" />)
+      const trigger = screen.getByRole('button', { name: /show member okrs/i })
+      fireEvent.click(trigger)
+      expect(screen.getByRole('group', { name: /member okrs/i })).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: /hide member okrs/i }))
+      expect(screen.queryByRole('group', { name: /member okrs/i })).not.toBeInTheDocument()
+    })
+
+    it('never shows the drill-down trigger or panel on an individual objective (Manager viewing their own OKR detail area)', () => {
+      const individualObjective = { id: 'io-9', title: 'Ship MVP' }
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="manager" />)
+      expect(screen.queryByRole('button', { name: /show member okrs/i })).not.toBeInTheDocument()
     })
   })
 

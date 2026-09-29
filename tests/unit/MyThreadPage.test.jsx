@@ -86,7 +86,7 @@ describe('MyThreadPage', () => {
     expect(screen.queryByText('Hire designer')).not.toBeInTheDocument()
   })
 
-  it('shows the linked company objective title for a direct_kr row', () => {
+  it('shows the linked company objective title', () => {
     render(
       <MyThreadPage
         ownerName="Satoshi Kimura"
@@ -97,7 +97,7 @@ describe('MyThreadPage', () => {
     expect(screen.getByText(/Grow revenue/)).toBeInTheDocument()
   })
 
-  it('labels the company-OKR link with "Linked to Company OKR: "', () => {
+  it('labels the company-OKR link with "Linked to Company OKR: " and no KR-title suffix (#B26)', () => {
     render(
       <MyThreadPage
         ownerName="Satoshi Kimura"
@@ -105,18 +105,7 @@ describe('MyThreadPage', () => {
         companyObjectives={companyObjectives}
       />
     )
-    expect(screen.getByText(/^Linked to Company OKR: Grow revenue/)).toBeInTheDocument()
-  })
-
-  it('shows the linked KR title for direct_kr rows', () => {
-    render(
-      <MyThreadPage
-        ownerName="Satoshi Kimura"
-        objectives={[objectives[0]]}
-        companyObjectives={companyObjectives}
-      />
-    )
-    expect(screen.getByText(/Reach 100 accounts/)).toBeInTheDocument()
+    expect(screen.getByText('Linked to Company OKR: Grow revenue')).toBeInTheDocument()
   })
 
   it('shows the linked company objective title for an objective_level row', () => {

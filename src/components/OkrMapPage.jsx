@@ -13,71 +13,6 @@ import MyThreadPage from './MyThreadPage'
 
 const VIEWER_OWNER_NAME = 'Satoshi Kimura'
 
-function LinkTypeLegend() {
-  return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '18px',
-      marginBottom: '14px',
-      font: '600 12px var(--font-display)',
-      color: 'var(--text-secondary)',
-    }}>
-      <LegendEntry testId="legend-icon-direct" label="Direct KR link">
-        <line x1="2" y1="6" x2="26" y2="6" stroke="var(--ink-900)" strokeWidth="2.5" strokeLinecap="round" />
-      </LegendEntry>
-      <LegendEntry testId="legend-icon-objective" label="Objective-level">
-        <line x1="2" y1="6" x2="26" y2="6" stroke="var(--ink-900)" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" />
-      </LegendEntry>
-    </div>
-  )
-}
-
-function LegendEntry({ testId, label, children }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-      <svg data-testid={testId} width="28" height="12" viewBox="0 0 28 12" aria-hidden="true">
-        {children}
-      </svg>
-      {label}
-    </span>
-  )
-}
-
-function AlignmentSummaryStrip({ objectives }) {
-  const directKrCount = objectives.filter(o => o.link_type === 'direct_kr').length
-  const objectiveLevelCount = objectives.filter(
-    o => o.link_type === 'objective_level' || o.link_type == null,
-  ).length
-  return (
-    <div style={{ display: 'flex', gap: '14px', marginTop: '14px' }}>
-      <SummaryCard label="Direct KR" count={directKrCount} borderStyle="solid" />
-      <SummaryCard label="Objective-level" count={objectiveLevelCount} borderStyle="dashed" />
-    </div>
-  )
-}
-
-function SummaryCard({ label, count, borderStyle }) {
-  return (
-    <div style={{
-      flex: 1,
-      border: `1.5px ${borderStyle} var(--hairline)`,
-      borderRadius: '12px',
-      background: 'var(--surface)',
-      padding: '12px 14px',
-    }}>
-      <div style={{
-        font: '700 10px var(--font-display)',
-        letterSpacing: '.16em',
-        textTransform: 'uppercase',
-        color: 'var(--text-secondary)',
-      }}>
-        {label} · {count}
-      </div>
-    </div>
-  )
-}
-
 function QuarterSelector({ quarters, quarterId, onChange, disabled = false }) {
   return (
     <select
@@ -348,7 +283,6 @@ export default function OkrMapPage() {
       </div>
       {view === 'map' ? (
         <>
-          <LinkTypeLegend />
           {objectives.length > 0 && (
             <ObjectiveCarousel
               objectives={objectives}
@@ -359,9 +293,9 @@ export default function OkrMapPage() {
               onStatusSaved={refetch}
               onKrSaved={refetch}
               readOnly={isPastQuarter}
+              viewMode={viewMode}
             />
           )}
-          <AlignmentSummaryStrip objectives={individualObjectives} />
         </>
       ) : (
         <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>

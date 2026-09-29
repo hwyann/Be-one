@@ -4,31 +4,11 @@ import useKrSummary from '../hooks/useKrSummary'
 import CheckInPanel from './CheckInPanel'
 import CheckInHistory, { SummaryBlock } from './CheckInHistory'
 
-const MAX_INLINE_OWNERS = 3
-const COLLAPSED_INLINE_OWNERS = 2
-
-function initialsFor(name) {
-  return name.trim().split(/\s+/).slice(0, 2).map(p => p[0].toUpperCase()).join('')
-}
-
-function Avatar({ text, overlap }) {
-  return (
-    <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '20px',
-      height: '20px',
-      borderRadius: '999px',
-      background: 'var(--panel)',
-      border: '2px solid var(--surface)',
-      font: '600 9px var(--font-sans)',
-      color: 'var(--text-secondary)',
-      marginLeft: overlap ? '-6px' : 0,
-      flex: 'none',
-    }}>{text}</span>
-  )
-}
+// The member-avatar cluster used to live here, per KR row, sourced from
+// kr.individual_objectives (the old direct-KR link). Members can only align
+// to a whole company Objective now (#B26), so the cluster moved up to
+// ObjectiveCard (one per objective, not one per KR) — see Avatar/
+// initialsFor there.
 
 function RowActionButton({ label, onClick }) {
   return (
@@ -121,10 +101,6 @@ function KrRow({
   kr, individualObjectiveId, viewMode, allowCheckIn, summary, summaryStatus,
   onCheckInSaved, onEdit, readOnly,
 }) {
-  const linked = kr.individual_objectives ?? []
-  const owners = linked.filter(o => o.owner_name)
-  const overflow = owners.length > MAX_INLINE_OWNERS ? owners.length - COLLAPSED_INLINE_OWNERS : 0
-  const shown = overflow > 0 ? owners.slice(0, COLLAPSED_INLINE_OWNERS) : owners
   const [checkingIn, setCheckingIn] = useState(false)
   // Codex review finding (per-kr-checkin, round 1): CheckInHistory owns its
   // own fetch internally and had no way to know a new check-in was just
@@ -156,16 +132,6 @@ function KrRow({
             </span>
           )}
         </div>
-        {(shown.length > 0 || overflow > 0) && (
-          <div style={{ display: 'flex' }}>
-            {shown.map((o, i) => (
-              <Avatar key={i} text={initialsFor(o.owner_name)} overlap={i > 0} />
-            ))}
-            {overflow > 0 && (
-              <Avatar text={`+${overflow}`} overlap={shown.length > 0} />
-            )}
-          </div>
-        )}
         {!readOnly && <RowActionButton label="Edit" onClick={onEdit} />}
       </div>
       {allowCheckIn && (

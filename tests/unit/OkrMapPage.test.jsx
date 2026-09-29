@@ -650,110 +650,23 @@ describe('OkrMapPage', () => {
     })
   })
 
-  describe('link-type legend row', () => {
-    it('renders both legend labels in Map view', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      render(<OkrMapPage />)
-      expect(screen.getByText('Direct KR link')).toBeInTheDocument()
-      expect(screen.getByText('Objective-level')).toBeInTheDocument()
-    })
+  // The link-type legend and alignment-summary-strip describe blocks that
+  // used to live here were removed in #B26 — members can only align to a
+  // whole company Objective now (no more direct_kr), so the solid/dashed
+  // distinction and its counts no longer mean anything.
 
-    it('renders the solid line icon with stroke-width 2.5 and ink-900 color', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      render(<OkrMapPage />)
-      const solid = screen.getByTestId('legend-icon-direct')
-      const line = solid.querySelector('line')
-      expect(line).not.toBeNull()
-      expect(line.getAttribute('stroke-width')).toBe('2.5')
-      expect(line.getAttribute('stroke')).toBe('var(--ink-900)')
-      expect(line.getAttribute('stroke-dasharray')).toBeNull()
-    })
-
-    it('renders the dashed line icon with stroke-width 2 and dasharray "5 4"', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      render(<OkrMapPage />)
-      const dashed = screen.getByTestId('legend-icon-objective')
-      const line = dashed.querySelector('line')
-      expect(line).not.toBeNull()
-      expect(line.getAttribute('stroke-width')).toBe('2')
-      expect(line.getAttribute('stroke-dasharray')).toBe('5 4')
-    })
-
-    it('does not render the legend in My thread view', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      mocks.useIndividualObjectives.mockReturnValue({
-        objectives: individualObjectives,
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-      })
-      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
-      render(<OkrMapPage />)
-      fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
-      expect(screen.queryByText('Direct KR link')).not.toBeInTheDocument()
-      expect(screen.queryByText('Objective-level')).not.toBeInTheDocument()
-    })
-  })
-
-  describe('alignment summary strip', () => {
-    const linkedIndividualObjectives = [
-      { id: 'io-1', title: 'A', link_type: 'direct_kr' },
-      { id: 'io-2', title: 'B', link_type: 'direct_kr' },
-      { id: 'io-3', title: 'C', link_type: 'objective_level' },
-      { id: 'io-4', title: 'D', link_type: null },
-    ]
-
-    it('shows a Direct KR card counting direct_kr links in Map view', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      mocks.useIndividualObjectives.mockReturnValue({
-        objectives: linkedIndividualObjectives,
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-      })
-      render(<OkrMapPage />)
-      expect(screen.getByText(/Direct KR · 2/)).toBeInTheDocument()
-    })
-
-    it('shows an Objective-level card counting objective_level and null links in Map view', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      mocks.useIndividualObjectives.mockReturnValue({
-        objectives: linkedIndividualObjectives,
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-      })
-      render(<OkrMapPage />)
-      expect(screen.getByText(/Objective-level · 2/)).toBeInTheDocument()
-    })
-
-    it('shows zero counts when there are no individual objectives', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      mocks.useIndividualObjectives.mockReturnValue({
-        objectives: [],
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-      })
-      render(<OkrMapPage />)
-      expect(screen.getByText(/Direct KR · 0/)).toBeInTheDocument()
-      expect(screen.getByText(/Objective-level · 0/)).toBeInTheDocument()
-    })
-
-    it('does not render the summary strip in My thread view', () => {
-      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
-      mocks.useIndividualObjectives.mockReturnValue({
-        objectives: linkedIndividualObjectives,
-        loading: false,
-        error: null,
-        refetch: vi.fn(),
-      })
-      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
-      render(<OkrMapPage />)
-      fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
-      expect(screen.queryByText(/Direct KR · /)).not.toBeInTheDocument()
-      expect(screen.queryByText(/Objective-level · /)).not.toBeInTheDocument()
-    })
+  it('passes viewMode through to the Map carousel so a Manager can open the member-OKR drill-down on a company card (#B26)', () => {
+    const withMember = [{
+      ...objectives[0],
+      individual_objectives: [
+        { id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed', key_results: [] },
+      ],
+    }, objectives[1]]
+    mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+    mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+    render(<OkrMapPage />)
+    fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+    expect(screen.getByRole('group', { name: /member okrs/i })).toHaveTextContent('Ship MVP')
   })
 
   describe('read-only past quarter (#5a-2)', () => {
