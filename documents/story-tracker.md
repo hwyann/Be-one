@@ -423,6 +423,7 @@ Feature: Unified drill-down modal for individual objectives
 | B24 | Redundant per-objective Review button in the OKR detail area; check-in was objective-level not per-KR; "Ask a question" had no Manager gate | Feature | **Accepted** (merged direct to `main` `7a7b428`, no PR/review — demo-build process, 2026-09-27). Background sub-agent + 3 rounds of Codex review before merge (3 real findings caught, incl. a live data-loss bug — see note below). | none | PM (background sub-agent + Codex review) |
 | B25 | Per-KR card layout was summary+history bundled, then Check-in below; wanted summary → check-in → history (newest first) | Bug | **Accepted** (merged direct to `main` `8362561`, no PR/review — demo-build process, 2026-09-27). Built directly by the PM session (no sub-agent — small, well-scoped change). Also includes a `generate-kr-summary` Edge Function fix + live diagnosis, see note below. | none | PM (direct) |
 | B26 | Members could align to a specific company KR (direct_kr), not just the whole Objective; Map's member avatars were per-KR; no way for a Manager to see whose OKR relates to a company objective | Feature | **Accepted** (merged direct to `main` `b7a26af`, no PR/review — demo-build process, 2026-09-27) | none | PM (direct) |
+| B27 | My OKR view's Review button was always on with no Manager trigger; Review opened as an in-place modal | Feature | **Accepted** (merged direct to `main` `b3de0c9`, no PR/review — demo-build process, 2026-09-27). Migration `0011_quarters_review_requested_at.sql` applied live by Jess via the Supabase SQL editor 2026-09-27 (additive, no backfill needed). | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -746,6 +747,48 @@ Feature: Members align to a whole company Objective, not a specific KR
       Then that draft does not appear in the list
 ```
 `e2e: none`. Implementation: `useCompanyObjectives.js`'s query changed from embedding `individual_objectives` under each `key_results` row via the `key_result_id` FK to embedding them once per `company_objectives` row via the `linked_company_objective_id` FK — each embedded individual objective also brings its own `key_results` along (via `key_results_individual_objective_id_fkey`) so the Manager panel doesn't need a second fetch. The avatar cluster (`Avatar`/`initialsFor`, previously in `KrListInline.jsx`'s `KrRow`, one per KR) moved to `ObjectiveCard.jsx` as `MemberAvatarCluster`, rendered once in the card header, sourced from `objective.individual_objectives` filtered to `status === 'confirmed'`. A new `MemberOkrPanel` renders outside the card's bordered box (via a fragment) when a Manager clicks the cluster. `OkrDialog.jsx`'s "Aligns with" `<select>` dropped its per-KR `<option>`s (was one `<optgroup>` per company objective with a KR sub-option each); `parseLink`/`formatLink` simplified to only handle `objective_level`. `OkrMapPage.jsx`'s `LinkTypeLegend` (solid/dashed line legend) and `AlignmentSummaryStrip` (Direct KR / Objective-level counts) were removed entirely — that distinction no longer exists. `MyThreadPage.jsx`'s "Linked to Company OKR: " label dropped its `· KR title` suffix for the same reason. Two live `individual_objectives` rows that already had `link_type: 'direct_kr'` were migrated to `objective_level` (with `key_result_id` cleared) via a direct Supabase REST PATCH, so they resolve correctly under the new model — no schema change was needed for this feature (`linked_company_objective_id` already existed on the table). 22 tests removed/rewritten across `useCompanyObjectives`, `ObjectiveCard`, `OkrDialog`, `OkrMapPage`, and `MyThreadPage`; full suite 479/479.
+
+**B27 — Manager-requested review, opened as a routed page**
+
+```gherkin
+Feature: Manager requests a review before Member's Review button activates
+  As Jess, I want a Member's Review button to stay off until their Manager
+  explicitly asks for a review, so that "time to review" is a deliberate
+  Manager-driven event instead of always being available.
+
+  Scenario: Manager requests review for the active quarter
+    Given the viewer is in Manager view
+    When they click "Request all members to review OKR"
+    Then quarters.review_requested_at is stamped for the active quarter
+    And the button's label changes to "Re-request OKR review"
+
+  Scenario: Member's Review button is disabled until a request exists
+    Given the active quarter has no review request yet
+    When a member looks at their "My Current OKR" row
+    Then the Review button is present but disabled
+
+  Scenario: Member's Review button activates after the request
+    Given a Manager has requested a review for the active quarter
+    When the member looks at their "My Current OKR" row
+    Then the Review button is enabled, independent of readOnly
+
+  Feature: Review opens as a routed page, not a modal
+    As Satoshi, I want Review to open a full page, so that my progress
+    isn't tied to keeping an overlay open, and I can leave and come back.
+
+    Scenario: Clicking Review navigates to a dedicated page
+      Given the Review button is enabled
+      When the member clicks it
+      Then they're taken to /review, listing each of their confirmed
+        objectives with its own review fields
+
+    Scenario: Each objective's review saves independently (draft-friendly)
+      Given the member is on the Review page
+      When they fill in one objective's fields and click Save
+      Then only that objective's quarter_reviews row is written
+      And they can navigate away and back later to finish the rest
+```
+`e2e: none`. Implementation: new `useRequestQuarterReview.js` hook (`update` on `quarters.review_requested_at`); `OkrMapPage.jsx` derives `reviewRequested` from `quarters.find(q => q.id === quarterId)?.review_requested_at` (reusing `useActiveQuarter`'s existing `select('*')` — no query change needed) and renders the request button only in Manager view. `MyThreadPage.jsx`'s Review button gained a `reviewEnabled` prop and now calls `useNavigate('/review')` instead of opening `AllOkrsReview` inline — this reverses #B23's "deliberately always-available" decision on purpose, per PM instruction. New `ReviewPage.jsx` (route `/review`, added to `App.jsx` ahead of the catch-all, `ProtectedRoute`-wrapped) reuses the existing `QuarterReviewFields` (already split out of `QuarterReviewModal.jsx` back in split-view-review-all) — since each objective's review already saves independently the moment Save is clicked (#B3), "save as draft and resume later" needed no new code, just no longer forcing the work to happen inside a single modal session. `AllOkrsReview.jsx` and its test are deleted (fully superseded). `VIEWER_OWNER_NAME` extracted from a local const in `OkrMapPage.jsx` to `src/lib/viewer.js` so `ReviewPage.jsx` doesn't redeclare it. 8 new/updated tests across `useRequestQuarterReview`, `ReviewPage`, `MyThreadPage`, and `OkrMapPage`; full suite 489/489.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
