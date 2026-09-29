@@ -10,6 +10,49 @@ import CheckInHistory, { SummaryBlock } from './CheckInHistory'
 // ObjectiveCard (one per objective, not one per KR) — see Avatar/
 // initialsFor there.
 
+// Manager's read-only view of a member's OKR (#B27 follow-up) shows the
+// same summary-then-history structure as the member's own card, but the
+// raw check-in entries default collapsed behind this arrow toggle instead
+// of always being shown — "opt in" to the details rather than seeing them
+// by default. The AI summary itself is unaffected and always visible.
+function HistoryToggle({ individualObjectiveId, keyResultId, canAskQuestion }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        aria-expanded={open}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          font: '600 11px var(--font-sans)',
+          color: 'var(--text-secondary)',
+          border: 'none',
+          background: 'transparent',
+          padding: '4px 0',
+          cursor: 'pointer',
+        }}
+      >
+        <span aria-hidden="true" style={{
+          display: 'inline-block',
+          transition: 'transform 120ms',
+          transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+        }}>▸</span>
+        History
+      </button>
+      {open && (
+        <CheckInHistory
+          individualObjectiveId={individualObjectiveId}
+          keyResultId={keyResultId}
+          canAskQuestion={canAskQuestion}
+        />
+      )}
+    </div>
+  )
+}
+
 function RowActionButton({ label, onClick }) {
   return (
     <button
@@ -98,7 +141,7 @@ export function KrForm({ initialTitle = '', initialTargetNote = '', onSubmit, on
 }
 
 function KrRow({
-  kr, individualObjectiveId, viewMode, allowCheckIn, summary, summaryStatus,
+  kr, individualObjectiveId, viewMode, allowCheckIn, managerReview, summary, summaryStatus,
   onCheckInSaved, onEdit, readOnly,
 }) {
   const [checkingIn, setCheckingIn] = useState(false)
@@ -109,6 +152,10 @@ function KrRow({
   // block by it forces a clean remount -> fresh fetch, without needing an
   // imperative refetch handle threaded back out of CheckInHistory.
   const [historyVersion, setHistoryVersion] = useState(0)
+  // Summary + history show for the viewer's own KR (allowCheckIn) AND for
+  // a Manager's read-only view of a member's KR (managerReview) — the two
+  // differ only in whether the Check-in trigger itself appears (#B27).
+  const showKrDetail = allowCheckIn || managerReview
 
   return (
     <div>
@@ -134,13 +181,13 @@ function KrRow({
         </div>
         {!readOnly && <RowActionButton label="Edit" onClick={onEdit} />}
       </div>
-      {allowCheckIn && (
+      {showKrDetail && (
         <>
           <SummaryBlock status={summaryStatus} summary={summary} />
-          {!checkingIn && (
+          {allowCheckIn && !checkingIn && (
             <RowActionButton label="Check-in" onClick={() => setCheckingIn(true)} />
           )}
-          {checkingIn && (
+          {allowCheckIn && checkingIn && (
             <CheckInPanel
               individualObjectiveId={individualObjectiveId}
               keyResultId={kr.id}
@@ -151,12 +198,20 @@ function KrRow({
               onDone={() => setCheckingIn(false)}
             />
           )}
-          <CheckInHistory
-            key={historyVersion}
-            individualObjectiveId={individualObjectiveId}
-            keyResultId={kr.id}
-            canAskQuestion={viewMode === 'manager'}
-          />
+          {managerReview ? (
+            <HistoryToggle
+              individualObjectiveId={individualObjectiveId}
+              keyResultId={kr.id}
+              canAskQuestion={viewMode === 'manager'}
+            />
+          ) : (
+            <CheckInHistory
+              key={historyVersion}
+              individualObjectiveId={individualObjectiveId}
+              keyResultId={kr.id}
+              canAskQuestion={viewMode === 'manager'}
+            />
+          )}
         </>
       )}
     </div>
@@ -171,6 +226,7 @@ export default function KrListInline({
   onKrSaved,
   readOnly = false,
   allowCheckIn = false,
+  managerReview = false,
   viewMode,
 }) {
   const [krFormMode, setKrFormMode] = useState(null)
@@ -231,6 +287,7 @@ export default function KrListInline({
                 individualObjectiveId={individualObjectiveId}
                 viewMode={viewMode}
                 allowCheckIn={allowCheckIn}
+                managerReview={managerReview}
                 summary={summary}
                 summaryStatus={summaryStatus}
                 onCheckInSaved={handleAnyCheckInSaved}

@@ -297,6 +297,7 @@ export default function OkrDialog({
   mandatory = false,
   existingDrafts = [],
   viewMode,
+  managerReview = false,
   onSave,
   onClose,
   onKrSaved,
@@ -308,7 +309,12 @@ export default function OkrDialog({
   const [objectiveDrafts, setObjectiveDrafts] = useState(() => draftsFromExisting(existingDrafts))
   const { save: saveRationale } = useRationale(null)
   const { create: createKr, update: updateKr } = useKrMutation()
-  const isConfirmedObjective = !!objective && objective.status === 'confirmed'
+  // Manager reading a member's OKR (#B27 follow-up) reuses this same "just
+  // like the member's card detail view" dialog chrome, always in its
+  // confirmed/read-only shape — Coach me, the editable title input, and
+  // the draft/confirm footer never apply to it, same as a genuinely
+  // confirmed objective.
+  const isConfirmedObjective = !!objective && (objective.status === 'confirmed' || managerReview)
 
   function updateDraft(index, patch) {
     setObjectiveDrafts(drafts => drafts.map((d, i) => (i === index ? { ...d, ...patch } : d)))
@@ -487,6 +493,7 @@ export default function OkrDialog({
           onKrSaved={onKrSaved}
           readOnly={isConfirmedObjective}
           viewMode={viewMode}
+          managerReview={managerReview}
         />
       )}
       {!isConfirmedObjective && (

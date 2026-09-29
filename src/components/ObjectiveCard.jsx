@@ -79,8 +79,12 @@ function MemberAvatarCluster({ members, interactive, expanded, onToggle }) {
 
 // Manager-only drill-down (#B26): each linked member's own OKR, shown below
 // (not inside) the company card, so it reads as "related to this objective"
-// rather than part of the company card's own content.
-function MemberOkrPanel({ members }) {
+// rather than part of the company card's own content. Each row is now also
+// clickable (#B27 follow-up) — it opens that member's OKR in a right-side
+// detail panel, the same card design used for a member's own "My OKR"
+// drill-down (see OkrMapPage's managerReview OkrDialog usage), just with
+// checking-in disabled and history collapsed behind an arrow by default.
+function MemberOkrPanel({ members, onSelect, selectedId }) {
   return (
     <div
       role="group"
@@ -88,12 +92,25 @@ function MemberOkrPanel({ members }) {
       style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}
     >
       {members.map(member => (
-        <div key={member.id} style={{
-          background: 'var(--panel)',
-          border: '1px solid var(--hairline)',
-          borderRadius: '12px',
-          padding: '10px 12px',
-        }}>
+        // A <div role="button">, not a <button> — same reasoning as
+        // MyThreadPage's ObjectiveCardRow (#B22): the KR list below is flow
+        // content, and a <button> may only contain phrasing content.
+        <div
+          key={member.id}
+          role="button"
+          tabIndex={0}
+          onClick={() => onSelect?.(member)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(member) }
+          }}
+          style={{
+            background: 'var(--panel)',
+            border: selectedId === member.id ? '1.5px solid var(--coral-700)' : '1px solid var(--hairline)',
+            borderRadius: '12px',
+            padding: '10px 12px',
+            cursor: 'pointer',
+          }}
+        >
           <div style={{ font: '700 12px var(--font-display)', color: 'var(--ink-900)' }}>
             {member.title}
           </div>
@@ -126,6 +143,9 @@ export default function ObjectiveCard({
   onKrSaved,
   readOnly = false,
   viewMode,
+  managerReview = false,
+  onSelectMember,
+  selectedMemberId,
 }) {
   const { id, category, title, status } = objective
   const isCompany = !individualObjectiveId
@@ -135,7 +155,9 @@ export default function ObjectiveCard({
   // — even though noEdit/readOnly is true for a confirmed objective. It
   // must still be fully absent for a company objective (Map context)
   // regardless of anything else, so this tracks !isCompany, not !readOnly.
-  const allowCheckIn = !isCompany
+  // A Manager reading a member's OKR (#B27 follow-up) never gets check-in
+  // either, even though this isn't the company Map card itself.
+  const allowCheckIn = !isCompany && !managerReview
   const statusMeta = status
     ? (STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' })
     : null
@@ -258,12 +280,13 @@ export default function ObjectiveCard({
         onKrSaved={onKrSaved}
         readOnly={noEdit}
         allowCheckIn={allowCheckIn}
+        managerReview={managerReview}
         viewMode={viewMode}
       />
       <RationaleSection rationale={rationale} />
     </div>
     {isCompany && isManager && showMembers && linkedMembers.length > 0 && (
-      <MemberOkrPanel members={linkedMembers} />
+      <MemberOkrPanel members={linkedMembers} onSelect={onSelectMember} selectedId={selectedMemberId} />
     )}
     </>
   )

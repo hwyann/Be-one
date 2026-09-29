@@ -679,6 +679,43 @@ describe('OkrMapPage', () => {
     expect(screen.getByRole('group', { name: /member okrs/i })).toHaveTextContent('Ship MVP')
   })
 
+  describe('Manager Map-view right panel for a member\'s OKR (#B28)', () => {
+    const memberObjective = { id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed', key_results: [] }
+    const withMember = [{ ...objectives[0], individual_objectives: [memberObjective] }, objectives[1]]
+
+    it('opens the right panel (OkrDialog with managerReview) when a member row is clicked', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.click(screen.getByRole('button', { name: /ship mvp/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+      const props = mocks.OkrDialog.mock.calls.at(-1)[0]
+      expect(props.objective).toEqual(memberObjective)
+      expect(props.managerReview).toBe(true)
+      expect(props.viewMode).toBe('manager')
+    })
+
+    it('does not render the right panel before a member row is clicked', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('closes the right panel when the dialog\'s onClose is called', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.click(screen.getByRole('button', { name: /ship mvp/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+      const { onClose } = mocks.OkrDialog.mock.calls.at(-1)[0]
+      act(() => { onClose() })
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
+  })
+
   describe('read-only past quarter (#5a-2)', () => {
     function mockPastQuarter(quarterId = 'q1') {
       mocks.useActiveQuarter.mockReturnValue({
@@ -1218,6 +1255,31 @@ describe('OkrMapPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /my okr/i }))
 
       expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+    })
+
+    it('also closes the Manager Map-view member-OKR right panel when the quarter changes (#B28)', () => {
+      const memberObjective = { id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed', key_results: [] }
+      const withMember = [{ ...objectives[0], individual_objectives: [memberObjective] }, objectives[1]]
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      const quarters = [
+        { id: 'q1', label: 'Q1 2026', is_active: true },
+        { id: 'q2', label: 'Q2 2026', is_active: false },
+      ]
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q1', quarters, error: null, selectQuarter: vi.fn(), refetch: vi.fn(),
+      })
+      const { rerender } = render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.click(screen.getByRole('button', { name: /ship mvp/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+
+      mocks.useActiveQuarter.mockReturnValue({
+        quarterId: 'q2', quarters, error: null, selectQuarter: vi.fn(), refetch: vi.fn(),
+      })
+      rerender(<OkrMapPage />)
+
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
     })
   })
 

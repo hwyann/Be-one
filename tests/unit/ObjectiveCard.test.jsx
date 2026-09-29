@@ -286,6 +286,54 @@ describe('ObjectiveCard', () => {
       render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="manager" />)
       expect(screen.queryByRole('button', { name: /show member okrs/i })).not.toBeInTheDocument()
     })
+
+    it('calls onSelectMember with the clicked member\'s objective (#B27 follow-up — opens the right-panel detail view)', () => {
+      const onSelectMember = vi.fn()
+      render(<ObjectiveCard objective={withMembers} viewMode="manager" onSelectMember={onSelectMember} />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.click(screen.getByRole('button', { name: /ship v2 redesign/i }))
+      expect(onSelectMember).toHaveBeenCalledWith(withMembers.individual_objectives[0])
+    })
+
+    it('activates a member row on Enter/Space, same as MyThreadPage\'s cards', () => {
+      const onSelectMember = vi.fn()
+      render(<ObjectiveCard objective={withMembers} viewMode="manager" onSelectMember={onSelectMember} />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.keyDown(screen.getByRole('button', { name: /ship v2 redesign/i }), { key: 'Enter' })
+      expect(onSelectMember).toHaveBeenCalledWith(withMembers.individual_objectives[0])
+    })
+  })
+
+  describe('managerReview — Manager\'s read-only detail view of a member\'s OKR (#B27 follow-up)', () => {
+    const memberObjective = {
+      id: 'io-1',
+      title: 'Ship v2 redesign',
+      status: 'confirmed',
+      key_results: [{ id: 'k1', title: 'Ship v1 by Q3' }],
+    }
+
+    it('never shows a Check-in trigger, even though this is an individual objective (not the company Map)', () => {
+      render(<ObjectiveCard objective={memberObjective} individualObjectiveId="io-1" managerReview readOnly />)
+      expect(screen.queryByRole('button', { name: /^check-in$/i })).not.toBeInTheDocument()
+    })
+
+    it('still shows a History toggle for each KR (defaults collapsed)', () => {
+      render(<ObjectiveCard objective={memberObjective} individualObjectiveId="io-1" managerReview readOnly />)
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: /check-in history/i })).not.toBeInTheDocument()
+    })
+
+    it('reveals the check-in history once the History toggle is clicked', () => {
+      render(<ObjectiveCard objective={memberObjective} individualObjectiveId="io-1" managerReview readOnly />)
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      expect(screen.getByRole('group', { name: /check-in history/i })).toBeInTheDocument()
+    })
+
+    it('does not render Edit/Add key result affordances (still read-only for editing)', () => {
+      render(<ObjectiveCard objective={memberObjective} individualObjectiveId="io-1" managerReview readOnly />)
+      expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /add key result/i })).not.toBeInTheDocument()
+    })
   })
 
   describe('individual-objective status editor (unchanged by #B12)', () => {

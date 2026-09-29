@@ -35,7 +35,7 @@ function swallowClick(e) {
   e.stopPropagation()
 }
 
-export default function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, onStatusSaved, onKrSaved, readOnly, viewMode }) {
+export default function ObjectiveCarousel({ objectives, index, onPrev, onNext, onCheckInSaved, onStatusSaved, onKrSaved, readOnly, viewMode, onSelectMember, selectedMemberId }) {
   const total = objectives.length
   const current = objectives[index]
   const prefersReduced = usePrefersReducedMotion()
@@ -82,6 +82,8 @@ export default function ObjectiveCarousel({ objectives, index, onPrev, onNext, o
               onStatusSaved={onStatusSaved}
               onKrSaved={onKrSaved}
               viewMode={viewMode}
+              onSelectMember={onSelectMember}
+              selectedMemberId={selectedMemberId}
             />
           </div>
         </div>

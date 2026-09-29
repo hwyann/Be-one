@@ -522,6 +522,49 @@ describe('OkrDialog', () => {
     })
   })
 
+  describe('managerReview — Manager viewing a member\'s OKR (#B27 follow-up)', () => {
+    // OkrMapPage's Map-view split panel reuses this same dialog chrome for
+    // "just like the member's card detail view" (see story-tracker.md
+    // #B28) — objective is always confirmed here, so this just has to make
+    // sure the read-only rendering + managerReview forwarding hold even
+    // without an explicit status field.
+    const memberObjective = { id: 'io-1', title: 'Ship v2 redesign', status: 'confirmed' }
+
+    it('forwards managerReview down to the embedded ObjectiveCard', () => {
+      render(<OkrDialog objective={memberObjective} viewMode="manager" managerReview onClose={onClose} />)
+      expect(mocks.objectiveCardProps).toHaveBeenCalledWith(
+        expect.objectContaining({ managerReview: true })
+      )
+    })
+
+    it('renders the title as static text, not an editable input', () => {
+      render(<OkrDialog objective={memberObjective} viewMode="manager" managerReview onClose={onClose} />)
+      expect(screen.queryByLabelText(/objective/i)).not.toBeInTheDocument()
+      // Appears twice: once as OkrDialog's own static title, once again as
+      // the embedded ObjectiveCard's own header — both are plain text here.
+      expect(screen.getAllByText('Ship v2 redesign').length).toBeGreaterThan(0)
+    })
+
+    it('does not render Coach me or a Save/draft/confirm footer', () => {
+      render(<OkrDialog objective={memberObjective} viewMode="manager" managerReview onClose={onClose} />)
+      expect(screen.queryByRole('button', { name: /coach me/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^save$/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /save as draft/i })).not.toBeInTheDocument()
+    })
+
+    it('still renders the Close (×) button, calling onClose when clicked', () => {
+      render(<OkrDialog objective={memberObjective} viewMode="manager" managerReview onClose={onClose} />)
+      fireEvent.click(screen.getByRole('button', { name: /^close$/i }))
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('treats the objective as confirmed/read-only even without an explicit status field', () => {
+      render(<OkrDialog objective={{ id: 'io-2', title: 'No status field' }} viewMode="manager" managerReview onClose={onClose} />)
+      expect(screen.queryByLabelText(/objective/i)).not.toBeInTheDocument()
+      expect(screen.getAllByText('No status field').length).toBeGreaterThan(0)
+    })
+  })
+
   describe('multi-objective creation (full-width "+ Add another objective")', () => {
     function fillDraft(index, { title, link, krTitle }) {
       fireEvent.change(screen.getAllByLabelText(/objective/i)[index], { target: { value: title } })

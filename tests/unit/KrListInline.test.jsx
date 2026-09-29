@@ -319,4 +319,87 @@ describe('KrListInline', () => {
       expect(mocks.checkInHistoryMounts).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe('managerReview — Manager\'s read-only view of a member\'s OKR (#B27 follow-up)', () => {
+    it('shows the AI summary but no Check-in trigger/panel even though allowCheckIn is false', () => {
+      render(
+        <KrListInline
+          individualObjectiveId="io-9"
+          keyResults={[kr]}
+          allowCheckIn={false}
+          managerReview
+          readOnly
+        />
+      )
+      expect(screen.getByTestId('summary-block')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^check-in$/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: /^check-in$/i })).not.toBeInTheDocument()
+    })
+
+    it('renders a collapsed History arrow toggle instead of the history block by default', () => {
+      render(
+        <KrListInline
+          individualObjectiveId="io-9"
+          keyResults={[kr]}
+          allowCheckIn={false}
+          managerReview
+          readOnly
+        />
+      )
+      expect(screen.getByRole('button', { name: /history/i })).toBeInTheDocument()
+      expect(screen.queryByTestId('check-in-history')).not.toBeInTheDocument()
+    })
+
+    it('reveals the history block when the arrow toggle is clicked, and hides it again on a second click', () => {
+      render(
+        <KrListInline
+          individualObjectiveId="io-9"
+          keyResults={[kr]}
+          allowCheckIn={false}
+          managerReview
+          readOnly
+        />
+      )
+      const toggle = screen.getByRole('button', { name: /history/i })
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+      fireEvent.click(toggle)
+      expect(screen.getByTestId('check-in-history')).toBeInTheDocument()
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+      fireEvent.click(toggle)
+      expect(screen.queryByTestId('check-in-history')).not.toBeInTheDocument()
+    })
+
+    it('passes canAskQuestion through to the history block based on viewMode, same as the normal (non-managerReview) path', () => {
+      render(
+        <KrListInline
+          individualObjectiveId="io-9"
+          keyResults={[kr]}
+          allowCheckIn={false}
+          managerReview
+          viewMode="manager"
+          readOnly
+        />
+      )
+      fireEvent.click(screen.getByRole('button', { name: /history/i }))
+      const props = mocks.checkInHistoryProps.mock.calls.at(-1)[0]
+      expect(props.canAskQuestion).toBe(true)
+    })
+
+    it('renders nothing KR-detail-related when neither allowCheckIn nor managerReview is set (plain company Map card, unchanged)', () => {
+      render(
+        <KrListInline
+          objectiveId="co-1"
+          keyResults={[kr]}
+          allowCheckIn={false}
+          managerReview={false}
+          readOnly
+        />
+      )
+      expect(screen.queryByTestId('summary-block')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /history/i })).not.toBeInTheDocument()
+      expect(screen.queryByTestId('check-in-history')).not.toBeInTheDocument()
+    })
+  })
 })

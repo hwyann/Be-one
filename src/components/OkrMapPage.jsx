@@ -112,6 +112,10 @@ export default function OkrMapPage() {
   const [toastMessage, setToastMessage] = useState(null)
   const [view, setView] = useState(viewMode === 'manager' ? 'map' : 'my-thread')
   const [carouselIndex, setCarouselIndex] = useState(0)
+  // Manager's Map-view drill-down into a specific member's OKR (#B27
+  // follow-up) — a right-side panel, same design as a member's own
+  // "My OKR" detail view, just read-only (see managerReview on OkrDialog).
+  const [selectedMemberObjective, setSelectedMemberObjective] = useState(null)
   const autoOpenedQuarterRef = useRef(null)
   const prevQuarterIdRef = useRef(quarterId)
 
@@ -129,6 +133,7 @@ export default function OkrMapPage() {
     if (prevQuarterIdRef.current !== quarterId) {
       prevQuarterIdRef.current = quarterId
       setDialogState(null)
+      setSelectedMemberObjective(null)
     }
   }, [quarterId])
 
@@ -315,21 +320,36 @@ export default function OkrMapPage() {
         )}
       </div>
       {view === 'map' ? (
-        <>
-          {objectives.length > 0 && (
-            <ObjectiveCarousel
-              objectives={objectives}
-              index={carouselIndex}
-              onPrev={() => setCarouselIndex(i => Math.max(0, i - 1))}
-              onNext={() => setCarouselIndex(i => Math.min(objectives.length - 1, i + 1))}
-              onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
-              onStatusSaved={refetch}
-              onKrSaved={refetch}
-              readOnly={isPastQuarter}
-              viewMode={viewMode}
-            />
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {objectives.length > 0 && (
+              <ObjectiveCarousel
+                objectives={objectives}
+                index={carouselIndex}
+                onPrev={() => setCarouselIndex(i => Math.max(0, i - 1))}
+                onNext={() => setCarouselIndex(i => Math.min(objectives.length - 1, i + 1))}
+                onCheckInSaved={() => setToastMessage('KR check-in notes saved.')}
+                onStatusSaved={refetch}
+                onKrSaved={refetch}
+                readOnly={isPastQuarter}
+                viewMode={viewMode}
+                onSelectMember={setSelectedMemberObjective}
+                selectedMemberId={selectedMemberObjective?.id}
+              />
+            )}
+          </div>
+          {viewMode === 'manager' && selectedMemberObjective && (
+            <div style={{ width: '30%', minWidth: '360px', flexShrink: 0, position: 'sticky', top: 0 }}>
+              <OkrDialog
+                key={selectedMemberObjective.id}
+                objective={selectedMemberObjective}
+                viewMode={viewMode}
+                managerReview
+                onClose={() => setSelectedMemberObjective(null)}
+              />
+            </div>
           )}
-        </>
+        </div>
       ) : (
         <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
