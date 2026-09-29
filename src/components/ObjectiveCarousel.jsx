@@ -81,6 +81,7 @@ export default function ObjectiveCarousel({ objectives, index, onPrev, onNext, o
               onCheckInSaved={onCheckInSaved}
               onStatusSaved={onStatusSaved}
               onKrSaved={onKrSaved}
+              readOnly={readOnly}
               viewMode={viewMode}
               onSelectMember={onSelectMember}
               selectedMemberId={selectedMemberId}

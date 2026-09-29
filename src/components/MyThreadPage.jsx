@@ -16,14 +16,18 @@ function cardStyle(selected) {
   }
 }
 
+// Coral (the brand/primary-action color, same as e.g. StatusEditor's Save
+// button) once a Manager has actually requested a review (#B27) — a clear
+// "this is now actionable" signal, instead of looking identical whether
+// it's usable or not (#B29 follow-up).
 function reviewButtonStyle(enabled) {
   return {
     font: '600 12px var(--font-display)',
     padding: '7px 14px',
     borderRadius: '8px',
-    border: '1px solid var(--hairline)',
-    background: 'transparent',
-    color: 'var(--text-secondary)',
+    border: enabled ? '1px solid var(--coral-800)' : '1px solid var(--hairline)',
+    background: enabled ? 'var(--coral-700)' : 'transparent',
+    color: enabled ? 'var(--surface)' : 'var(--text-secondary)',
     cursor: enabled ? 'pointer' : 'default',
     opacity: enabled ? 1 : 0.5,
   }

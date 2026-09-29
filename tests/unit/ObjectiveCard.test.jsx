@@ -2,7 +2,8 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-  update: vi.fn(),
+  companyStatusUpdate: vi.fn(),
+  individualStatusUpdate: vi.fn(),
   krCreate: vi.fn(),
   krUpdate: vi.fn(),
   rationaleRefetch: vi.fn(),
@@ -33,7 +34,11 @@ vi.mock('../../src/hooks/useCheckInQuestions', () => ({
 }))
 
 vi.mock('../../src/hooks/useCompanyObjectiveStatus', () => ({
-  default: () => ({ update: mocks.update, saving: false, error: null }),
+  default: () => ({ update: mocks.companyStatusUpdate, saving: false, error: null }),
+}))
+
+vi.mock('../../src/hooks/useIndividualObjectiveStatus', () => ({
+  default: () => ({ update: mocks.individualStatusUpdate, saving: false, error: null }),
 }))
 
 vi.mock('../../src/hooks/useKrMutation', () => ({
@@ -53,7 +58,8 @@ import ObjectiveCard from '../../src/components/ObjectiveCard'
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.update.mockResolvedValue(true)
+  mocks.companyStatusUpdate.mockResolvedValue(true)
+  mocks.individualStatusUpdate.mockResolvedValue(true)
   mocks.krCreate.mockResolvedValue(true)
   mocks.krUpdate.mockResolvedValue(true)
   mocks.useRationaleMock.mockReturnValue({
@@ -336,23 +342,32 @@ describe('ObjectiveCard', () => {
     })
   })
 
-  describe('individual-objective status editor (unchanged by #B12)', () => {
-    const individualObjective = { id: 'io-9', title: 'Ship MVP', status: 'on_track' }
+  describe('individual-objective status editor (#B29 — the member\'s own OKR, member-editable only)', () => {
+    // progress_status (not `status`, which holds draft/confirmed per #B17)
+    // is the traffic-light field for a member's own OKR (#B29 / migration
+    // 0012). Editing it is gated to viewMode="member" — a Manager only
+    // ever sees it read-only (covered in a separate describe block below).
+    const individualObjective = { id: 'io-9', title: 'Ship MVP', progress_status: 'on_track' }
 
-    it('renders a clickable on_track status dot when the card represents an individual objective', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+    it('renders a clickable on_track status badge in Member view', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
       expect(screen.getByRole('button', { name: /on track/i })).toBeInTheDocument()
     })
 
-    it('opens the status editor when the status dot is clicked', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+    it('shows the label text on the badge, not just a bare dot', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
+      expect(screen.getByText('On track')).toBeInTheDocument()
+    })
+
+    it('opens the status editor when the status badge is clicked', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
       expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
       fireEvent.click(screen.getByRole('button', { name: /on track/i }))
       expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
     })
 
     it('renders the three traffic-light options in the status editor', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
       fireEvent.click(screen.getByRole('button', { name: /on track/i }))
       const group = screen.getByRole('group', { name: /set status/i })
       expect(within(group).getByRole('radio', { name: /on track/i })).toBeInTheDocument()
@@ -360,14 +375,15 @@ describe('ObjectiveCard', () => {
       expect(within(group).getByRole('radio', { name: /behind/i })).toBeInTheDocument()
     })
 
-    it('saves the picked status via useCompanyObjectiveStatus.update and closes the editor', async () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+    it('saves the picked status via useIndividualObjectiveStatus.update (not the company one) and closes the editor', async () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
       fireEvent.click(screen.getByRole('button', { name: /on track/i }))
       const group = screen.getByRole('group', { name: /set status/i })
       fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
       fireEvent.click(within(group).getByRole('button', { name: /save/i }))
 
-      await waitFor(() => expect(mocks.update).toHaveBeenCalledWith({ id: 'io-9', status: 'at_risk' }))
+      await waitFor(() => expect(mocks.individualStatusUpdate).toHaveBeenCalledWith({ id: 'io-9', status: 'at_risk' }))
+      expect(mocks.companyStatusUpdate).not.toHaveBeenCalled()
       await waitFor(() =>
         expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
       )
@@ -379,6 +395,7 @@ describe('ObjectiveCard', () => {
         <ObjectiveCard
           objective={individualObjective}
           individualObjectiveId="io-9"
+          viewMode="member"
           onStatusSaved={onStatusSaved}
         />
       )
@@ -390,12 +407,13 @@ describe('ObjectiveCard', () => {
     })
 
     it('does not call onStatusSaved or close when the save fails', async () => {
-      mocks.update.mockResolvedValueOnce(false)
+      mocks.individualStatusUpdate.mockResolvedValueOnce(false)
       const onStatusSaved = vi.fn()
       render(
         <ObjectiveCard
           objective={individualObjective}
           individualObjectiveId="io-9"
+          viewMode="member"
           onStatusSaved={onStatusSaved}
         />
       )
@@ -403,17 +421,68 @@ describe('ObjectiveCard', () => {
       const group = screen.getByRole('group', { name: /set status/i })
       fireEvent.click(within(group).getByRole('radio', { name: /at risk/i }))
       fireEvent.click(within(group).getByRole('button', { name: /save/i }))
-      await waitFor(() => expect(mocks.update).toHaveBeenCalled())
+      await waitFor(() => expect(mocks.individualStatusUpdate).toHaveBeenCalled())
       expect(onStatusSaved).not.toHaveBeenCalled()
       expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
     })
 
     it('closes the editor when Cancel is clicked and does not call update', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
       fireEvent.click(screen.getByRole('button', { name: /on track/i }))
       fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
-      expect(mocks.update).not.toHaveBeenCalled()
+      expect(mocks.individualStatusUpdate).not.toHaveBeenCalled()
       expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+    })
+
+    it('renders the badge read-only (no button) when a Manager views the same OKR', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="manager" />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+      expect(screen.getByText('On track')).toBeInTheDocument()
+    })
+
+    it('renders the badge read-only when no viewMode is set at all', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+    })
+
+    it('renders the badge read-only once the objective is confirmed/readOnly, even in Member view (#B19 lock still applies)', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" readOnly />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('company-objective status editor (#B29 — Manager-editable, Member view-only)', () => {
+    const companyObjective = { id: 'co-1', category: 'Growth', title: 'Expand into new markets', status: 'on_track' }
+
+    it('renders a clickable badge in Manager view', () => {
+      render(<ObjectiveCard objective={companyObjective} viewMode="manager" />)
+      expect(screen.getByRole('button', { name: /on track/i })).toBeInTheDocument()
+    })
+
+    it('saves via useCompanyObjectiveStatus.update (not the individual one)', async () => {
+      render(<ObjectiveCard objective={companyObjective} viewMode="manager" />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      const group = screen.getByRole('group', { name: /set status/i })
+      fireEvent.click(within(group).getByRole('radio', { name: /behind/i }))
+      fireEvent.click(within(group).getByRole('button', { name: /save/i }))
+      await waitFor(() => expect(mocks.companyStatusUpdate).toHaveBeenCalledWith({ id: 'co-1', status: 'behind' }))
+      expect(mocks.individualStatusUpdate).not.toHaveBeenCalled()
+    })
+
+    it('renders the badge read-only (no button) in Member view', () => {
+      render(<ObjectiveCard objective={companyObjective} viewMode="member" />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+      expect(screen.getByText('On track')).toBeInTheDocument()
+    })
+
+    it('renders the badge read-only when no viewMode is set at all', () => {
+      render(<ObjectiveCard objective={companyObjective} />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+    })
+
+    it('renders the badge read-only for a Manager during a past/read-only quarter', () => {
+      render(<ObjectiveCard objective={companyObjective} viewMode="manager" readOnly />)
+      expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
     })
   })
 
@@ -688,10 +757,10 @@ describe('ObjectiveCard', () => {
   })
 
   describe('readOnly prop (confirmed OKR drill-down)', () => {
-    const individualObjective = { id: 'io-9', title: 'Ship MVP', status: 'on_track' }
+    const individualObjective = { id: 'io-9', title: 'Ship MVP', progress_status: 'on_track' }
 
-    it('renders the status dot as non-interactive (no button) when readOnly', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" readOnly />)
+    it('renders the status badge as non-interactive (no button) when readOnly, even in Member view', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" readOnly />)
       expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
     })
 
@@ -706,8 +775,8 @@ describe('ObjectiveCard', () => {
       expect(screen.queryByRole('button', { name: /^edit$/i })).not.toBeInTheDocument()
     })
 
-    it('is fully editable by default (readOnly not set)', () => {
-      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" />)
+    it('is fully editable by default (readOnly not set, viewMode="member")', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
       expect(screen.getByRole('button', { name: /on track/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /add key result/i })).toBeInTheDocument()
     })

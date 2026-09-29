@@ -744,7 +744,7 @@ describe('OkrMapPage', () => {
       expect(screen.getByRole('button', { name: /add objective/i })).toBeInTheDocument()
     })
 
-    it('never exposes a status editor from the map carousel when the quarter is past (#B12: map is read-only)', () => {
+    it('never exposes a status editor from the map carousel when the quarter is past, even in Manager view (#B12/#B29)', () => {
       mockPastQuarter()
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
       render(<OkrMapPage />)
@@ -752,11 +752,23 @@ describe('OkrMapPage', () => {
       expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
     })
 
-    it('never exposes a status editor from the map carousel for the current quarter either (#B12: map is read-only)', () => {
+    // #B29 supersedes the old blanket "map is fully read-only" rule for
+    // status specifically: a Manager can now edit a company objective's
+    // status from the Map (for a non-past quarter); a Member still cannot.
+    it('does not expose a status editor from the map carousel in Member view for the current quarter', () => {
       mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
       render(<OkrMapPage />)
       expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
       expect(screen.queryByRole('group', { name: /set status/i })).not.toBeInTheDocument()
+    })
+
+    it('does expose a clickable status editor from the map carousel in Manager view for the current quarter (#B29)', () => {
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
     })
 
     it('passes readOnly to MyThreadPage when the selected quarter is past', () => {

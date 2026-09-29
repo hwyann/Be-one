@@ -4,6 +4,8 @@ import KrListInline from './KrListInline'
 import RationaleSection from './RationaleSection'
 import { STATUS_BY_VALUE } from '../lib/statuses'
 import useRationale from '../hooks/useRationale'
+import useCompanyObjectiveStatus from '../hooks/useCompanyObjectiveStatus'
+import useIndividualObjectiveStatus from '../hooks/useIndividualObjectiveStatus'
 
 const MAX_INLINE_OWNERS = 3
 const COLLAPSED_INLINE_OWNERS = 2
@@ -135,6 +137,60 @@ function MemberOkrPanel({ members, onSelect, selectedId }) {
   )
 }
 
+// Status is now a labeled, colored-background badge, not a bare dot
+// (#B29), and who can click it to change it depends on which kind of
+// objective this is:
+//  - Company objective: Manager only, Member sees it read-only.
+//  - Individual (member) objective: the member only, Manager sees it
+//    read-only (see the Manager's managerReview right-panel view, #B28).
+function StatusBadge({ meta, editable, onClick }) {
+  const badge = (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '5px',
+      padding: '3px 9px',
+      borderRadius: '999px',
+      background: meta.bg,
+      border: `1px solid ${meta.border}`,
+      font: '600 11px var(--font-sans)',
+      color: meta.text,
+      whiteSpace: 'nowrap',
+    }}>
+      <span style={{
+        width: '7px',
+        height: '7px',
+        borderRadius: '50%',
+        background: meta.color,
+        display: 'inline-block',
+        flexShrink: 0,
+      }} />
+      {meta.label}
+    </span>
+  )
+
+  if (!editable) {
+    return <span style={{ flexShrink: 0 }}>{badge}</span>
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={meta.label}
+      onClick={onClick}
+      style={{
+        flexShrink: 0,
+        padding: 0,
+        border: 'none',
+        background: 'transparent',
+        cursor: 'pointer',
+      }}
+    >
+      {badge}
+    </button>
+  )
+}
+
 export default function ObjectiveCard({
   objective,
   individualObjectiveId,
@@ -147,7 +203,7 @@ export default function ObjectiveCard({
   onSelectMember,
   selectedMemberId,
 }) {
-  const { id, category, title, status } = objective
+  const { id, category, title } = objective
   const isCompany = !individualObjectiveId
   const noEdit = isCompany || readOnly
   // Check-in stays available on a confirmed individual objective — that's
@@ -158,14 +214,31 @@ export default function ObjectiveCard({
   // A Manager reading a member's OKR (#B27 follow-up) never gets check-in
   // either, even though this isn't the company Map card itself.
   const allowCheckIn = !isCompany && !managerReview
+  // Company objectives keep their traffic-light status on `status`; a
+  // member's own OKR keeps it on the separate `progress_status` column
+  // (#B29) — `status` on individual_objectives is already the draft/
+  // confirmed field from #B17 and must not be overwritten by this.
+  const status = isCompany ? objective.status : objective.progress_status
   const statusMeta = status
-    ? (STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)' })
+    ? (STATUS_BY_VALUE[status] ?? { label: status, color: 'var(--text-muted)', bg: 'var(--panel)', text: 'var(--text-secondary)', border: 'var(--hairline)' })
     : null
   const keyResults = objective.key_results ?? []
   const [editingStatus, setEditingStatus] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const { rationale } = useRationale(id)
   const isManager = viewMode === 'manager'
+  // Who can click the status badge to change it (#B29): a company
+  // objective's status is Manager-only (Member sees it read-only); an
+  // individual objective's status is the member's own to set (Manager
+  // only ever sees it read-only, e.g. in the #B28 right-panel view).
+  // Gated by !readOnly either way — a past quarter (readOnly passed down
+  // from ObjectiveCarousel) or a confirmed OKR (#B19) still locks it.
+  const canEditStatus = (isCompany ? isManager : viewMode === 'member') && !readOnly
+  const { update: updateCompanyStatus, saving: savingCompanyStatus, error: companyStatusError } = useCompanyObjectiveStatus()
+  const { update: updateIndividualStatus, saving: savingIndividualStatus, error: individualStatusError } = useIndividualObjectiveStatus()
+  const updateStatus = isCompany ? updateCompanyStatus : updateIndividualStatus
+  const savingStatus = isCompany ? savingCompanyStatus : savingIndividualStatus
+  const statusError = isCompany ? companyStatusError : individualStatusError
   // Draft (unconfirmed) member OKRs stay private, same rule as My Thread
   // (#B18/#B19) — only a confirmed one is "real" enough to surface here.
   const linkedMembers = isCompany
@@ -213,63 +286,22 @@ export default function ObjectiveCard({
           />
         )}
         {statusMeta && (
-          noEdit ? (
-            <span
-              title={statusMeta.label}
-              style={{
-                width: '14px',
-                height: '14px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                marginTop: '1px',
-              }}
-            >
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: statusMeta.color,
-                display: 'inline-block',
-              }} />
-            </span>
-          ) : (
-            <button
-              type="button"
-              aria-label={statusMeta.label}
-              onClick={() => setEditingStatus(true)}
-              style={{
-                width: '14px',
-                height: '14px',
-                padding: 0,
-                border: 'none',
-                background: 'transparent',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                marginTop: '1px',
-                cursor: 'pointer',
-              }}
-            >
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: statusMeta.color,
-                display: 'inline-block',
-              }} />
-            </button>
-          )
+          <StatusBadge
+            meta={statusMeta}
+            editable={canEditStatus}
+            onClick={() => setEditingStatus(true)}
+          />
         )}
       </div>
-      {!noEdit && editingStatus && (
+      {canEditStatus && editingStatus && (
         <StatusEditor
           objectiveId={id}
           currentStatus={status}
           onDone={() => setEditingStatus(false)}
           onSaved={onStatusSaved}
+          update={updateStatus}
+          saving={savingStatus}
+          error={statusError}
         />
       )}
       <KrListInline

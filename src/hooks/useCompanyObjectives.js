@@ -32,7 +32,7 @@ export default function useCompanyObjectives(quarterId) {
         id, category, title, status,
         key_results(id, title, target_note),
         individual_objectives!linked_company_objective_id(
-          id, title, owner_name, status,
+          id, title, owner_name, status, progress_status,
           key_results:key_results!key_results_individual_objective_id_fkey(id, title, target_note)
         )
       `)

@@ -187,5 +187,8 @@ describe('useCompanyObjectives', () => {
     expect(capturedSelect).toMatch(/individual_objectives!linked_company_objective_id/)
     expect(capturedSelect).toContain('key_results_individual_objective_id_fkey')
     expect(capturedSelect).toContain('status')
+    // progress_status (#B29) — the Manager's read-only right-panel view of
+    // a member's OKR needs this to render the status badge at all.
+    expect(capturedSelect).toContain('progress_status')
   })
 })

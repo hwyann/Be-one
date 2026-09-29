@@ -451,6 +451,29 @@ describe('MyThreadPage', () => {
       expect(screen.getByRole('button', { name: /^review$/i })).not.toBeDisabled()
     })
 
+    it('turns coral once activated (reviewEnabled), unlike its default grey/transparent look (#B29)', () => {
+      const { rerender } = render(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+        />
+      )
+      const disabledButton = screen.getByRole('button', { name: /^review$/i })
+      expect(disabledButton).toHaveStyle({ background: 'transparent' })
+
+      rerender(
+        <MyThreadPage
+          ownerName="Satoshi Kimura"
+          objectives={objectives}
+          companyObjectives={companyObjectives}
+          reviewEnabled
+        />
+      )
+      const enabledButton = screen.getByRole('button', { name: /^review$/i })
+      expect(enabledButton).toHaveStyle({ background: 'var(--coral-700)' })
+    })
+
     it('stays enabled/disabled independent of readOnly (a distinct action from editing)', () => {
       render(
         <MyThreadPage

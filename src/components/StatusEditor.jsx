@@ -1,10 +1,13 @@
 import { useState } from 'react'
-import useCompanyObjectiveStatus from '../hooks/useCompanyObjectiveStatus'
 import { STATUSES } from '../lib/statuses'
 
-export default function StatusEditor({ objectiveId, currentStatus, onDone, onSaved }) {
+// Purely presentational now (#B29) — the caller (ObjectiveCard) picks
+// which hook's `update` applies (useCompanyObjectiveStatus for a company
+// objective, useIndividualObjectiveStatus for an individual one, gated by
+// who's allowed to edit which) and passes it straight through, rather
+// than this component importing one specific hook itself.
+export default function StatusEditor({ objectiveId, currentStatus, onDone, onSaved, update, saving, error }) {
   const [picked, setPicked] = useState(currentStatus)
-  const { update, saving, error } = useCompanyObjectiveStatus()
 
   async function handleSave() {
     const ok = await update({ id: objectiveId, status: picked })
