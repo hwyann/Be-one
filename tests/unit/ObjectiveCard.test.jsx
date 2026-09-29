@@ -366,6 +366,13 @@ describe('ObjectiveCard', () => {
       expect(screen.getByRole('group', { name: /set status/i })).toBeInTheDocument()
     })
 
+    it('keeps the original inline block (not a floating popover) for a member\'s own status editor (#B31 follow-up)', () => {
+      render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      const editor = screen.getByRole('group', { name: /set status/i })
+      expect(editor).not.toHaveStyle({ position: 'absolute' })
+    })
+
     it('renders the three traffic-light options in the status editor', () => {
       render(<ObjectiveCard objective={individualObjective} individualObjectiveId="io-9" viewMode="member" />)
       fireEvent.click(screen.getByRole('button', { name: /on track/i }))
@@ -483,6 +490,16 @@ describe('ObjectiveCard', () => {
     it('renders the badge read-only for a Manager during a past/read-only quarter', () => {
       render(<ObjectiveCard objective={companyObjective} viewMode="manager" readOnly />)
       expect(screen.queryByRole('button', { name: /on track/i })).not.toBeInTheDocument()
+    })
+
+    // #B31 follow-up: Manager's company-status editor is a small floating
+    // popover anchored to the badge, not the full-width block pushed into
+    // the card's flow that a member's own OKR still uses.
+    it('renders the status editor as a floating popover (position: absolute), not the inline block', () => {
+      render(<ObjectiveCard objective={companyObjective} viewMode="manager" />)
+      fireEvent.click(screen.getByRole('button', { name: /on track/i }))
+      const editor = screen.getByRole('group', { name: /set status/i })
+      expect(editor).toHaveStyle({ position: 'absolute' })
     })
   })
 

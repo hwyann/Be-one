@@ -1207,6 +1207,51 @@ describe('OkrMapPage', () => {
       expect(refetchQuarters).not.toHaveBeenCalled()
       expect(selectQuarter).not.toHaveBeenCalled()
     })
+
+    // #B31: every new quarter starts with zero Company OKR now (no more
+    // clone-from-previous-quarter), so "+ New quarter" opens the Company
+    // OKR panel directly instead of waiting for the general empty-state
+    // effect to notice.
+    it('opens the Company OKR panel directly after creating a quarter, in Manager view', async () => {
+      const createQuarter = vi.fn().mockResolvedValue({ id: 'q3', name: 'Q3 2026' })
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      mocks.useCreateQuarter.mockReturnValue({ createQuarter, creating: false, error: null })
+
+      render(<OkrMapPage />)
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /new quarter/i })) })
+      expect(screen.getByTestId('company-okr-dialog')).toBeInTheDocument()
+    })
+
+    it('does not open the Company OKR panel after creating a quarter in Member view', async () => {
+      const createQuarter = vi.fn().mockResolvedValue({ id: 'q3', name: 'Q3 2026' })
+      mocks.useCompanyObjectives.mockReturnValue({ objectives, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'member', setViewMode: vi.fn() })
+      mocks.useCreateQuarter.mockReturnValue({ createQuarter, creating: false, error: null })
+
+      render(<OkrMapPage />)
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /new quarter/i })) })
+      expect(screen.queryByTestId('company-okr-dialog')).not.toBeInTheDocument()
+    })
+
+    it('closes any open member right panel when the Company OKR panel opens off "+ New quarter"', async () => {
+      const memberObjective = { id: 'io-1', title: 'Ship MVP', owner_name: 'Satoshi Kimura', status: 'confirmed', key_results: [] }
+      const withMember = [{ ...objectives[0], individual_objectives: [memberObjective] }, objectives[1]]
+      const createQuarter = vi.fn().mockResolvedValue({ id: 'q3', name: 'Q3 2026' })
+      mocks.useCompanyObjectives.mockReturnValue({ objectives: withMember, loading: false, error: null, refetch: vi.fn() })
+      mocks.useViewMode.mockReturnValue({ viewMode: 'manager', setViewMode: vi.fn() })
+      mocks.useCreateQuarter.mockReturnValue({ createQuarter, creating: false, error: null })
+
+      render(<OkrMapPage />)
+      fireEvent.click(screen.getByRole('button', { name: /show member okrs/i }))
+      fireEvent.click(screen.getByRole('button', { name: /ship mvp/i }))
+      expect(screen.getByTestId('okr-dialog')).toBeInTheDocument()
+
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: /new quarter/i })) })
+      expect(screen.getByTestId('company-okr-dialog')).toBeInTheDocument()
+      expect(screen.queryByTestId('okr-dialog')).not.toBeInTheDocument()
+    })
   })
 
   describe('empty-state auto-open of Add Objective modal', () => {

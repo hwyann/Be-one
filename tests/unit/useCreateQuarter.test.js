@@ -7,11 +7,6 @@ const mocks = vi.hoisted(() => ({
   quartersUpdateIn: vi.fn(),
   quartersInsert: vi.fn(),
   quartersInsertSelect: vi.fn(),
-  coSelect: vi.fn(),
-  coSelectEq: vi.fn(),
-  coInsert: vi.fn(),
-  coInsertSelect: vi.fn(),
-  krInsert: vi.fn(),
 }))
 
 vi.mock('../../src/lib/supabase', () => ({
@@ -28,12 +23,6 @@ beforeEach(() => {
     if (table === 'quarters') {
       return { update: mocks.quartersUpdate, insert: mocks.quartersInsert }
     }
-    if (table === 'company_objectives') {
-      return { select: mocks.coSelect, insert: mocks.coInsert }
-    }
-    if (table === 'key_results') {
-      return { insert: mocks.krInsert }
-    }
     throw new Error(`unexpected table: ${table}`)
   })
   mocks.quartersUpdate.mockReturnValue({ in: mocks.quartersUpdateIn })
@@ -43,11 +32,6 @@ beforeEach(() => {
     data: [{ id: 'q2', name: 'Q4 2026', start_date: '2026-10-01', end_date: '2026-12-31', is_active: true }],
     error: null,
   })
-  mocks.coSelect.mockReturnValue({ eq: mocks.coSelectEq })
-  mocks.coSelectEq.mockResolvedValue({ data: [], error: null })
-  mocks.coInsert.mockReturnValue({ select: mocks.coInsertSelect })
-  mocks.coInsertSelect.mockResolvedValue({ data: [{ id: 'new-co-1' }], error: null })
-  mocks.krInsert.mockResolvedValue({ error: null })
 })
 
 describe('useCreateQuarter', () => {
@@ -77,44 +61,15 @@ describe('useCreateQuarter', () => {
     expect(mocks.quartersUpdate).not.toHaveBeenCalled()
   })
 
-  it('skips cloning company objectives when there is no prior quarter', async () => {
-    const { result } = renderHook(() => useCreateQuarter())
-    await act(async () => { await result.current.createQuarter([]) })
-    expect(mocks.coSelect).not.toHaveBeenCalled()
-  })
-
-  it('clones each company objective and its key results into the new quarter', async () => {
-    mocks.coSelectEq.mockResolvedValue({
-      data: [{
-        title: 'Ship the MVP',
-        description: 'desc',
-        category: 'Delivery',
-        key_results: [
-          { title: 'Zero critical bugs', description: null, target_value: 0, unit: 'bugs', target_note: null },
-        ],
-      }],
-      error: null,
-    })
+  // #B31: "+ New quarter" no longer clones Company OKR from the prior
+  // quarter — every new quarter starts empty, and the Manager sets it
+  // fresh via CompanyOkrDialog (opened directly by OkrMapPage right after
+  // creation). Only the quarters table itself is ever touched here now.
+  it('never touches company_objectives or key_results (no more cloning)', async () => {
     const { result } = renderHook(() => useCreateQuarter())
     await act(async () => { await result.current.createQuarter([sourceQuarter]) })
-
-    expect(mocks.coSelectEq).toHaveBeenCalledWith('quarter_id', 'q1')
-    expect(mocks.coInsert).toHaveBeenCalledWith([{
-      quarter_id: 'q2',
-      title: 'Ship the MVP',
-      description: 'desc',
-      category: 'Delivery',
-      status: 'not_started',
-    }])
-    expect(mocks.krInsert).toHaveBeenCalledWith([{
-      objective_id: 'new-co-1',
-      title: 'Zero critical bugs',
-      description: null,
-      target_value: 0,
-      unit: 'bugs',
-      target_note: null,
-      current_value: 0,
-    }])
+    expect(mocks.from).not.toHaveBeenCalledWith('company_objectives')
+    expect(mocks.from).not.toHaveBeenCalledWith('key_results')
   })
 
   it('returns null and sets error when the quarter insert fails', async () => {
@@ -124,7 +79,6 @@ describe('useCreateQuarter', () => {
     await act(async () => { created = await result.current.createQuarter([sourceQuarter]) })
     expect(created).toBeNull()
     expect(result.current.error).toBe('insert boom')
-    expect(mocks.coSelect).not.toHaveBeenCalled()
   })
 
   it('returns null and sets error, without inserting, when deactivation fails', async () => {

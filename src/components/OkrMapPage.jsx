@@ -259,6 +259,16 @@ export default function OkrMapPage() {
     await refetchQuarters()
     selectQuarter(newQuarter.id)
     setToastMessage(`New quarter "${newQuarter.name}" created.`)
+    // Opens the Company OKR panel directly off this action (#B31) rather
+    // than relying solely on the empty-state effect below to notice —
+    // every new quarter starts with zero Company OKR now (the old
+    // clone-from-previous-quarter behavior is gone), so this is no longer
+    // an edge case, it's the normal path. Member-clicked "+ New quarter"
+    // doesn't open it — only Manager sets Company OKR.
+    if (viewMode === 'manager') {
+      autoOpenedCompanyQuarterRef.current = newQuarter.id
+      openCompanyDialog()
+    }
   }
 
   async function handleRequestReview() {
@@ -270,6 +280,7 @@ export default function OkrMapPage() {
 
   function handleCompanyOkrSaved() {
     refetch()
+    refetchQuarters()
     setCompanyDialogOpen(false)
     setToastMessage('Company OKR saved.')
   }

@@ -3,10 +3,12 @@ import { supabase } from '../lib/supabase'
 import { nextQuarterLabel, nextQuarterDates, pickLatestQuarter } from '../lib/quarters'
 
 // Backs the "+ New quarter" demo button (OkrMapPage): creates the next
-// quarter and clones the current quarter's Company OKRs into it, so a demo
-// can show the intended empty state immediately — Company OKR already set,
-// individual OKR not yet — without an admin having to re-author company
-// objectives by hand for every new quarter.
+// quarter, always starting with zero Company OKR (#B31) -- previously this
+// cloned the prior quarter's Company OKR to fake the intended empty state,
+// but that meant "+ New quarter" almost never actually produced an empty
+// Map, and the Manager's fresh company-objective-setup flow (#B30) rarely
+// fired. Now the Manager sets the Company OKR from scratch every time via
+// CompanyOkrDialog, opened directly by OkrMapPage right after creation.
 export default function useCreateQuarter() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState(null)
@@ -42,54 +44,9 @@ export default function useCreateQuarter() {
       setCreating(false)
       return null
     }
-    const newQuarter = inserted[0]
-
-    if (source) {
-      const { data: sourceObjectives, error: fetchError } = await supabase
-        .from('company_objectives')
-        .select('title, description, category, key_results(title, description, target_value, unit, target_note)')
-        .eq('quarter_id', source.id)
-
-      if (fetchError) {
-        setError(fetchError.message)
-        setCreating(false)
-        return newQuarter
-      }
-
-      for (const co of sourceObjectives ?? []) {
-        const { data: newCoRows, error: coError } = await supabase
-          .from('company_objectives')
-          .insert([{
-            quarter_id: newQuarter.id,
-            title: co.title,
-            description: co.description,
-            category: co.category,
-            status: 'not_started',
-          }])
-          .select()
-
-        if (coError) {
-          setError(coError.message)
-          continue
-        }
-
-        const newCo = newCoRows[0]
-        for (const kr of co.key_results ?? []) {
-          await supabase.from('key_results').insert([{
-            objective_id: newCo.id,
-            title: kr.title,
-            description: kr.description,
-            target_value: kr.target_value,
-            unit: kr.unit,
-            target_note: kr.target_note,
-            current_value: 0,
-          }])
-        }
-      }
-    }
 
     setCreating(false)
-    return newQuarter
+    return inserted[0]
   }, [])
 
   return { createQuarter, creating, error }

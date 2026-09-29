@@ -286,14 +286,34 @@ export default function ObjectiveCard({
           />
         )}
         {statusMeta && (
-          <StatusBadge
-            meta={statusMeta}
-            editable={canEditStatus}
-            onClick={() => setEditingStatus(true)}
-          />
+          // Manager-only company-status editing renders as a small
+          // floating tooltip anchored to the badge (#B29 follow-up)
+          // instead of pushing the card's content down — needs this
+          // relative wrapper for the editor's absolute positioning.
+          // A member's own OKR status editor keeps the original inline
+          // block below the header row (rendered further down instead).
+          <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+            <StatusBadge
+              meta={statusMeta}
+              editable={canEditStatus}
+              onClick={() => setEditingStatus(true)}
+            />
+            {isCompany && canEditStatus && editingStatus && (
+              <StatusEditor
+                objectiveId={id}
+                currentStatus={status}
+                onDone={() => setEditingStatus(false)}
+                onSaved={onStatusSaved}
+                update={updateStatus}
+                saving={savingStatus}
+                error={statusError}
+                floating
+              />
+            )}
+          </span>
         )}
       </div>
-      {canEditStatus && editingStatus && (
+      {!isCompany && canEditStatus && editingStatus && (
         <StatusEditor
           objectiveId={id}
           currentStatus={status}

@@ -236,9 +236,14 @@ function CompanyObjectiveDraftFields({ draft, index, onChange, onRemove }) {
 // Company OKR when the active quarter has none yet (#B30). Unlike
 // OkrDialog's individual-objective flow, there's no draft/confirm split
 // (company_objectives has no such concept) and no alignment select
-// (nothing for a company objective to align to) — just title, an optional
-// category, and one or more key results, saved directly on a single click.
+// (nothing for a company objective to align to) — just a quarter name,
+// then title, an optional category, and one or more key results per
+// objective, saved directly on a single click.
 export default function CompanyOkrDialog({ quarterId, quarterName, onSaved, onClose }) {
+  // Editable here too (#B31) — "+ New quarter" opens this dialog directly
+  // with an auto-suggested name (see lib/quarters.js's nextQuarterLabel),
+  // and the Manager can rename it before ever saving a Company OKR.
+  const [quarterNameInput, setQuarterNameInput] = useState(quarterName ?? '')
   const [objectiveDrafts, setObjectiveDrafts] = useState([emptyDraft()])
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -258,6 +263,10 @@ export default function CompanyOkrDialog({ quarterId, quarterName, onSaved, onCl
 
   async function handleSave() {
     if (!quarterId) return
+    if (!quarterNameInput.trim()) {
+      setError('Quarter name is required.')
+      return
+    }
     if (objectiveDrafts.some(d => !d.title.trim())) {
       setError('Every objective needs a title.')
       return
@@ -269,6 +278,20 @@ export default function CompanyOkrDialog({ quarterId, quarterName, onSaved, onCl
 
     setSaving(true)
     setError(null)
+
+    const trimmedName = quarterNameInput.trim()
+    if (trimmedName !== (quarterName ?? '')) {
+      const { error: renameErr } = await supabase
+        .from('quarters')
+        .update({ name: trimmedName })
+        .eq('id', quarterId)
+      if (renameErr) {
+        setError(renameErr.message)
+        setSaving(false)
+        return
+      }
+    }
+
     const saved = []
     for (const draft of objectiveDrafts) {
       const { data, error: err } = await supabase
@@ -313,13 +336,22 @@ export default function CompanyOkrDialog({ quarterId, quarterName, onSaved, onCl
     <div role="dialog" aria-label="Set Company OKR" style={cardStyle}>
       <button type="button" onClick={onClose} aria-label="Close" style={closeButtonStyle()}>×</button>
       <div style={headingStyle}>
-        Set Company OKR{quarterName ? ` for ${quarterName}` : ''}
+        Set Company OKR
       </div>
       {error && (
         <div role="alert" style={{ font: '500 11px var(--font-sans)', color: 'var(--behind)' }}>
           {error}
         </div>
       )}
+      <label htmlFor="company-okr-quarter-name" style={labelStyle}>
+        Quarter name
+        <input
+          id="company-okr-quarter-name"
+          value={quarterNameInput}
+          onChange={(e) => setQuarterNameInput(e.target.value)}
+          style={inputStyle}
+        />
+      </label>
       {objectiveDrafts.map((draft, index) => (
         <CompanyObjectiveDraftFields
           key={index}

@@ -6,7 +6,14 @@ import { STATUSES } from '../lib/statuses'
 // objective, useIndividualObjectiveStatus for an individual one, gated by
 // who's allowed to edit which) and passes it straight through, rather
 // than this component importing one specific hook itself.
-export default function StatusEditor({ objectiveId, currentStatus, onDone, onSaved, update, saving, error }) {
+//
+// `floating` (#B29 follow-up, Manager-only): renders as a small popover
+// anchored to the status badge instead of a full-width block pushed into
+// the card's normal flow — the caller must wrap the badge + this in a
+// `position: relative` element for the anchoring to work. Only used for
+// company-objective status editing; a member's own OKR keeps the original
+// inline block below the title row.
+export default function StatusEditor({ objectiveId, currentStatus, onDone, onSaved, update, saving, error, floating = false }) {
   const [picked, setPicked] = useState(currentStatus)
 
   async function handleSave() {
@@ -19,22 +26,33 @@ export default function StatusEditor({ objectiveId, currentStatus, onDone, onSav
 
   const canSave = picked && picked !== 'not_started' && !saving
 
+  const floatingStyle = {
+    position: 'absolute',
+    top: 'calc(100% + 6px)',
+    right: 0,
+    zIndex: 30,
+    width: '230px',
+  }
+
+  const panelStyle = {
+    margin: floating ? 0 : '4px 0 8px',
+    padding: '10px 12px',
+    background: floating ? 'var(--surface)' : 'var(--panel)',
+    border: '1px solid var(--hairline)',
+    borderRadius: '10px',
+    boxShadow: floating ? '0 4px 16px rgba(19,30,40,.18)' : 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  }
+
   return (
     <div
       role="group"
       aria-label="Set status"
-      style={{
-        margin: '4px 0 8px',
-        padding: '10px 12px',
-        background: 'var(--panel)',
-        border: '1px solid var(--hairline)',
-        borderRadius: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-      }}
+      style={floating ? { ...floatingStyle, ...panelStyle } : panelStyle}
     >
-      <div role="radiogroup" aria-label="Status" style={{ display: 'flex', gap: '10px' }}>
+      <div role="radiogroup" aria-label="Status" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
         {STATUSES.map(opt => {
           const selected = picked === opt.value
           return (
