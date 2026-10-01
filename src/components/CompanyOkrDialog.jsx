@@ -161,9 +161,15 @@ const draftHeadingStyle = {
 }
 
 function emptyDraft() {
-  return { title: '', category: '', draftKrs: [], showKrForm: false }
+  return { title: '', category: '', krTitle: '', krTargetNote: '', draftKrs: [], showKrForm: false }
 }
 
+// #B32: a key result is compulsory (Save is blocked without at least one),
+// so its title/target-note fields are always-visible inputs here, typed
+// directly like the Objective/Category fields above them — no "+ Add key
+// result" click needed to even find where to type one. Only an actual
+// *second* (optional) key result still goes through the dashed button
+// below, which now reads "+ Add another key result" to reflect that.
 function CompanyObjectiveDraftFields({ draft, index, onChange, onRemove }) {
   return (
     <div style={draftSectionStyle}>
@@ -189,6 +195,24 @@ function CompanyObjectiveDraftFields({ draft, index, onChange, onRemove }) {
           value={draft.category}
           onChange={(e) => onChange({ category: e.target.value })}
           placeholder="e.g. Growth, Retention, Delivery"
+          style={inputStyle}
+        />
+      </label>
+      <label htmlFor={`co-kr-title-${index}`} style={labelStyle}>
+        Key result
+        <input
+          id={`co-kr-title-${index}`}
+          value={draft.krTitle}
+          onChange={(e) => onChange({ krTitle: e.target.value })}
+          style={inputStyle}
+        />
+      </label>
+      <label htmlFor={`co-kr-target-note-${index}`} style={labelStyle}>
+        Target note (optional)
+        <input
+          id={`co-kr-target-note-${index}`}
+          value={draft.krTargetNote}
+          onChange={(e) => onChange({ krTargetNote: e.target.value })}
           style={inputStyle}
         />
       </label>
@@ -225,7 +249,7 @@ function CompanyObjectiveDraftFields({ draft, index, onChange, onRemove }) {
         />
       ) : (
         <button type="button" onClick={() => onChange({ showKrForm: true })} style={dashedButtonStyle()}>
-          + Add key result
+          + Add another key result
         </button>
       )}
     </div>
@@ -271,7 +295,7 @@ export default function CompanyOkrDialog({ quarterId, quarterName, onSaved, onCl
       setError('Every objective needs a title.')
       return
     }
-    if (objectiveDrafts.some(d => d.draftKrs.length === 0)) {
+    if (objectiveDrafts.some(d => !d.krTitle.trim() && d.draftKrs.length === 0)) {
       setError('At least one key result is required for each objective.')
       return
     }
@@ -312,7 +336,10 @@ export default function CompanyOkrDialog({ quarterId, quarterName, onSaved, onCl
       const companyObjective = data[0]
       saved.push(companyObjective)
 
-      for (const kr of draft.draftKrs) {
+      const krsToSave = draft.krTitle.trim()
+        ? [{ title: draft.krTitle.trim(), targetNote: draft.krTargetNote }, ...draft.draftKrs]
+        : draft.draftKrs
+      for (const kr of krsToSave) {
         const ok = await createKr({
           objectiveId: companyObjective.id,
           title: kr.title,

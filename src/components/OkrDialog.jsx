@@ -154,7 +154,7 @@ const draftHeadingStyle = {
 }
 
 function emptyDraft() {
-  return { title: '', link: '', draftKrs: [], showKrForm: false }
+  return { title: '', link: '', krTitle: '', krTargetNote: '', draftKrs: [], showKrForm: false }
 }
 
 // Inverse of parseLink — reconstructs the <select> value from a persisted
@@ -181,6 +181,12 @@ function draftsFromExisting(existingDrafts) {
     id: o.id,
     title: o.title,
     link: formatLink(o),
+    // The inline compulsory KR fields (#B32) always start blank on reload
+    // — a draft's already-saved key results stay in draftKrs below
+    // (editable via the existing Edit affordance), which already
+    // satisfies the "at least one KR" requirement on its own.
+    krTitle: '',
+    krTargetNote: '',
     draftKrs: (o.key_results ?? []).map(kr => ({
       id: kr.id,
       title: kr.title,
@@ -228,6 +234,30 @@ function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRem
             <option key={obj.id} value={`objective_level:${obj.id}`}>{obj.title}</option>
           ))}
         </select>
+      </label>
+      {/* A key result is compulsory (save is blocked without at least one),
+          so its fields are always-visible inputs here (#B32), typed
+          directly like Objective/Aligns-with above — no "+ Add key
+          result" click needed to even find where to type one. Only a
+          genuine *second* (optional) KR still goes through the dashed
+          button below, now relabeled "+ Add another key result". */}
+      <label htmlFor={`okr-kr-title-${index}`} style={labelStyle}>
+        Key result
+        <input
+          id={`okr-kr-title-${index}`}
+          value={draft.krTitle}
+          onChange={(e) => onChange({ krTitle: e.target.value })}
+          style={inputStyle}
+        />
+      </label>
+      <label htmlFor={`okr-kr-target-note-${index}`} style={labelStyle}>
+        Target note (optional)
+        <input
+          id={`okr-kr-target-note-${index}`}
+          value={draft.krTargetNote}
+          onChange={(e) => onChange({ krTargetNote: e.target.value })}
+          style={inputStyle}
+        />
       </label>
       {draft.draftKrs.length > 0 && (
         <ul style={draftKrListStyle}>
@@ -282,7 +312,7 @@ function ObjectiveDraftFields({ draft, index, companyObjectives, onChange, onRem
         />
       ) : (
         <button type="button" onClick={() => onChange({ showKrForm: true })} style={dashedButtonStyle()}>
-          + Add key result
+          + Add another key result
         </button>
       )}
     </div>
@@ -370,7 +400,7 @@ export default function OkrDialog({
         setError('A company objective link is required')
         return
       }
-      if (draft.draftKrs.length === 0) {
+      if (!draft.krTitle.trim() && draft.draftKrs.length === 0) {
         setError('At least one key result is required')
         return
       }
@@ -398,7 +428,10 @@ export default function OkrDialog({
       const savedObjective = data[0]
       savedObjectives.push(savedObjective)
 
-      for (const kr of draft.draftKrs) {
+      const krsToSave = draft.krTitle.trim()
+        ? [{ title: draft.krTitle.trim(), targetNote: draft.krTargetNote }, ...draft.draftKrs]
+        : draft.draftKrs
+      for (const kr of krsToSave) {
         if (kr.existing) continue
         const ok = await createKr({
           individualObjectiveId: savedObjective.id,

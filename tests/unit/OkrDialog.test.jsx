@@ -89,10 +89,12 @@ describe('OkrDialog', () => {
     mocks.krUpdateEq.mockResolvedValue({ error: null })
   })
 
+  // #B32: the (compulsory) first key result is now a plain inline input —
+  // no "+ Add key result" click needed to reveal it. Kept the original
+  // name/call-site shape (still awaitable, now just a no-op await) to
+  // minimize the diff across this file's many call sites.
   async function addDraftKr(title = 'Ship v1') {
-    fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
-    fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: title } })
-    fireEvent.click(screen.getByRole('button', { name: /^add$/i }))
+    fireEvent.change(screen.getByLabelText(/^key result$/i), { target: { value: title } })
   }
 
   it('renders title input, Save button, and a close (X) button', () => {
@@ -569,9 +571,9 @@ describe('OkrDialog', () => {
     function fillDraft(index, { title, link, krTitle }) {
       fireEvent.change(screen.getAllByLabelText(/objective/i)[index], { target: { value: title } })
       fireEvent.change(screen.getAllByLabelText(/aligns with/i)[index], { target: { value: link } })
-      fireEvent.click(screen.getAllByRole('button', { name: /add key result/i })[index])
-      fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: krTitle } })
-      fireEvent.click(screen.getByRole('button', { name: /^add$/i }))
+      // #B32: the (compulsory) first key result per objective section is
+      // now a plain inline input, no "+ Add key result" click needed.
+      fireEvent.change(screen.getAllByLabelText(/^key result$/i)[index], { target: { value: krTitle } })
     }
 
     it('renders a full-width "+ Add another objective" button when creating', () => {
@@ -808,8 +810,11 @@ describe('OkrDialog', () => {
         />
       )
       fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
-      expect(screen.getByLabelText(/key result/i)).toHaveValue('Talk to 10 customers')
-      expect(screen.getByLabelText(/target note/i)).toHaveValue('by Friday')
+      // Two "Key result" fields exist now (#B32): the always-visible
+      // compulsory one for a brand-new KR, and this Edit form's own —
+      // the edit form's renders second in the DOM (inside the KR list).
+      expect(screen.getAllByLabelText(/^key result$/i)[1]).toHaveValue('Talk to 10 customers')
+      expect(screen.getAllByLabelText(/target note/i)[1]).toHaveValue('by Friday')
     })
 
     it('persists the edited key result via useKrMutation.update and reflects it in the list', async () => {
@@ -823,7 +828,7 @@ describe('OkrDialog', () => {
         />
       )
       fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
-      fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: 'Talk to 20 customers' } })
+      fireEvent.change(screen.getAllByLabelText(/^key result$/i)[1], { target: { value: 'Talk to 20 customers' } })
       fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
 
       await waitFor(() => expect(mocks.krUpdate).toHaveBeenCalledWith({
@@ -847,7 +852,7 @@ describe('OkrDialog', () => {
         />
       )
       fireEvent.click(screen.getByRole('button', { name: /^edit$/i }))
-      fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: 'Broken update' } })
+      fireEvent.change(screen.getAllByLabelText(/^key result$/i)[1], { target: { value: 'Broken update' } })
       fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
 
       expect(await screen.findByRole('alert')).toHaveTextContent(/failed to update key result/i)

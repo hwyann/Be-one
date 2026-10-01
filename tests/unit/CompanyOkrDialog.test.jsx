@@ -42,10 +42,10 @@ describe('CompanyOkrDialog', () => {
     mocks.krCreate.mockResolvedValue(true)
   })
 
-  async function addDraftKr() {
-    fireEvent.click(screen.getByRole('button', { name: /add key result/i }))
-    fireEvent.change(screen.getByLabelText(/key result/i), { target: { value: 'Sign 5 enterprise deals' } })
-    fireEvent.click(screen.getByRole('button', { name: /^add$/i }))
+  // #B32: the (compulsory) first key result is now a plain inline input,
+  // no "+ Add key result" click needed to reveal it.
+  function fillDraftKr(value = 'Sign 5 enterprise deals') {
+    fireEvent.change(screen.getByLabelText(/^key result$/i), { target: { value } })
   }
 
   it('renders as a dialog with a heading, quarter name (pre-filled), title/category fields, and a close (x) button', () => {
@@ -68,7 +68,7 @@ describe('CompanyOkrDialog', () => {
     render(<CompanyOkrDialog quarterId="q1" quarterName="Q3 2026" onSaved={onSaved} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/quarter name/i), { target: { value: '' } })
     fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-    await addDraftKr()
+    fillDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/quarter name is required/i)
     expect(mocks.coInsert).not.toHaveBeenCalled()
@@ -93,7 +93,7 @@ describe('CompanyOkrDialog', () => {
     render(<CompanyOkrDialog quarterId="q1" quarterName="Q3 2026" onSaved={onSaved} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
     fireEvent.change(screen.getByLabelText(/category/i), { target: { value: 'Growth' } })
-    await addDraftKr()
+    fillDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() =>
       expect(mocks.coInsert).toHaveBeenCalledWith([
@@ -105,7 +105,7 @@ describe('CompanyOkrDialog', () => {
   it('creates each key result against the new company objective via useKrMutation', async () => {
     render(<CompanyOkrDialog quarterId="q1" quarterName="Q3 2026" onSaved={onSaved} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-    await addDraftKr()
+    fillDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() =>
       expect(mocks.krCreate).toHaveBeenCalledWith({
@@ -119,7 +119,7 @@ describe('CompanyOkrDialog', () => {
   it('calls onSaved with the saved objectives after a successful save', async () => {
     render(<CompanyOkrDialog quarterId="q1" quarterName="Q3 2026" onSaved={onSaved} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-    await addDraftKr()
+    fillDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith([{ id: 'new-co-1', title: 'Grow revenue' }]))
   })
@@ -131,15 +131,15 @@ describe('CompanyOkrDialog', () => {
     render(<CompanyOkrDialog quarterId="q1" quarterName="Q3 2026" onSaved={onSaved} onClose={onClose} />)
 
     fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-    await addDraftKr()
+    fillDraftKr()
 
     fireEvent.click(screen.getByRole('button', { name: /add another objective/i }))
     const titleInputs = screen.getAllByLabelText(/^objective$/i)
     expect(titleInputs).toHaveLength(2)
     fireEvent.change(titleInputs[1], { target: { value: 'Improve retention' } })
-    fireEvent.click(screen.getAllByRole('button', { name: /add key result/i })[1])
-    fireEvent.change(screen.getAllByLabelText(/key result/i)[0], { target: { value: 'Cut churn 10%' } })
-    fireEvent.click(screen.getByRole('button', { name: /^add$/i }))
+    const krInputs = screen.getAllByLabelText(/^key result$/i)
+    expect(krInputs).toHaveLength(2)
+    fireEvent.change(krInputs[1], { target: { value: 'Cut churn 10%' } })
 
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     await waitFor(() => expect(mocks.coInsert).toHaveBeenCalledTimes(2))
@@ -160,7 +160,7 @@ describe('CompanyOkrDialog', () => {
     mocks.coSelect.mockResolvedValue({ data: null, error: { message: 'DB error' } })
     render(<CompanyOkrDialog quarterId="q1" quarterName="Q3 2026" onSaved={onSaved} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-    await addDraftKr()
+    fillDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/db error/i)
     expect(onSaved).not.toHaveBeenCalled()
@@ -170,7 +170,7 @@ describe('CompanyOkrDialog', () => {
     mocks.krCreate.mockResolvedValueOnce(false)
     render(<CompanyOkrDialog quarterId="q1" quarterName="Q3 2026" onSaved={onSaved} onClose={onClose} />)
     fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-    await addDraftKr()
+    fillDraftKr()
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/key result failed to save/i)
     expect(onSaved).not.toHaveBeenCalled()
@@ -183,7 +183,7 @@ describe('CompanyOkrDialog', () => {
       render(<CompanyOkrDialog quarterId="q1" quarterName="Q4 2026" onSaved={onSaved} onClose={onClose} />)
       fireEvent.change(screen.getByLabelText(/quarter name/i), { target: { value: 'Launch Quarter' } })
       fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-      await addDraftKr()
+      fillDraftKr()
       fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(() => expect(mocks.quartersUpdate).toHaveBeenCalledWith({ name: 'Launch Quarter' }))
       expect(mocks.quartersUpdateEq).toHaveBeenCalledWith('id', 'q1')
@@ -192,7 +192,7 @@ describe('CompanyOkrDialog', () => {
     it('does not touch the quarters table when the name is left unchanged', async () => {
       render(<CompanyOkrDialog quarterId="q1" quarterName="Q4 2026" onSaved={onSaved} onClose={onClose} />)
       fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-      await addDraftKr()
+      fillDraftKr()
       fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(() => expect(mocks.coInsert).toHaveBeenCalled())
       expect(mocks.quartersUpdate).not.toHaveBeenCalled()
@@ -203,7 +203,7 @@ describe('CompanyOkrDialog', () => {
       render(<CompanyOkrDialog quarterId="q1" quarterName="Q4 2026" onSaved={onSaved} onClose={onClose} />)
       fireEvent.change(screen.getByLabelText(/quarter name/i), { target: { value: 'Launch Quarter' } })
       fireEvent.change(screen.getByLabelText(/^objective$/i), { target: { value: 'Grow revenue' } })
-      await addDraftKr()
+      fillDraftKr()
       fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
       expect(await screen.findByRole('alert')).toHaveTextContent(/rename failed/i)
       expect(mocks.coInsert).not.toHaveBeenCalled()
