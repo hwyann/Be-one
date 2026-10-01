@@ -428,6 +428,7 @@ Feature: Unified drill-down modal for individual objectives
 | B29 | Status was a bare, unlabeled dot anyone could theoretically click; a member's own status editor was silently broken (wrote to the wrong table/id); no role-based gating on who can change which kind of objective's status | Bug + Feature | **Accepted** (merged direct to `main` `9f3f712`, no PR/review — demo-build process, 2026-09-27). Migration `0012_individual_objectives_progress_status.sql` applied live by Jess via the Supabase SQL editor 2026-09-30. See process note below re: this migration's deploy sequencing. | none | PM (direct) |
 | B30 | No UI anywhere to create a company objective from scratch — only "+ New quarter"'s clone-from-previous-quarter path, which leaves a quarter with zero Company OKR whenever there's no source to clone from | Feature | **Accepted** (merged direct to `main` `a767595`, no PR/review — demo-build process, 2026-09-30) | none | PM (direct) |
 | B31 | Manager's company-status editor was a full-width block, not a tooltip; "+ New quarter" only reached Company OKR setup indirectly (via clone or the empty-state effect), with no way to rename the quarter or guarantee it started empty | Feature | **Accepted** (merged direct to `main` `03cae27`, no PR/review — demo-build process, 2026-09-30) | none | PM (direct) |
+| B32 | A key result is compulsory for every objective draft (Save is blocked without one), but its input was hidden behind a "+ Add key result" click + a separate sub-form to confirm | Feature | **Accepted** (merged direct to `main` `70952bc`, no PR/review — demo-build process, 2026-09-30) | none | PM (direct) |
 
 **B14 — "+ New quarter" button for demo**
 As Jess, I want a one-click way to add the next quarter for a demo, so I can show a fresh quarter's empty state without hand-seeding company objectives in Supabase every time.
@@ -954,6 +955,37 @@ Feature: "+ New quarter" opens Company OKR setup directly, always empty
     Then the quarter's name is updated to what they typed
 ```
 `e2e: none`. Implementation: `StatusEditor.jsx` gained a `floating` boolean — when true, renders `position: absolute` (anchored below-right of the badge, not literally above it despite the "on top of" phrasing — positioning above risked getting clipped by `ObjectiveCarousel`'s `overflow: hidden` slide wrapper on the Map, since the badge sits near the very top of the card) with a box-shadow, versus the original `margin`+`background` inline block. `ObjectiveCard.jsx` wraps the badge in a `position: relative` span and only passes `floating` for the company-objective case; the individual case keeps rendering `StatusEditor` at its original location, unchanged. `useCreateQuarter.js` dropped its entire clone-from-previous-quarter block (company_objectives/key_results are no longer touched at all) — it only creates the quarters row now. `OkrMapPage.jsx`'s `handleCreateQuarter` opens `CompanyOkrDialog` directly (Manager view only) right after creation, reusing the same `openCompanyDialog` mutual-exclusion helper from #B30. `CompanyOkrDialog.jsx` gained an editable "Quarter name" field (defaults to the passed-in `quarterName`), updating `quarters.name` on save only if changed. 16 new/updated tests across `StatusEditor`(via `ObjectiveCard`)/`useCreateQuarter`/`CompanyOkrDialog`/`OkrMapPage`; full suite 554/554.
+
+**B32 — Compulsory key result as an always-visible inline field**
+
+```gherkin
+Feature: The compulsory first key result doesn't hide behind a button
+  As Jess, I want the key result field to just be there on the page when
+  I'm creating an objective, since I can't save without one anyway.
+
+  Scenario: Member creating an individual objective
+    Given the viewer opens "+ Add objective"
+    Then a "Key result" input is already visible on the page
+    And they can type into it directly, with no button to click first
+
+  Scenario: Manager setting the Company OKR
+    Given the Manager has the "Set Company OKR" panel open
+    Then a "Key result" input is already visible for each objective
+    And they can type into it directly, with no button to click first
+
+  Scenario: A genuine second key result is still opt-in
+    Given the compulsory first key result is already filled in
+    When the viewer wants to add one more
+    Then they still use a "+ Add another key result" button, since that
+      one really is optional
+
+  Scenario: Reloading an existing draft is unaffected
+    Given a member reopens "+ Add objective" on a draft that already has
+      a saved key result
+    Then that key result still shows in the list with its own Edit
+      control, and the inline field is available for an optional new one
+```
+`e2e: none`. Implementation: both `OkrDialog.jsx` (member, individual objectives) and `CompanyOkrDialog.jsx` (Manager, Company OKR, #B30) gained `krTitle`/`krTargetNote` fields directly on the draft object, rendered as plain always-visible inputs right after the Objective/Aligns-with (or Category) fields — no `showKrForm` toggle needed for this one. The existing `draftKrs` array + "+ Add key result" button (relabeled "+ Add another key result") are unchanged, now representing only genuinely optional additional key results. Validation changed from `draftKrs.length === 0` to `!krTitle.trim() && draftKrs.length === 0`, and the save loop prepends the inline field's value (when filled) to the list of key results to create. Reloading an existing draft (#B18) leaves the inline field blank — already-saved key results stay in `draftKrs` with their own Edit affordance, which already satisfies the "at least one" requirement on its own. No schema change needed.
 
 **B6 — `key_results.objective_id` NOT NULL blocks all individual Key Result inserts**
 As Satoshi, I want my Key Results to actually save when I create an objective, so that the objective isn't silently left without the KR I just wrote.
